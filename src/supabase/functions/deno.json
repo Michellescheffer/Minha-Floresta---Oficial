@@ -1,0 +1,16 @@
+{
+  "tasks": {
+    "start": "deno run --allow-all --watch=static/,routes/ dev.ts"
+  },
+  "imports": {
+    "@supabase/functions-js": "https://esm.sh/@supabase/functions-js@2.1.5",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.38.4",
+    "hono": "https://deno.land/x/hono@v3.4.1/mod.ts",
+    "hono/": "https://deno.land/x/hono@v3.4.1/"
+  },
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["deno.window"],
+    "strict": true
+  }
+}

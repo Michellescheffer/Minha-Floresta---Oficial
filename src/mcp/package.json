@@ -1,0 +1,53 @@
+{
+  "name": "minha-floresta-mcp",
+  "version": "1.0.0",
+  "description": "MCP Server for Minha Floresta Conservações MySQL Database",
+  "main": "mysql-server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node mysql-server.js",
+    "dev": "nodemon mysql-server.js",
+    "test": "node test-mcp.js",
+    "interactive": "node test-mcp.js --interactive",
+    "install": "node scripts/install-mcp.js",
+    "install-mcp": "npm install -g @modelcontextprotocol/cli",
+    "setup": "npm install && npm run install",
+    "hostinger": "node hostinger-config.js",
+    "hostinger-setup": "node hostinger-config.js && npm install",
+    "hostinger-remote": "node hostinger-remote-config.js",
+    "remote-setup": "node hostinger-remote-config.js && npm install"
+  },
+  "bin": {
+    "minha-floresta-mcp": "./mysql-server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0",
+    "mysql2": "^3.6.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "mysql",
+    "database",
+    "reforestation",
+    "minha-floresta"
+  ],
+  "author": "Minha Floresta Conservações",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/minha-floresta/mcp-mysql-server"
+  },
+  "mcp": {
+    "server": {
+      "command": "node",
+      "args": ["mysql-server.js"],
+      "env": {}
+    }
+  }
+}

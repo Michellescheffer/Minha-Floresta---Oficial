@@ -1,0 +1,27 @@
+{
+  "name": "minha-floresta-hostinger-api",
+  "version": "1.0.0",
+  "description": "API REST para Hostinger - Minha Floresta Conservações",
+  "main": "hostinger-api.js",
+  "scripts": {
+    "start": "node hostinger-api.js",
+    "dev": "nodemon hostinger-api.js",
+    "test": "node test-hostinger-api.js",
+    "setup": "node setup-hostinger.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.6.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "express-rate-limit": "^6.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "author": "Minha Floresta Conservações",
+  "license": "MIT"
+}
