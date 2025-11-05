@@ -22,11 +22,9 @@ import {
   FileText
 } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
-import { BackendConnectionTest } from '../components/BackendConnectionTest';
-import { IntegrationTest } from '../components/IntegrationTest';
-import { IntegrationSummary } from '../components/IntegrationSummary';
+ 
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'sonner@2.0.3';
+import { toast } from 'sonner';
 
 type DashboardTab = 'overview' | 'purchases' | 'donations' | 'certificates' | 'profile';
 
@@ -134,18 +132,9 @@ export function DashboardPage() {
           })}
         </div>
 
-        {/* Backend Connection Test - Mostrar apenas em desenvolvimento */}
+        {/* Overview */}
         {activeTab === 'overview' && (
           <div className="space-y-8">
-            {/* Integration Summary */}
-            <IntegrationSummary />
-            
-            {/* Backend Connection Status */}
-            <BackendConnectionTest />
-            
-            {/* Integration Test */}
-            <IntegrationTest />
-            
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <GlassCard className="p-6">
