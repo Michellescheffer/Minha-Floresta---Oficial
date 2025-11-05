@@ -21,14 +21,7 @@ serve(async (req: Request) => {
     );
 
     const url = new URL(req.url);
-    let path = url.pathname;
-    // Normalize path to remove function-name prefix if present in production
-    // e.g., '/mf-backend/admin/...' -> '/admin/...'
-    if (path.startsWith('/mf-backend/')) {
-      path = path.replace(/^\/mf-backend/, '');
-    } else if (path === '/mf-backend') {
-      path = '/';
-    }
+    const path = url.pathname;
     const method = req.method;
     
     console.log(`${method} ${path}`);

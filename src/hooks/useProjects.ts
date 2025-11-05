@@ -136,21 +136,26 @@ export function useProjects() {
       }
       
       if (data && data.length > 0) {
-        // Transform Supabase data to frontend format
-        const transformedProjects = data.map(project => ({
-          id: project.id,
-          name: project.name,
-          description: project.description,
-          location: project.location,
-          type: project.type || 'reforestation',
-          price: project.price_per_m2 || project.price || 25,
-          available: project.available_area || 10000,
-          sold: project.sold_area || 0,
-          image: project.main_image || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',
-          images: project.gallery_images || [project.main_image] || [],
-          status: project.status,
-          coordinates: project.coordinates || { lat: -15.7942, lng: -47.8822 }
-        }));
+        // Transform Supabase data to frontend format (current schema)
+        const transformedProjects = data.map(project => {
+          const available = project.available_m2 ?? project.available_area ?? project.available ?? 0;
+          const total = project.total_m2 ?? project.total_area ?? (available || 0);
+          const sold = total && available ? Math.max(0, Number(total) - Number(available)) : (project.sold_area ?? project.sold ?? 0);
+          return {
+            id: project.id,
+            name: project.name,
+            description: project.description,
+            location: project.location,
+            type: project.type || 'reforestation',
+            price: project.price_per_m2 || project.price_per_sqm || project.price || 25,
+            available: available || 0,
+            sold,
+            image: project.image || project.main_image || 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800',
+            images: project.gallery_images || (project.image ? [project.image] : []),
+            status: project.status,
+            coordinates: project.coordinates || { lat: -15.7942, lng: -47.8822 }
+          } as Project;
+        });
         
         setProjects(transformedProjects);
       } else {
@@ -239,12 +244,10 @@ export function useProjects() {
           location: projectData.location,
           type: projectData.type,
           price_per_m2: projectData.price,
-          total_area: projectData.available,
-          available_area: projectData.available,
-          sold_area: projectData.sold || 0,
-          main_image: projectData.image,
+          total_m2: projectData.available,
+          available_m2: projectData.available,
+          image: projectData.image,
           gallery_images: projectData.images || [projectData.image],
-          coordinates: { lat: -15.7942, lng: -47.8822 },
           status: 'active'
         })
         .select()
@@ -263,9 +266,9 @@ export function useProjects() {
           location: data.location,
           type: data.type,
           price: data.price_per_m2,
-          available: data.available_area,
-          sold: data.sold_area,
-          image: data.main_image,
+          available: data.available_m2,
+          sold: Math.max(0, (data.total_m2 ?? 0) - (data.available_m2 ?? 0)),
+          image: data.image || data.main_image,
           images: data.gallery_images,
           status: data.status,
           coordinates: data.coordinates
