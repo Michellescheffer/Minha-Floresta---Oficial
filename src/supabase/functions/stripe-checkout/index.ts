@@ -173,56 +173,72 @@ serve(async (req: Request) => {
       }
 
       const amountInCents = Math.round(donation_amount * 100);
+      const useHosted = Boolean((metadata && (metadata as any).use_hosted) || false);
+      const successUrl = (metadata && (metadata as any).success_url) || `${new URL(req.url).origin}/#checkout-success`;
+      const cancelUrl = (metadata && (metadata as any).cancel_url) || `${new URL(req.url).origin}/#doacoes`;
 
-      // Criar registro de doação (status: pending)
-      const { data: donation, error: donationError } = await supabase
-        .from('donations')
-        .insert({
-          user_id: user_id || null,
-          project_id: donation_project_id || null,
-          amount: donation_amount,
-          currency: 'brl',
-          payment_method: 'stripe',
-          payment_status: 'pending',
-          donor_name: metadata.donor_name || null,
-          donor_email: email,
-          is_anonymous: metadata.is_anonymous || false,
-          is_recurring: false,
-          message: metadata.message || null,
-        })
-        .select()
-        .single();
+      // Hosted Checkout (Stripe Checkout Session)
+      if (useHosted) {
+        const session = await stripe.checkout.sessions.create({
+          mode: 'payment',
+          payment_method_types: ['card'],
+          line_items: [
+            {
+              price_data: {
+                currency: 'brl',
+                product_data: {
+                  name: donation_project_id ? `Doação para projeto ${donation_project_id}` : 'Doação Geral',
+                },
+                unit_amount: amountInCents,
+              },
+              quantity: 1,
+            },
+          ],
+          success_url: successUrl,
+          cancel_url: cancelUrl,
+          allow_promotion_codes: false,
+          metadata: {
+            type: 'donation',
+            project_id: donation_project_id || 'general',
+            user_id: user_id || 'anonymous',
+            email,
+            donor_name: metadata?.donor_name || '',
+            donor_phone: metadata?.donor_phone || '',
+            message: metadata?.message || '',
+            is_anonymous: String(metadata?.is_anonymous || false),
+          },
+        });
 
-      if (donationError || !donation) {
-        console.error('Error creating donation:', donationError);
         return new Response(
-          JSON.stringify({ error: 'Failed to create donation record' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ success: true, session_url: session.url }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      // Criar Payment Intent no Stripe
+      // Embedded (PaymentIntent + Elements)
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amountInCents,
         currency: 'brl',
         receipt_email: email,
         metadata: {
           type: 'donation',
-          donation_id: donation.id,
+          donation_id: 'none',
           user_id: user_id || 'anonymous',
           email,
           project_id: donation_project_id || 'general',
-          is_anonymous: String(metadata.is_anonymous || false),
+          donor_name: metadata?.donor_name || '',
+          donor_phone: metadata?.donor_phone || '',
+          message: metadata?.message || '',
+          is_anonymous: String(metadata?.is_anonymous || false),
         },
       });
 
-      // Salvar em stripe_payment_intents
       const { error: piError } = await supabase
         .from('stripe_payment_intents')
         .insert({
           stripe_payment_intent_id: paymentIntent.id,
           stripe_client_secret: paymentIntent.client_secret,
-          donation_id: donation.id,
+          donation_id: null,
           amount: donation_amount,
           currency: 'brl',
           status: paymentIntent.status,
@@ -233,18 +249,11 @@ serve(async (req: Request) => {
         console.error('Error saving payment intent:', piError);
       }
 
-      // Atualizar donation com stripe_payment_intent_id
-      await supabase
-        .from('donations')
-        .update({ stripe_payment_intent_id: paymentIntent.id })
-        .eq('id', donation.id);
-
       return new Response(
         JSON.stringify({
           success: true,
           client_secret: paymentIntent.client_secret,
           payment_intent_id: paymentIntent.id,
-          donation_id: donation.id,
           amount: donation_amount,
           currency: 'brl',
         }),

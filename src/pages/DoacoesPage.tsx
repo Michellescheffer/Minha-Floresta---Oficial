@@ -16,6 +16,8 @@ export function DoacoesPage() {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [message, setMessage] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix' | 'bank_transfer'>('credit_card');
+  const [paymentExperience, setPaymentExperience] = useState<'embedded' | 'hosted'>('embedded');
+  const [isGeneralDonation, setIsGeneralDonation] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showCheckout, setShowCheckout] = useState(false);
@@ -48,10 +50,7 @@ export function DoacoesPage() {
       return;
     }
 
-    if (!targetProject) {
-      alert('Por favor, selecione um projeto para sua doação.');
-      return;
-    }
+    // Permitir doação geral quando não há projeto selecionado
 
     if (paymentMethod !== 'credit_card') {
       alert('Nesta tela, apenas Cartão (Stripe) está disponível no momento.');
@@ -65,15 +64,24 @@ export function DoacoesPage() {
       const resp = await createPaymentIntent({
         type: 'donation',
         donation_amount: amount,
-        donation_project_id: targetProject.id,
+        donation_project_id: isGeneralDonation ? undefined : targetProject?.id,
         email: donorEmail,
         metadata: {
           donor_name: isAnonymous ? 'Anonymous' : donorName,
           donor_phone: donorPhone || undefined,
           message: message || undefined,
           is_anonymous: isAnonymous,
+          use_hosted: paymentExperience === 'hosted',
+          success_url: `${window.location.origin}/#checkout-success`,
+          cancel_url: `${window.location.origin}/#doacoes`,
         },
       } as any);
+
+      // Hosted Checkout: redirecionar se vier session_url
+      if (resp.success && (resp as any).session_url) {
+        window.location.href = (resp as any).session_url as string;
+        return;
+      }
 
       if (!resp.success || !resp.client_secret) {
         throw new Error(resp.error || 'Erro ao iniciar pagamento');
@@ -92,8 +100,8 @@ export function DoacoesPage() {
 
   const getCurrentAmount = () => selectedAmount || Number(customAmount) || 0;
 
-  // If no project is selected, show project selection view
-  if (!targetProject) {
+  // If no project is selected and not general donation, show selection view (with General Donation option)
+  if (!targetProject && !isGeneralDonation) {
     return (
       <div className="min-h-screen pt-52 sm:pt-48 pb-16 sm:pb-20">
         <div className="absolute inset-0 bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-pink-50/80"></div>
@@ -125,6 +133,29 @@ export function DoacoesPage() {
               Escolha um projeto específico para apoiar. Sua doação será direcionada 
               exclusivamente para o projeto selecionado, maximizando o impacto da sua contribuição.
             </p>
+          </div>
+
+          {/* Doação Geral */}
+          <div className="mb-12">
+            <GlassCard className="p-6 border-2 border-dashed border-green-300/60 bg-white/60">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center space-x-4">
+                  <div className="w-14 h-14 bg-gradient-to-br from-pink-400 to-purple-400 rounded-xl flex items-center justify-center text-white">
+                    <HandHeart className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl text-gray-800">Doação Geral</h3>
+                    <p className="text-gray-600 text-sm">Doe diretamente para a Minha Floresta, sem vincular a um projeto específico.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsGeneralDonation(true)}
+                  className="px-5 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+                >
+                  Fazer Doação Geral
+                </button>
+              </div>
+            </GlassCard>
           </div>
 
           {/* Projects Grid */}
@@ -224,7 +255,7 @@ export function DoacoesPage() {
     );
   }
 
-  // Show donation form for selected project
+  // Show donation form (for selected project or general donation)
   return (
     <div className="min-h-screen pt-52 sm:pt-48 pb-16 sm:pb-20">
       <div className="absolute inset-0 bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-pink-50/80"></div>
@@ -248,28 +279,35 @@ export function DoacoesPage() {
         {/* Header */}
         <div className="text-center mb-16">
           <button
-            onClick={() => setSelectedDonationProject(null)}
+            onClick={() => {
+              setSelectedDonationProject(null);
+              setIsGeneralDonation(false);
+            }}
             className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 mb-4 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Escolher outro projeto</span>
+            <span>Escolher outro destino</span>
           </button>
           
           <div className="inline-flex items-center space-x-2 bg-green-500/10 px-4 py-2 rounded-full mb-6">
             <Heart className="w-4 h-4 text-green-600" />
-            <span className="text-green-700">Doação para {targetProject.title}</span>
+            <span className="text-green-700">{isGeneralDonation ? 'Doação Geral' : `Doação para ${targetProject?.title}`}</span>
           </div>
           
           <h1 className="text-gray-800 mb-6">
-            Apoie o projeto
-            <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-pink-600">
-              {targetProject.title}
-            </span>
+            {isGeneralDonation ? 'Apoie nossa causa' : 'Apoie o projeto'}
+            {!isGeneralDonation && (
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-pink-600">
+                {targetProject?.title}
+              </span>
+            )}
           </h1>
           
-          <p className="text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            {targetProject.description}
-          </p>
+          {!isGeneralDonation && (
+            <p className="text-gray-600 max-w-3xl mx-auto leading-relaxed">
+              {targetProject?.description}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
@@ -314,6 +352,37 @@ export function DoacoesPage() {
                   placeholder="Outro valor"
                   className="w-full pl-10 pr-4 py-3 bg-white/50 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20"
                 />
+              </div>
+            </div>
+
+            {/* Payment Experience */}
+            <div className="mb-6">
+              <label className="block text-gray-700 mb-3">Como deseja pagar?</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  onClick={() => setPaymentExperience('embedded')}
+                  type="button"
+                  className={`p-4 rounded-lg border-2 transition-all duration-300 flex items-center justify-center space-x-3 ${
+                    paymentExperience === 'embedded'
+                      ? 'border-green-500 bg-green-50 text-green-700'
+                      : 'border-white/30 hover:border-green-300'
+                  }`}
+                >
+                  <CreditCard className="w-5 h-5" />
+                  <span>Pagar aqui (embutido)</span>
+                </button>
+                <button
+                  onClick={() => setPaymentExperience('hosted')}
+                  type="button"
+                  className={`p-4 rounded-lg border-2 transition-all duration-300 flex items-center justify-center space-x-3 ${
+                    paymentExperience === 'hosted'
+                      ? 'border-purple-500 bg-purple-50 text-purple-700'
+                      : 'border-white/30 hover:border-purple-300'
+                  }`}
+                >
+                  <Building2 className="w-5 h-5" />
+                  <span>Página do Stripe (hospedada)</span>
+                </button>
               </div>
             </div>
 
@@ -420,10 +489,12 @@ export function DoacoesPage() {
                     <span className="text-green-700">Valor:</span>
                     <span className="font-medium text-green-800">R$ {getCurrentAmount().toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-green-700">Projeto:</span>
-                    <span className="font-medium text-green-800">{targetProject.title}</span>
-                  </div>
+                  {!isGeneralDonation && (
+                    <div className="flex justify-between">
+                      <span className="text-green-700">Projeto:</span>
+                      <span className="font-medium text-green-800">{targetProject?.title}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-green-700">Pagamento:</span>
                     <span className="font-medium text-green-800">
@@ -460,7 +531,7 @@ export function DoacoesPage() {
           </GlassCard>
 
           {/* Stripe Form - Donation */}
-          {showCheckout && clientSecret && (
+          {paymentExperience === 'embedded' && showCheckout && clientSecret && (
             <GlassCard className="p-6">
               <h3 className="text-gray-800 mb-4">Pagamento Seguro (Doação)</h3>
               <StripePaymentFormWrapper
@@ -477,117 +548,7 @@ export function DoacoesPage() {
             </GlassCard>
           )}
 
-          {/* Project Details */}
-          <div className="space-y-6">
-            <div className="flex items-center space-x-3 mb-6">
-              <Target className="w-6 h-6 text-green-600" />
-              <h3 className="text-gray-800">Detalhes do Projeto</h3>
-            </div>
-            
-            {/* Project Card */}
-            <GlassCard className="p-6">
-              <div className="flex items-start space-x-4 mb-6">
-                <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-400 rounded-xl flex items-center justify-center text-white">
-                  <Heart className="w-8 h-8" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-xl text-gray-800 mb-2">{targetProject.title}</h4>
-                  <p className="text-gray-600 text-sm mb-4">{targetProject.description}</p>
-                  
-                  <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
-                    <div className="flex items-center space-x-1">
-                      <MapPin className="w-4 h-4" />
-                      <span>{targetProject.location}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Users className="w-4 h-4" />
-                      <span>{targetProject.beneficiaries} beneficiários</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <div className="flex items-center space-x-1">
-                      <Calendar className="w-4 h-4" />
-                      <span>{new Date(targetProject.startDate).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <Award className="w-4 h-4" />
-                      <span>{targetProject.coordinator.split(' ')[0]}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Donation Progress */}
-              {targetProject.donationGoal && (
-                <div className="mb-6">
-                  <div className="flex justify-between text-sm text-gray-600 mb-2">
-                    <span>Arrecadado: R$ {(targetProject.donationsReceived || 0).toLocaleString()}</span>
-                    <span>Meta: R$ {targetProject.donationGoal.toLocaleString()}</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-3">
-                    <div 
-                      className="bg-gradient-to-r from-pink-400 to-purple-400 h-3 rounded-full transition-all duration-300"
-                      style={{ 
-                        width: `${Math.min(((targetProject.donationsReceived || 0) / targetProject.donationGoal) * 100, 100)}%` 
-                      }}
-                    ></div>
-                  </div>
-                  <div className="text-right text-sm text-green-600 font-medium mt-1">
-                    {Math.round(((targetProject.donationsReceived || 0) / targetProject.donationGoal) * 100)}% da meta alcançada
-                  </div>
-                </div>
-              )}
-              
-              {/* Project Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-                <div className="text-center">
-                  <div className="text-lg font-bold text-green-600">{targetProject.beneficiaries}</div>
-                  <div className="text-xs text-gray-600">Beneficiários</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-blue-600">{targetProject.partners.length}</div>
-                  <div className="text-xs text-gray-600">Parceiros</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-lg font-bold text-purple-600">
-                    {Math.round((targetProject.spent / targetProject.budget) * 100)}%
-                  </div>
-                  <div className="text-xs text-gray-600">Executado</div>
-                </div>
-              </div>
-            </GlassCard>
-
-            {/* Project Objectives */}
-            <GlassCard className="p-6">
-              <h4 className="font-medium text-gray-800 mb-4">Objetivos do Projeto</h4>
-              <ul className="space-y-3">
-                {targetProject.objectives.map((objective, index) => (
-                  <li key={index} className="flex items-start space-x-3">
-                    <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    </div>
-                    <span className="text-sm text-gray-600">{objective}</span>
-                  </li>
-                ))}
-              </ul>
-            </GlassCard>
-
-            {/* Project Results */}
-            {targetProject.results.length > 0 && (
-              <GlassCard className="p-6">
-                <h4 className="font-medium text-gray-800 mb-4">Resultados Alcançados</h4>
-                <ul className="space-y-3">
-                  {targetProject.results.map((result, index) => (
-                    <li key={index} className="flex items-start space-x-3">
-                      <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
-                      <span className="text-sm text-gray-600">{result}</span>
-                    </li>
-                  ))}
-                </ul>
-              </GlassCard>
-            )}
-          </div>
+          {/* Project Details intentionally omitted here to simplify and avoid duplication */}
         </div>
       </div>
     </div>

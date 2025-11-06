@@ -60,7 +60,7 @@ export function StripePaymentForm({
         confirmParams: {
           return_url: returnUrl,
         },
-        redirect: 'if_required',
+        redirect: 'always',
       });
 
       if (confirmError) {
@@ -69,6 +69,8 @@ export function StripePaymentForm({
 
       // Pagamento confirmado
       onSuccess();
+      // Garantir navegação se o Stripe não redirecionar por algum motivo
+      try { window.location.href = returnUrl; } catch {}
 
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
