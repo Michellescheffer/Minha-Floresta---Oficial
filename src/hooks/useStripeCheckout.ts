@@ -52,8 +52,9 @@ export function useStripeCheckout(): UseStripeCheckoutReturn {
       setIsLoading(true);
       setError(null);
 
-      // Verificar se Stripe está configurado
-      if (!isStripeConfigured()) {
+      // Verificar se Stripe está configurado APENAS para fluxo embutido
+      const isHostedFlow = Boolean((params as any)?.metadata?.use_hosted);
+      if (!isHostedFlow && !isStripeConfigured()) {
         throw new Error('Stripe não está configurado. Contate o administrador.');
       }
 
@@ -74,6 +75,12 @@ export function useStripeCheckout(): UseStripeCheckoutReturn {
 
       const data: StripeCheckoutResponse = await response.json();
 
+      // Hosted Checkout (doação ou compra): se vier session_url, apenas retornar (redireciono no caller)
+      if ((data as any).session_url) {
+        return data;
+      }
+
+      // Embedded: requer client_secret
       if (!data.success || !data.client_secret) {
         throw new Error(data.error || 'Erro ao obter dados de pagamento');
       }

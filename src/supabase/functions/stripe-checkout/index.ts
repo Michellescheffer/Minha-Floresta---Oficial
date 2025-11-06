@@ -179,6 +179,7 @@ serve(async (req: Request) => {
 
       // Hosted Checkout (Stripe Checkout Session)
       if (useHosted) {
+        const projectTitle = (metadata && (metadata as any).project_title) || null;
         const session = await stripe.checkout.sessions.create({
           mode: 'payment',
           payment_method_types: ['card'],
@@ -187,7 +188,9 @@ serve(async (req: Request) => {
               price_data: {
                 currency: 'brl',
                 product_data: {
-                  name: donation_project_id ? `Doação para projeto ${donation_project_id}` : 'Doação Geral',
+                  name: donation_project_id
+                    ? (projectTitle ? `Doação para ${projectTitle}` : `Doação para projeto ${donation_project_id}`)
+                    : 'Doação Geral',
                 },
                 unit_amount: amountInCents,
               },

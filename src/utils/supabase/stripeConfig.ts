@@ -288,6 +288,7 @@ export interface StripeCheckoutResponse {
   payment_intent_id?: string;
   amount?: number;
   currency?: string;
+  session_url?: string;
   error?: string;
 }
 

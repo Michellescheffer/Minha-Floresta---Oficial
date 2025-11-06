@@ -1,6 +1,5 @@
 import { Heart, Target, Users, Zap, HandHeart, CreditCard, Smartphone, Building2, ArrowLeft, CheckCircle, MapPin, Calendar, Award } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { StripePaymentFormWrapper } from '../components/StripePaymentForm';
 import { useStripeCheckout } from '../hooks/useStripeCheckout';
 import { GlassCard } from '../components/GlassCard';
 import { useApp } from '../contexts/AppContext';
@@ -16,7 +15,7 @@ export function DoacoesPage() {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [message, setMessage] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix' | 'bank_transfer'>('credit_card');
-  const [paymentExperience, setPaymentExperience] = useState<'embedded' | 'hosted'>('embedded');
+  const [paymentExperience, setPaymentExperience] = useState<'embedded' | 'hosted'>('hosted');
   const [isGeneralDonation, setIsGeneralDonation] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -45,17 +44,14 @@ export function DoacoesPage() {
       return;
     }
 
-    if (!donorName.trim() || !donorEmail.trim()) {
-      alert('Por favor, preencha seu nome e e-mail.');
+    if ((!isAnonymous && !donorName.trim()) || !donorEmail.trim()) {
+      alert('Por favor, preencha seu e-mail e, se não for anônimo, o nome.');
       return;
     }
 
     // Permitir doação geral quando não há projeto selecionado
 
-    if (paymentMethod !== 'credit_card') {
-      alert('Nesta tela, apenas Cartão (Stripe) está disponível no momento.');
-      return;
-    }
+    // Fluxo hospedado do Stripe: sem seletores de método locais
 
     try {
       setIsProcessing(true);
@@ -71,14 +67,18 @@ export function DoacoesPage() {
           donor_phone: donorPhone || undefined,
           message: message || undefined,
           is_anonymous: isAnonymous,
-          use_hosted: paymentExperience === 'hosted',
+          use_hosted: true,
+          project_title: !isGeneralDonation ? (targetProject?.title || undefined) : undefined,
           success_url: `${window.location.origin}/#checkout-success`,
           cancel_url: `${window.location.origin}/#doacoes`,
         },
       } as any);
 
-      // Hosted Checkout: redirecionar se vier session_url
+      // Hosted Checkout: redirecionar se vier session_url (otimista)
       if (resp.success && (resp as any).session_url) {
+        if (!isGeneralDonation && targetProject?.id) {
+          try { addDonation(targetProject.id, amount); } catch {}
+        }
         window.location.href = (resp as any).session_url as string;
         return;
       }
@@ -317,6 +317,16 @@ export function DoacoesPage() {
               <HandHeart className="w-6 h-6 text-green-600" />
               <h3 className="text-gray-800">Formulário de Doação</h3>
             </div>
+
+            {!isGeneralDonation && targetProject && (
+              <div className="mb-6">
+                <div className="inline-flex items-center space-x-2 bg-green-600/10 px-4 py-2 rounded-full">
+                  <Heart className="w-4 h-4 text-green-700" />
+                  <span className="text-green-800 font-medium">Projeto selecionado:</span>
+                  <span className="text-green-900 font-semibold">{targetProject.title}</span>
+                </div>
+              </div>
+            )}
             
             {/* Amount Selection */}
             <div className="mb-6">
@@ -355,34 +365,17 @@ export function DoacoesPage() {
               </div>
             </div>
 
-            {/* Payment Experience */}
+            {/* Payment Info - Hosted Only */}
             <div className="mb-6">
-              <label className="block text-gray-700 mb-3">Como deseja pagar?</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  onClick={() => setPaymentExperience('embedded')}
-                  type="button"
-                  className={`p-4 rounded-lg border-2 transition-all duration-300 flex items-center justify-center space-x-3 ${
-                    paymentExperience === 'embedded'
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : 'border-white/30 hover:border-green-300'
-                  }`}
-                >
-                  <CreditCard className="w-5 h-5" />
-                  <span>Pagar aqui (embutido)</span>
-                </button>
-                <button
-                  onClick={() => setPaymentExperience('hosted')}
-                  type="button"
-                  className={`p-4 rounded-lg border-2 transition-all duration-300 flex items-center justify-center space-x-3 ${
-                    paymentExperience === 'hosted'
-                      ? 'border-purple-500 bg-purple-50 text-purple-700'
-                      : 'border-white/30 hover:border-purple-300'
-                  }`}
-                >
+              <label className="block text-gray-700 mb-3">Como você pagará</label>
+              <div className="p-4 rounded-lg border-2 border-purple-500 bg-purple-50 text-purple-800 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
                   <Building2 className="w-5 h-5" />
-                  <span>Página do Stripe (hospedada)</span>
-                </button>
+                  <div className="text-sm">
+                    <div className="font-medium">Página segura do Stripe</div>
+                    <div className="text-purple-700/90">Você será redirecionado para concluir o pagamento com segurança.</div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -438,47 +431,7 @@ export function DoacoesPage() {
               />
             </div>
 
-            {/* Payment Method */}
-            <div className="mb-6">
-              <label className="block text-gray-700 mb-3">Forma de pagamento</label>
-              <div className="grid grid-cols-1 gap-3">
-                <button
-                  onClick={() => setPaymentMethod('credit_card')}
-                  className={`p-4 rounded-lg border-2 transition-all duration-300 flex items-center space-x-3 ${
-                    paymentMethod === 'credit_card'
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : 'border-white/30 hover:border-green-300'
-                  }`}
-                >
-                  <CreditCard className="w-5 h-5" />
-                  <span>Cartão de Crédito</span>
-                </button>
-                
-                <button
-                  onClick={() => setPaymentMethod('pix')}
-                  className={`p-4 rounded-lg border-2 transition-all duration-300 flex items-center space-x-3 ${
-                    paymentMethod === 'pix'
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : 'border-white/30 hover:border-green-300'
-                  }`}
-                >
-                  <Smartphone className="w-5 h-5" />
-                  <span>PIX</span>
-                </button>
-                
-                <button
-                  onClick={() => setPaymentMethod('bank_transfer')}
-                  className={`p-4 rounded-lg border-2 transition-all duration-300 flex items-center space-x-3 ${
-                    paymentMethod === 'bank_transfer'
-                      ? 'border-green-500 bg-green-50 text-green-700'
-                      : 'border-white/30 hover:border-green-300'
-                  }`}
-                >
-                  <Building2 className="w-5 h-5" />
-                  <span>Transferência Bancária</span>
-                </button>
-              </div>
-            </div>
+            {/* Payment Method - removido: fluxo hospedado */}
 
             {/* Donation Summary */}
             {getCurrentAmount() > 0 && (
@@ -488,6 +441,12 @@ export function DoacoesPage() {
                   <div className="flex justify-between">
                     <span className="text-green-700">Valor:</span>
                     <span className="font-medium text-green-800">R$ {getCurrentAmount().toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-green-700">Tipo:</span>
+                    <span className="font-medium text-green-800">
+                      {isGeneralDonation ? 'Doação Geral' : 'Doação para projeto'}
+                    </span>
                   </div>
                   {!isGeneralDonation && (
                     <div className="flex justify-between">
@@ -515,42 +474,72 @@ export function DoacoesPage() {
               {isProcessing || isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Processando...</span>
+                  <span>Redirecionando...</span>
                 </>
               ) : (
                 <>
                   <HandHeart className="w-5 h-5" />
-                  <span>Doar R$ {getCurrentAmount().toFixed(2)}</span>
+                  <span>Ir para Página Segura do Stripe</span>
                 </>
               )}
             </button>
 
             <p className="text-gray-600 text-sm text-center mt-4">
-              🔒 Pagamento seguro e certificado
+              🔒 Você será redirecionado para a página segura do Stripe para concluir o pagamento
             </p>
           </GlassCard>
 
-          {/* Stripe Form - Donation */}
-          {paymentExperience === 'embedded' && showCheckout && clientSecret && (
-            <GlassCard className="p-6">
-              <h3 className="text-gray-800 mb-4">Pagamento Seguro (Doação)</h3>
-              <StripePaymentFormWrapper
-                clientSecret={clientSecret}
-                amount={getCurrentAmount()}
-                returnUrl={`${window.location.origin}/#checkout-success`}
-                onSuccess={() => setShowSuccess(true)}
-                onError={(err) => alert(err)}
-                buttonText="Pagar Doação"
-              />
-              {stripeError && (
-                <div className="text-sm text-red-600 mt-3">{stripeError}</div>
-              )}
-            </GlassCard>
-          )}
+            {/* Stripe Elements (embutido) desativado: fluxo obrigatório via Checkout hospedado do Stripe */}
 
-          {/* Project Details intentionally omitted here to simplify and avoid duplication */}
-        </div>
+        {/* Fixed Project Info Card (Right Column) */}
+        {!isGeneralDonation && targetProject && (
+          <GlassCard className="p-6 lg:sticky lg:top-32 h-fit">
+            <div className="flex items-start space-x-4 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-400 to-emerald-400 rounded-xl flex items-center justify-center text-white">
+                <Heart className="w-6 h-6" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg text-gray-800 mb-1">{targetProject.title}</h3>
+                <div className="flex items-center space-x-3 text-sm text-gray-600">
+                  <div className="flex items-center space-x-1">
+                    <MapPin className="w-4 h-4" />
+                    <span>{targetProject.location}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Users className="w-4 h-4" />
+                    <span>{targetProject.beneficiaries} beneficiários</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {targetProject.donationGoal && (
+              <div className="mb-4">
+                <div className="flex justify-between text-xs text-gray-600 mb-2">
+                  <span>Arrecadado: R$ {(targetProject.donationsReceived || 0).toLocaleString()}</span>
+                  <span>Meta: R$ {targetProject.donationGoal.toLocaleString()}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-gradient-to-r from-green-400 to-emerald-400 h-2.5 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min(((targetProject.donationsReceived || 0) / targetProject.donationGoal) * 100, 100)}%` }}
+                  ></div>
+                </div>
+                <div className="text-right text-xs text-green-600 font-medium mt-1">
+                  {Math.round(((targetProject.donationsReceived || 0) / targetProject.donationGoal) * 100)}% da meta
+                </div>
+              </div>
+            )}
+
+            {targetProject.description && (
+              <p className="text-sm text-gray-600">
+                {targetProject.description}
+              </p>
+            )}
+          </GlassCard>
+        )}
       </div>
     </div>
-  );
+  </div>
+);
 }

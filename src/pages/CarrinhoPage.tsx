@@ -1,10 +1,9 @@
-import { Minus, Plus, Trash2, CreditCard, Smartphone, Bitcoin, Download, Leaf, MapPin, Award, ShoppingCart } from 'lucide-react';
+import { Minus, Plus, Trash2, CreditCard, Smartphone, Bitcoin, Download, Leaf, MapPin, Award, ShoppingCart, Building2 } from 'lucide-react';
 import { useState } from 'react';
 import { GlassCard } from '../components/GlassCard';
 import { useApp } from '../contexts/AppContext';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { toast } from 'sonner';
-import { StripePaymentFormWrapper } from '../components/StripePaymentForm';
 import { useStripeCheckout } from '../hooks/useStripeCheckout';
 
 export function CarrinhoPage() {
@@ -13,7 +12,6 @@ export function CarrinhoPage() {
   const [showCheckout, setShowCheckout] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [buyerEmail, setBuyerEmail] = useState('');
-  const [clientSecret, setClientSecret] = useState<string | null>(null);
 
   const { createPaymentIntent, error: stripeError, isLoading } = useStripeCheckout();
 
@@ -51,6 +49,21 @@ export function CarrinhoPage() {
     updateQuantity(itemId, newQuantity);
     toast.success(`Quantidade atualizada para ${newQuantity} m²`);
   };
+
+  const PaymentInfoHosted = () => (
+    <div className="mb-6">
+      <label className="block text-gray-700 mb-3">Como você pagará</label>
+      <div className="p-4 rounded-lg border-2 border-purple-500 bg-purple-50 text-purple-800 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Building2 className="w-5 h-5" />
+          <div className="text-sm">
+            <div className="font-medium">Página segura do Stripe</div>
+            <div className="text-purple-700/90">Você será redirecionado para concluir o pagamento com segurança.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const handleRemoveItem = (itemId: string, projectName: string) => {
     removeFromCart(itemId);
@@ -95,15 +108,18 @@ export function CarrinhoPage() {
           email: buyerEmail,
           metadata: {
             certificate_type: 'digital',
+            use_hosted: true,
+            success_url: `${window.location.origin}/#checkout-success`,
+            cancel_url: `${window.location.origin}/#loja`,
           },
         } as any);
 
-        if (!resp.success || !resp.client_secret) {
-          throw new Error(resp.error || 'Erro ao criar pagamento');
+        if ((resp as any).session_url) {
+          window.location.href = (resp as any).session_url as string;
+          return;
         }
 
-        setClientSecret(resp.client_secret);
-        toast.success('Pagamento iniciado. Complete os dados do cartão.');
+        throw new Error(resp.error || 'Erro ao criar sessão de pagamento');
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Erro ao iniciar pagamento';
         toast.error(msg);
@@ -322,35 +338,17 @@ export function CarrinhoPage() {
                 className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-4 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
               >
                 <CreditCard className="w-5 h-5" />
-                <span>{(isProcessing || isLoading) ? 'Processando...' : 'Finalizar Compra'}</span>
+                <span>{(isProcessing || isLoading) ? 'Redirecionando...' : 'Ir para Página Segura do Stripe'}</span>
               </button>
               
               <div className="mt-4 space-y-2 text-center text-sm text-gray-600">
-                <div>🔒 Pagamento processado via Stripe</div>
+                <div>🔒 Você será redirecionado para a página segura do Stripe para concluir o pagamento</div>
                 <div>📜 Certificado digital disponível imediatamente</div>
                 <div>📦 Certificado físico enviado em até 7 dias</div>
               </div>
             </GlassCard>
 
-            {/* Stripe Form */}
-            {showCheckout && clientSecret && (
-              <GlassCard className="p-6">
-                <h3 className="text-gray-800 mb-4">Pagamento Seguro</h3>
-                <StripePaymentFormWrapper
-                  clientSecret={clientSecret}
-                  amount={totalPrice}
-                  returnUrl={`${window.location.origin}/#checkout-success`}
-                  onSuccess={() => {
-                    toast.success('Pagamento confirmado!');
-                  }}
-                  onError={(err) => toast.error(err)}
-                  buttonText="Pagar com Cartão"
-                />
-                {stripeError && (
-                  <div className="text-sm text-red-600 mt-3">{stripeError}</div>
-                )}
-              </GlassCard>
-            )}
+            {/* Stripe Elements desativado: fluxo obrigatório via Checkout hospedado do Stripe */}
 
             {/* Impact Details */}
             <GlassCard className="p-6">

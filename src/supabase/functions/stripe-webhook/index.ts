@@ -263,25 +263,112 @@ async function handlePaymentIntentSucceeded(
   } else if (type === 'donation') {
     const donationId = metadata.donation_id;
 
-    // Atualizar donation
-    await supabase
-      .from('donations')
-      .update({
+    if (donationId && donationId !== 'none') {
+      // Atualizar donation existente (fluxos legados)
+      await supabase
+        .from('donations')
+        .update({
+          payment_status: 'paid',
+          payment_date: new Date().toISOString(),
+        })
+        .eq('id', donationId);
+
+      await supabase.from('audit_logs').insert({
+        action: 'donation_completed',
+        table_name: 'donations',
+        record_id: donationId,
+        details: {
+          payment_intent_id: paymentIntent.id,
+          amount: paymentIntent.amount / 100,
+        },
+      });
+
+      // Tentar incrementar social_projects.funds_raised se conhecermos o projeto
+      const projectId = metadata.project_id && metadata.project_id !== 'general' ? metadata.project_id : null;
+      if (projectId) {
+        try {
+          await supabase.rpc('increment_decimal_column', {
+            table_name: 'social_projects',
+            id_column: 'id',
+            target_id: projectId,
+            column_name: 'funds_raised',
+            increment_by: paymentIntent.amount / 100,
+          });
+        } catch (_) {
+          // Fallback: update direto
+          await supabase
+            .from('social_projects')
+            .update({ funds_raised: (supabase as any).sql`COALESCE(funds_raised,0)+${paymentIntent.amount/100}` })
+            .eq('id', projectId);
+        }
+      }
+    } else {
+      // Criar donation nova (fluxo atual sem pré-insert)
+      const amount = paymentIntent.amount / 100;
+      const email = metadata.email || paymentIntent.receipt_email || null;
+      const projectId = metadata.project_id && metadata.project_id !== 'general' ? metadata.project_id : null;
+
+      const insertPayload: any = {
+        user_id: metadata.user_id || null,
+        project_id: projectId,
+        amount,
+        currency: paymentIntent.currency || 'brl',
+        payment_method: 'stripe',
         payment_status: 'paid',
         payment_date: new Date().toISOString(),
-      })
-      .eq('id', donationId);
+        donor_name: metadata.donor_name || null,
+        donor_email: email,
+        is_anonymous: metadata.is_anonymous === 'true' || metadata.is_anonymous === true,
+        message: metadata.message || null,
+        stripe_payment_intent_id: paymentIntent.id,
+      };
 
-    // Log de auditoria
-    await supabase.from('audit_logs').insert({
-      action: 'donation_completed',
-      table_name: 'donations',
-      record_id: donationId,
-      details: {
-        payment_intent_id: paymentIntent.id,
-        amount: paymentIntent.amount / 100,
-      },
-    });
+      const { data: created, error: insertErr } = await supabase
+        .from('donations')
+        .insert(insertPayload)
+        .select('id, project_id')
+        .single();
+
+      if (insertErr) {
+        console.error('Failed to insert donation:', insertErr);
+      } else {
+        await supabase.from('audit_logs').insert({
+          action: 'donation_created',
+          table_name: 'donations',
+          record_id: created.id,
+          details: {
+            payment_intent_id: paymentIntent.id,
+            amount,
+            project_id: created.project_id || 'general',
+          },
+        });
+
+        // Incrementar funds_raised do projeto social, se aplicável
+        if (created.project_id) {
+          try {
+            await supabase.rpc('increment_decimal_column', {
+              table_name: 'social_projects',
+              id_column: 'id',
+              target_id: created.project_id,
+              column_name: 'funds_raised',
+              increment_by: amount,
+            });
+          } catch (_) {
+            // Fallback: update direto somando no lado do app (pode não funcionar sem SQL literal)
+            const { data: proj } = await supabase
+              .from('social_projects')
+              .select('funds_raised')
+              .eq('id', created.project_id)
+              .single();
+            const current = proj?.funds_raised || 0;
+            await supabase
+              .from('social_projects')
+              .update({ funds_raised: Number(current) + amount })
+              .eq('id', created.project_id);
+          }
+        }
+      }
+    }
   }
 }
 
