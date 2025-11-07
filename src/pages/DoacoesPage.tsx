@@ -11,9 +11,7 @@ export function DoacoesPage() {
   const [customAmount, setCustomAmount] = useState('');
   const [donorName, setDonorName] = useState('');
   const [donorEmail, setDonorEmail] = useState('');
-  const [donorPhone, setDonorPhone] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
-  const [message, setMessage] = useState('');
   // Fluxo hospedado: sem seleção de método/experiência
   const [isGeneralDonation, setIsGeneralDonation] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -63,8 +61,6 @@ export function DoacoesPage() {
         email: donorEmail,
         metadata: {
           donor_name: isAnonymous ? 'Anonymous' : donorName,
-          donor_phone: donorPhone || undefined,
-          message: message || undefined,
           is_anonymous: isAnonymous,
           use_hosted: true,
           project_title: !isGeneralDonation ? (targetProject?.title || undefined) : undefined,
@@ -73,11 +69,8 @@ export function DoacoesPage() {
         },
       } as any);
 
-      // Hosted Checkout: redirecionar se vier session_url (otimista)
+      // Hosted Checkout: redirecionar se vier session_url
       if (resp.success && (resp as any).session_url) {
-        if (!isGeneralDonation && targetProject?.id) {
-          try { addDonation(targetProject.id, amount); } catch {}
-        }
         window.location.href = (resp as any).session_url as string;
         return;
       }
@@ -378,7 +371,8 @@ export function DoacoesPage() {
               </div>
             </div>
 
-            {/* Personal Info */}
+            {/* Personal Info */
+            }
             <div className="space-y-4 mb-6">
               <div className="flex items-center space-x-2 mb-4">
                 <input
@@ -411,22 +405,6 @@ export function DoacoesPage() {
                 placeholder="E-mail"
                 className="w-full px-4 py-3 bg-white/50 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20"
                 required
-              />
-              
-              <input
-                type="tel"
-                value={donorPhone}
-                onChange={(e) => setDonorPhone(e.target.value)}
-                placeholder="Telefone (opcional)"
-                className="w-full px-4 py-3 bg-white/50 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20"
-              />
-              
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Mensagem de apoio (opcional)"
-                rows={3}
-                className="w-full px-4 py-3 bg-white/50 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20 resize-none"
               />
             </div>
 
