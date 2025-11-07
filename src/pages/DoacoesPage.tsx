@@ -92,154 +92,52 @@ export function DoacoesPage() {
 
   const getCurrentAmount = () => selectedAmount || Number(customAmount) || 0;
 
-  // If no project is selected and not general donation, show selection view (with General Donation option)
+  // If no project is selected and not general donation, show a compact selection view
   if (!targetProject && !isGeneralDonation) {
     return (
-      <div className="min-h-screen pt-52 sm:pt-48 pb-16 sm:pb-20">
+      <div className="min-h-screen pt-40 pb-16">
         <div className="absolute inset-0 bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-pink-50/80"></div>
-        
-        <div className="relative z-10 max-w-6xl mx-auto px-6">
-          {/* Header */}
-          <div className="text-center mb-16">
-            <button
-              onClick={() => setCurrentPage('projetos-sociais')}
-              className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 mb-4 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Voltar aos projetos sociais</span>
-            </button>
-            
-            <div className="inline-flex items-center space-x-2 bg-green-500/10 px-4 py-2 rounded-full mb-6">
-              <Heart className="w-4 h-4 text-green-600" />
-              <span className="text-green-700">Escolha um Projeto</span>
-            </div>
-            
-            <h1 className="text-5xl md:text-6xl font-medium text-gray-800 mb-6">
-              Selecione o Projeto para
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-pink-600">
-                Sua Doação
-              </span>
-            </h1>
-            
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Escolha um projeto específico para apoiar. Sua doação será direcionada 
-              exclusivamente para o projeto selecionado, maximizando o impacto da sua contribuição.
-            </p>
+        <div className="relative z-10 max-w-5xl mx-auto px-6">
+          <div className="text-center mb-10">
+            <h1 className="text-3xl text-gray-800 mb-2">Escolha onde doar</h1>
+            <p className="text-gray-600">Selecione um projeto ou faça uma doação geral</p>
           </div>
 
-          {/* Doação Geral */}
-          <div className="mb-12">
-            <GlassCard className="p-6 border-2 border-dashed border-green-300/60 bg-white/60">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div className="flex items-center space-x-4">
-                  <div className="w-14 h-14 bg-gradient-to-br from-pink-400 to-purple-400 rounded-xl flex items-center justify-center text-white">
-                    <HandHeart className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl text-gray-800">Doação Geral</h3>
-                    <p className="text-gray-600 text-sm">Doe diretamente para a Minha Floresta, sem vincular a um projeto específico.</p>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <GlassCard className="p-5 border border-pink-200/60">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-purple-500 text-white flex items-center justify-center">
+                  <HandHeart className="w-5 h-5" />
+                </div>
+                <div className="font-medium text-gray-800">Doação Geral</div>
+              </div>
+              <button
+                onClick={() => setIsGeneralDonation(true)}
+                className="w-full py-3 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 transition-all"
+              >
+                Escolher
+              </button>
+            </GlassCard>
+
+            {activeDonationProjects.slice(0, 8).map((project) => (
+              <GlassCard key={project.id} className="p-5 hover:border-green-400/80 transition-all border border-white/50">
+                <div className="mb-3">
+                  <div className="font-medium text-gray-800">{project.title}</div>
+                  <div className="text-xs text-gray-600 flex items-center gap-1"><MapPin className="w-3 h-3" />{project.location}</div>
                 </div>
                 <button
-                  onClick={() => setIsGeneralDonation(true)}
-                  className="px-5 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  onClick={() => setSelectedDonationProject(project)}
+                  className="w-full py-3 rounded-lg bg-white text-green-700 border border-green-300 hover:bg-green-50 transition-all"
                 >
-                  Fazer Doação Geral
+                  Selecionar Projeto
                 </button>
-              </div>
-            </GlassCard>
-          </div>
-
-          {/* Projects Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {activeDonationProjects.map((project) => (
-              <GlassCard 
-                key={project.id} 
-                className="p-6 hover:scale-105 transition-all duration-300 cursor-pointer"
-                onClick={() => setSelectedDonationProject(project)}
-              >
-                <div className="flex items-start space-x-4 mb-6">
-                  <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-400 rounded-xl flex items-center justify-center text-white">
-                    <Heart className="w-8 h-8" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl text-gray-800 mb-2">{project.title}</h3>
-                    <p className="text-gray-600 text-sm mb-4">{project.description}</p>
-                    
-                    <div className="flex items-center space-x-4 text-sm text-gray-600 mb-4">
-                      <div className="flex items-center space-x-1">
-                        <MapPin className="w-4 h-4" />
-                        <span>{project.location}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Users className="w-4 h-4" />
-                        <span>{project.beneficiaries} beneficiários</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Progress Section */}
-                {project.donationGoal && (
-                  <div className="mb-6">
-                    <div className="flex justify-between text-sm text-gray-600 mb-2">
-                      <span>Arrecadado: R$ {(project.donationsReceived || 0).toLocaleString()}</span>
-                      <span>Meta: R$ {project.donationGoal.toLocaleString()}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className="bg-gradient-to-r from-green-400 to-emerald-400 h-3 rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${Math.min(((project.donationsReceived || 0) / project.donationGoal) * 100, 100)}%` 
-                        }}
-                      ></div>
-                    </div>
-                    <div className="text-right text-sm text-green-600 font-medium mt-1">
-                      {Math.round(((project.donationsReceived || 0) / project.donationGoal) * 100)}% da meta alcançada
-                    </div>
-                  </div>
-                )}
-
-                {/* Project Stats */}
-                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-green-600">{project.beneficiaries}</div>
-                    <div className="text-xs text-gray-600">Beneficiários</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-blue-600">{project.partners.length}</div>
-                    <div className="text-xs text-gray-600">Parceiros</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-lg font-bold text-purple-600">
-                      {Math.round((project.spent / project.budget) * 100)}%
-                    </div>
-                    <div className="text-xs text-gray-600">Executado</div>
-                  </div>
-                </div>
-
-                {/* Call to Action */}
-                <div className="mt-6 pt-4 border-t border-gray-200">
-                  <button className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-3 rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center space-x-2">
-                    <HandHeart className="w-5 h-5" />
-                    <span>Doar para este projeto</span>
-                  </button>
-                </div>
               </GlassCard>
             ))}
           </div>
 
-          {activeDonationProjects.length === 0 && (
-            <div className="text-center py-20">
-              <Heart className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-2xl text-gray-800 mb-2">Nenhum projeto disponível para doação</h3>
-              <p className="text-gray-600 mb-8">No momento não há projetos sociais ativos que aceitem doações.</p>
-              <button 
-                onClick={() => setCurrentPage('projetos-sociais')}
-                className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-2xl hover:from-green-600 hover:to-emerald-600 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
-              >
-                Ver Todos os Projetos
-              </button>
+          {activeDonationProjects.length > 8 && (
+            <div className="text-center mt-8">
+              <button onClick={() => setCurrentPage('projetos-sociais')} className="text-green-700 underline">Ver todos os projetos</button>
             </div>
           )}
         </div>
@@ -269,7 +167,7 @@ export function DoacoesPage() {
         )}
 
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <button
             onClick={() => {
               setSelectedDonationProject(null);
@@ -281,33 +179,20 @@ export function DoacoesPage() {
             <span>Escolher outro destino</span>
           </button>
           
-          <div className="inline-flex items-center space-x-2 bg-green-500/10 px-4 py-2 rounded-full mb-6">
+          <div className="inline-flex items-center space-x-2 bg-green-500/10 px-4 py-2 rounded-full mb-4">
             <Heart className="w-4 h-4 text-green-600" />
             <span className="text-green-700">{isGeneralDonation ? 'Doação Geral' : `Doação para ${targetProject?.title}`}</span>
           </div>
           
-          <h1 className="text-gray-800 mb-6">
-            {isGeneralDonation ? 'Apoie nossa causa' : 'Apoie o projeto'}
-            {!isGeneralDonation && (
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-pink-600">
-                {targetProject?.title}
-              </span>
-            )}
-          </h1>
-          
-          {!isGeneralDonation && (
-            <p className="text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              {targetProject?.description}
-            </p>
-          )}
+          <p className="text-gray-600">Defina o valor, informe seu e-mail e finalize no Stripe.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Donation Form */}
-          <GlassCard className="p-8">
+          <GlassCard className="p-6">
             <div className="flex items-center space-x-3 mb-6">
               <HandHeart className="w-6 h-6 text-green-600" />
-              <h3 className="text-gray-800">Formulário de Doação</h3>
+              <h3 className="text-gray-800">Doação</h3>
             </div>
 
             {!isGeneralDonation && targetProject && (
@@ -412,27 +297,11 @@ export function DoacoesPage() {
 
             {/* Donation Summary */}
             {getCurrentAmount() > 0 && (
-              <div className="mb-6 p-4 bg-green-50/80 rounded-lg border border-green-200">
-                <h4 className="font-medium text-green-800 mb-2">Resumo da Doação</h4>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-green-700">Valor:</span>
-                    <span className="font-medium text-green-800">R$ {getCurrentAmount().toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-green-700">Tipo:</span>
-                    <span className="font-medium text-green-800">
-                      {isGeneralDonation ? 'Doação Geral' : 'Doação para projeto'}
-                    </span>
-                  </div>
-                  {!isGeneralDonation && (
-                    <div className="flex justify-between">
-                      <span className="text-green-700">Projeto:</span>
-                      <span className="font-medium text-green-800">{targetProject?.title}</span>
-                    </div>
-                  )}
-                  {/* Pagamento: sempre via Checkout hospedado do Stripe */}
-                </div>
+              <div className="mb-6 p-4 bg-green-50/80 rounded-lg border border-green-200 text-sm">
+                <div className="flex justify-between"><span className="text-green-700">Valor</span><span className="font-medium text-green-800">R$ {getCurrentAmount().toFixed(2)}</span></div>
+                {!isGeneralDonation && (
+                  <div className="flex justify-between"><span className="text-green-700">Projeto</span><span className="font-medium text-green-800">{targetProject?.title}</span></div>
+                )}
               </div>
             )}
 
