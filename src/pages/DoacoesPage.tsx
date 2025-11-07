@@ -92,58 +92,22 @@ export function DoacoesPage() {
 
   const getCurrentAmount = () => selectedAmount || Number(customAmount) || 0;
 
-  // If no project is selected and not general donation, show a compact selection view
-  if (!targetProject && !isGeneralDonation) {
-    return (
-      <div className="min-h-screen pt-40 pb-16">
-        <div className="absolute inset-0 bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-pink-50/80"></div>
-        <div className="relative z-10 max-w-5xl mx-auto px-6">
-          <div className="text-center mb-10">
-            <h1 className="text-3xl text-gray-800 mb-2">Escolha onde doar</h1>
-            <p className="text-gray-600">Selecione um projeto ou faça uma doação geral</p>
-          </div>
+  // Detect general=1 in hash (e.g., #doacoes?general=1) and set general donation
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    if (hash.includes('general=1')) {
+      setIsGeneralDonation(true);
+    }
+  }, []);
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <GlassCard className="p-5 border border-pink-200/60">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-purple-500 text-white flex items-center justify-center">
-                  <HandHeart className="w-5 h-5" />
-                </div>
-                <div className="font-medium text-gray-800">Doação Geral</div>
-              </div>
-              <button
-                onClick={() => setIsGeneralDonation(true)}
-                className="w-full py-3 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 transition-all"
-              >
-                Escolher
-              </button>
-            </GlassCard>
+  // If no project is selected and not general donation, redirect to Projetos Sociais
+  useEffect(() => {
+    if (!targetProject && !isGeneralDonation) {
+      setCurrentPage('projetos-sociais');
+    }
+  }, [targetProject, isGeneralDonation, setCurrentPage]);
 
-            {activeDonationProjects.slice(0, 8).map((project) => (
-              <GlassCard key={project.id} className="p-5 hover:border-green-400/80 transition-all border border-white/50">
-                <div className="mb-3">
-                  <div className="font-medium text-gray-800">{project.title}</div>
-                  <div className="text-xs text-gray-600 flex items-center gap-1"><MapPin className="w-3 h-3" />{project.location}</div>
-                </div>
-                <button
-                  onClick={() => setSelectedDonationProject(project)}
-                  className="w-full py-3 rounded-lg bg-white text-green-700 border border-green-300 hover:bg-green-50 transition-all"
-                >
-                  Selecionar Projeto
-                </button>
-              </GlassCard>
-            ))}
-          </div>
-
-          {activeDonationProjects.length > 8 && (
-            <div className="text-center mt-8">
-              <button onClick={() => setCurrentPage('projetos-sociais')} className="text-green-700 underline">Ver todos os projetos</button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  if (!targetProject && !isGeneralDonation) return null;
 
   // Show donation form (for selected project or general donation)
   return (

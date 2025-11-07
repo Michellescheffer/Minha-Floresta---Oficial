@@ -1,35 +1,21 @@
 import React, { useState } from 'react';
-import { Users, Target, TrendingUp, Calendar, MapPin, Heart, Coins, CheckCircle, Shield, Award, BookOpen, Globe, Leaf, HandHeart, DollarSign, Eye, CreditCard, Smartphone, Building2, ArrowRight } from 'lucide-react';
+import { Users, TrendingUp, Calendar, MapPin, Heart, CheckCircle, Award, BookOpen, Globe, Leaf, HandHeart, Eye } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
 import { useApp } from '../contexts/AppContext';
 import { useSocialProjects } from '../hooks/useSocialProjects';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { EnhancedLoading } from '../components/EnhancedLoading';
-import { useDonationNotification, useSuccessNotification, useErrorNotification } from '../components/NotificationSystem';
-import { SocialProjectStats, useSocialProjectStats, CompactSocialStats } from '../components/SocialProjectStats';
+import { SocialProjectStats, useSocialProjectStats } from '../components/SocialProjectStats';
 
 export function ProjetosSociaisPage() {
-  const { setCurrentPage, setSelectedDonationProject, addDonation } = useApp();
+  const { setCurrentPage, setSelectedDonationProject } = useApp();
   const { socialProjects, isLoading, error } = useSocialProjects();
   const safeProjects = Array.isArray(socialProjects) ? socialProjects : [];
   const stats = useSocialProjectStats(safeProjects);
-  const showDonationNotification = useDonationNotification();
-  const showSuccessNotification = useSuccessNotification();
-  const showErrorNotification = useErrorNotification();
+  // Notifications removidas: fluxo de doação acontece na DoacoesPage
 
   // Todos os useState hooks devem estar no topo, antes dos returns condicionais
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
-  const [showDonationForm, setShowDonationForm] = useState(false);
-  const [selectedDonationAmount, setSelectedDonationAmount] = useState<number | null>(null);
-  const [customDonationAmount, setCustomDonationAmount] = useState('');
-  const [donorName, setDonorName] = useState('');
-  const [donorEmail, setDonorEmail] = useState('');
-  const [donorPhone, setDonorPhone] = useState('');
-  const [isAnonymous, setIsAnonymous] = useState(false);
-  const [donationMessage, setDonationMessage] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix' | 'bank_transfer'>('credit_card');
-  const [isProcessingDonation, setIsProcessingDonation] = useState(false);
-  const [donationSuccess, setDonationSuccess] = useState(false);
 
   // Loading state
   if (isLoading) {
@@ -126,90 +112,10 @@ export function ProjetosSociaisPage() {
 
   const handleDonateToProject = (project: any) => {
     setSelectedDonationProject(project);
-    setShowDonationForm(true);
-    // Scroll to donation section
-    setTimeout(() => {
-      const donationSection = document.getElementById('donation-section');
-      donationSection?.scrollIntoView({ behavior: 'smooth' });
-    }, 100);
+    setCurrentPage('doacoes');
   };
 
-  const predefinedDonationAmounts = [50, 100, 250, 500, 1000];
-
-  const getCurrentDonationAmount = () => selectedDonationAmount || Number(customDonationAmount) || 0;
-
-  const handleGeneralDonation = async () => {
-    const amount = getCurrentDonationAmount();
-    
-    if (amount <= 0) {
-      showErrorNotification(
-        'Valor Inválido', 
-        'Por favor, selecione um valor válido para a doação.'
-      );
-      return;
-    }
-
-    if (!donorName.trim() || !donorEmail.trim()) {
-      showErrorNotification(
-        'Dados Incompletos', 
-        'Por favor, preencha seu nome e e-mail para continuar.'
-      );
-      return;
-    }
-
-    setIsProcessingDonation(true);
-
-    try {
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const donation = {
-        donorName: isAnonymous ? 'Doador Anônimo' : donorName,
-        donorEmail,
-        donorPhone,
-        amount,
-        paymentMethod,
-        paymentStatus: 'confirmed' as const,
-        donationDate: new Date().toISOString().split('T')[0],
-        isAnonymous,
-        message: donationMessage.trim() || undefined,
-        receiptId: `RECEIPT-${Date.now()}`
-      };
-
-      addDonation(donation);
-      
-      // Show success notification
-      showDonationNotification(
-        'Doação Realizada com Sucesso!',
-        `Sua doação de R$ ${amount.toFixed(2)} foi processada. Obrigado por contribuir para um futuro mais sustentável!`,
-        amount
-      );
-      
-      // Reset form
-      setSelectedDonationAmount(null);
-      setCustomDonationAmount('');
-      setDonorName('');
-      setDonorEmail('');
-      setDonorPhone('');
-      setDonationMessage('');
-      setIsAnonymous(false);
-      setShowDonationForm(false);
-      setDonationSuccess(true);
-
-      // Hide success message after 5 seconds
-      setTimeout(() => {
-        setDonationSuccess(false);
-      }, 5000);
-      
-    } catch (error) {
-      showErrorNotification(
-        'Erro no Processamento',
-        'Houve um problema ao processar sua doação. Tente novamente em alguns instantes.'
-      );
-    } finally {
-      setIsProcessingDonation(false);
-    }
-  };
+  // Doações acontecem na DoacoesPage
 
   // Verificar se socialProjects está carregado e é um array válido
 
@@ -247,6 +153,30 @@ export function ProjetosSociaisPage() {
 
         {/* Enhanced Statistics */}
         <SocialProjectStats stats={stats} animated={true} />
+
+        {/* General Donation CTA */}
+        <div className="mb-10">
+          <GlassCard className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-purple-500 text-white flex items-center justify-center">
+                <HandHeart className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="font-medium text-gray-800">Faça uma Doação Geral</div>
+                <div className="text-sm text-gray-600">Sua contribuição será direcionada para onde houver maior necessidade.</div>
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setSelectedDonationProject(null);
+                window.location.hash = 'doacoes?general=1';
+              }}
+              className="px-6 py-3 rounded-lg bg-gradient-to-r from-pink-500 to-purple-500 text-white hover:from-pink-600 hover:to-purple-600 transition-all"
+            >
+              Doar Agora
+            </button>
+          </GlassCard>
+        </div>
 
         {/* Projects Grid */}
         {safeProjects.length > 0 ? (
@@ -466,323 +396,6 @@ export function ProjetosSociaisPage() {
           </div>
         )}
 
-        {/* Donation Section */}
-        <div id="donation-section" className="mb-20">
-          {/* Success Message */}
-          {donationSuccess && (
-            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
-              <GlassCard className="p-6 bg-green-50/95 border-green-200">
-                <div className="flex items-center space-x-3 text-green-800">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                  <div>
-                    <h4 className="font-medium">Doação Realizada com Sucesso!</h4>
-                    <p className="text-sm text-green-700">Obrigado por contribuir para um futuro melhor.</p>
-                  </div>
-                </div>
-              </GlassCard>
-            </div>
-          )}
-
-          <div className="text-center mb-16">
-            <div className="inline-flex items-center space-x-2 bg-pink-500/10 px-4 py-2 rounded-full mb-8">
-              <Heart className="w-4 h-4 text-pink-600" />
-              <span className="text-pink-700">Doações</span>
-            </div>
-            
-            <h2 className="text-5xl md:text-6xl font-medium text-gray-800 mb-8">
-              Apoie a
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600">
-                Transformação Social
-              </span>
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Sua doação faz a diferença. Apoie nossos projetos sociais e contribua para 
-              o desenvolvimento sustentável das comunidades e preservação ambiental.
-            </p>
-          </div>
-
-          {!showDonationForm ? (
-            /* Donation Options */
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Project-Specific Donations */}
-              <GlassCard className="p-8">
-                <div className="flex items-center space-x-3 mb-6">
-                  <Target className="w-6 h-6 text-green-600" />
-                  <h3 className="text-gray-800">Doação para Projeto Específico</h3>
-                </div>
-                
-                <p className="text-gray-600 mb-6">
-                  Escolha um projeto específico para sua doação e acompanhe diretamente 
-                  o impacto da sua contribuição na comunidade beneficiada.
-                </p>
-
-                <div className="space-y-4 mb-6">
-                  {safeProjects.filter(p => p?.allowDonations && p?.status === 'active').map((project) => (
-                    <div key={project.id} className="p-4 border border-gray-200 rounded-lg hover:border-green-300 transition-colors cursor-pointer" onClick={() => handleDonateToProject(project)}>
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-800">{project.title}</h4>
-                        <div className="text-sm text-green-600 font-medium">
-                          {project.donationGoal ? `${Math.round(((project.donationsReceived || 0) / project.donationGoal) * 100)}%` : '∞'}
-                        </div>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-3">{project.description}</p>
-                      {project.donationGoal && (
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-gradient-to-r from-green-400 to-emerald-400 h-2 rounded-full"
-                            style={{ width: `${Math.min(((project.donationsReceived || 0) / project.donationGoal) * 100, 100)}%` }}
-                          ></div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {safeProjects.filter(p => p?.allowDonations && p?.status === 'active').length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <HandHeart className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                    <p>Nenhum projeto ativo aceitando doações no momento.</p>
-                  </div>
-                )}
-              </GlassCard>
-
-              {/* General Donation */}
-              <GlassCard className="p-8">
-                <div className="flex items-center space-x-3 mb-6">
-                  <HandHeart className="w-6 h-6 text-pink-600" />
-                  <h3 className="text-gray-800">Doação Geral</h3>
-                </div>
-                
-                <p className="text-gray-600 mb-6">
-                  Faça uma doação geral que será direcionada para onde há maior necessidade, 
-                  maximizando o impacto da sua contribuição.
-                </p>
-
-                <div className="space-y-6">
-                  {/* Impact Statistics */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-green-50/80 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">{totalBeneficiaries}</div>
-                      <div className="text-sm text-gray-600">Beneficiários</div>
-                    </div>
-                    <div className="text-center p-4 bg-pink-50/80 rounded-lg">
-                      <div className="text-2xl font-bold text-pink-600">R$ {(totalDonations / 1000).toFixed(0)}k</div>
-                      <div className="text-sm text-gray-600">Arrecadado</div>
-                    </div>
-                  </div>
-
-                  {/* Suggested Impact */}
-                  <div className="p-4 bg-blue-50/80 rounded-lg">
-                    <h4 className="font-medium text-gray-800 mb-3">Com sua doação, podemos:</h4>
-                    <ul className="space-y-2 text-sm text-gray-600">
-                      <li className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span>R$ 50 - Apoiar 1 família por 1 mês</span>
-                      </li>
-                      <li className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span>R$ 100 - Capacitar 1 pessoa</span>
-                      </li>
-                      <li className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4 text-green-600" />
-                        <span>R$ 250 - Implementar 1 horta comunitária</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <button 
-                    onClick={() => setShowDonationForm(true)}
-                    className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-4 rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center space-x-2"
-                  >
-                    <HandHeart className="w-5 h-5" />
-                    <span>Fazer Doação Geral</span>
-                  </button>
-                </div>
-              </GlassCard>
-            </div>
-          ) : (
-            /* Donation Form */
-            <div className="max-w-4xl mx-auto">
-              <div className="text-center mb-8">
-                <button
-                  onClick={() => setShowDonationForm(false)}
-                  className="inline-flex items-center space-x-2 text-gray-600 hover:text-gray-700 mb-4 transition-colors"
-                >
-                  <ArrowRight className="w-4 h-4 rotate-180" />
-                  <span>Voltar às opções de doação</span>
-                </button>
-                <h3 className="text-3xl text-gray-800 mb-2">Formulário de Doação</h3>
-                <p className="text-gray-600">Complete os dados abaixo para finalizar sua doação</p>
-              </div>
-
-              <GlassCard className="p-8">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  {/* Amount Selection */}
-                  <div>
-                    <label className="block text-gray-700 mb-4">Selecione o valor</label>
-                    <div className="grid grid-cols-3 gap-3 mb-4">
-                      {predefinedDonationAmounts.map((amount) => (
-                        <button
-                          key={amount}
-                          onClick={() => {
-                            setSelectedDonationAmount(amount);
-                            setCustomDonationAmount('');
-                          }}
-                          className={`p-3 rounded-lg border-2 transition-all duration-300 ${
-                            selectedDonationAmount === amount
-                              ? 'border-pink-500 bg-pink-50 text-pink-700'
-                              : 'border-white/30 hover:border-pink-300'
-                          }`}
-                        >
-                          R$ {amount}
-                        </button>
-                      ))}
-                    </div>
-                    
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">R$</span>
-                      <input
-                        type="number"
-                        value={customDonationAmount}
-                        onChange={(e) => {
-                          setCustomDonationAmount(e.target.value);
-                          setSelectedDonationAmount(null);
-                        }}
-                        placeholder="Outro valor"
-                        className="w-full pl-10 pr-4 py-3 bg-white/50 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/20"
-                      />
-                    </div>
-
-                    {/* Payment Method */}
-                    <div className="mt-6">
-                      <label className="block text-gray-700 mb-3">Forma de pagamento</label>
-                      <div className="space-y-2">
-                        {[
-                          { value: 'credit_card', icon: CreditCard, label: 'Cartão de Crédito' },
-                          { value: 'pix', icon: Smartphone, label: 'PIX' },
-                          { value: 'bank_transfer', icon: Building2, label: 'Transferência Bancária' }
-                        ].map(({ value, icon: Icon, label }) => (
-                          <button
-                            key={value}
-                            onClick={() => setPaymentMethod(value as any)}
-                            className={`w-full p-3 rounded-lg border-2 transition-all duration-300 flex items-center space-x-3 ${
-                              paymentMethod === value
-                                ? 'border-pink-500 bg-pink-50 text-pink-700'
-                                : 'border-white/30 hover:border-pink-300'
-                            }`}
-                          >
-                            <Icon className="w-5 h-5" />
-                            <span>{label}</span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Personal Info */}
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-2 mb-4">
-                      <input
-                        type="checkbox"
-                        id="anonymous-donation"
-                        checked={isAnonymous}
-                        onChange={(e) => setIsAnonymous(e.target.checked)}
-                        className="rounded"
-                      />
-                      <label htmlFor="anonymous-donation" className="text-gray-700 text-sm">
-                        Fazer doação anônima
-                      </label>
-                    </div>
-                    
-                    {!isAnonymous && (
-                      <input
-                        type="text"
-                        value={donorName}
-                        onChange={(e) => setDonorName(e.target.value)}
-                        placeholder="Nome completo"
-                        className="w-full px-4 py-3 bg-white/50 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/20"
-                        required
-                      />
-                    )}
-                    
-                    <input
-                      type="email"
-                      value={donorEmail}
-                      onChange={(e) => setDonorEmail(e.target.value)}
-                      placeholder="E-mail"
-                      className="w-full px-4 py-3 bg-white/50 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/20"
-                      required
-                    />
-                    
-                    <input
-                      type="tel"
-                      value={donorPhone}
-                      onChange={(e) => setDonorPhone(e.target.value)}
-                      placeholder="Telefone (opcional)"
-                      className="w-full px-4 py-3 bg-white/50 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/20"
-                    />
-                    
-                    <textarea
-                      value={donationMessage}
-                      onChange={(e) => setDonationMessage(e.target.value)}
-                      placeholder="Mensagem de apoio (opcional)"
-                      rows={3}
-                      className="w-full px-4 py-3 bg-white/50 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500/20 resize-none"
-                    />
-
-                    {/* Donation Summary */}
-                    {getCurrentDonationAmount() > 0 && (
-                      <div className="p-4 bg-pink-50/80 rounded-lg border border-pink-200">
-                        <h4 className="font-medium text-pink-800 mb-2">Resumo da Doação</h4>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-pink-700">Valor:</span>
-                            <span className="font-medium text-pink-800">R$ {getCurrentDonationAmount().toFixed(2)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-pink-700">Tipo:</span>
-                            <span className="font-medium text-pink-800">Doação Geral</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-pink-700">Pagamento:</span>
-                            <span className="font-medium text-pink-800">
-                              {paymentMethod === 'credit_card' && 'Cartão de Crédito'}
-                              {paymentMethod === 'pix' && 'PIX'}
-                              {paymentMethod === 'bank_transfer' && 'Transferência'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <button
-                      onClick={handleGeneralDonation}
-                      disabled={isProcessingDonation || getCurrentDonationAmount() <= 0}
-                      className="w-full bg-gradient-to-r from-pink-500 to-purple-500 text-white py-4 rounded-lg hover:from-pink-600 hover:to-purple-600 transition-all duration-300 font-medium shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isProcessingDonation ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                          <span>Processando...</span>
-                        </>
-                      ) : (
-                        <>
-                          <HandHeart className="w-5 h-5" />
-                          <span>Doar R$ {getCurrentDonationAmount().toFixed(2)}</span>
-                        </>
-                      )}
-                    </button>
-
-                    <p className="text-gray-600 text-sm text-center">
-                      🔒 Pagamento seguro e certificado
-                    </p>
-                  </div>
-                </div>
-              </GlassCard>
-            </div>
-          )}
-        </div>
-
         {/* Call to Action */}
         <div className="text-center">
           <GlassCard className="p-12 bg-gradient-to-r from-green-50/80 to-blue-50/80">
@@ -818,16 +431,13 @@ export function ProjetosSociaisPage() {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button 
                 onClick={() => {
-                  setShowDonationForm(true);
-                  setTimeout(() => {
-                    const donationSection = document.getElementById('donation-section');
-                    donationSection?.scrollIntoView({ behavior: 'smooth' });
-                  }, 100);
+                  setSelectedDonationProject(null);
+                  window.location.hash = 'doacoes?general=1';
                 }}
                 className="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-10 py-4 rounded-2xl hover:from-pink-600 hover:to-purple-600 transition-all duration-300 shadow-lg hover:shadow-xl text-lg flex items-center justify-center space-x-2"
               >
                 <HandHeart className="w-6 h-6" />
-                <span>Fazer Doação</span>
+                <span>Fazer Doação Geral</span>
               </button>
               <button 
                 onClick={() => setCurrentPage('contato')}
