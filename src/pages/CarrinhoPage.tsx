@@ -1,4 +1,4 @@
-import { Minus, Plus, Trash2, CreditCard, Smartphone, Bitcoin, Download, Leaf, MapPin, Award, ShoppingCart, Building2 } from 'lucide-react';
+import { Minus, Plus, Trash2, CreditCard, Download, Leaf, MapPin, Award, ShoppingCart, Building2 } from 'lucide-react';
 import { useState } from 'react';
 import { GlassCard } from '../components/GlassCard';
 import { useApp } from '../contexts/AppContext';
@@ -8,7 +8,7 @@ import { useStripeCheckout } from '../hooks/useStripeCheckout';
 
 export function CarrinhoPage() {
   const { cartItems, updateQuantity, removeFromCart, totalPrice, total_m2, clearCart } = useApp();
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix' | 'crypto'>('card');
+  // Fluxo hospedado do Stripe: sem seleção de método local
   const [showCheckout, setShowCheckout] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [buyerEmail, setBuyerEmail] = useState('');
@@ -80,10 +80,7 @@ export function CarrinhoPage() {
   const handleCheckout = () => {
     if (isProcessing || isLoading) return;
 
-    if (paymentMethod !== 'card') {
-      toast.error('Atualmente apenas Cartão (Stripe) está disponível nesta tela.');
-      return;
-    }
+    // Checkout hospedado: sempre redireciona para o Stripe
 
     if (!buyerEmail.trim()) {
       toast.error('Informe seu email para continuar.');
@@ -281,56 +278,7 @@ export function CarrinhoPage() {
                 />
               </div>
 
-              {/* Payment Methods */}
-              <div className="mb-6">
-                <h4 className="text-gray-800 mb-4">Opções de Pagamento</h4>
-                <div className="space-y-3">
-                  <button
-                    onClick={() => setPaymentMethod('card')}
-                    className={`w-full p-3 rounded-lg border-2 transition-all duration-300 flex items-center space-x-3 ${
-                      paymentMethod === 'card'
-                        ? 'border-green-500 bg-green-50/50'
-                        : 'border-white/30 hover:border-green-300'
-                    }`}
-                  >
-                    <CreditCard className="w-5 h-5 text-gray-600" />
-                    <div className="text-left">
-                      <div className="font-medium">Cartão de Crédito/Débito</div>
-                      <div className="text-sm text-gray-600">Via Stripe - Seguro e rápido</div>
-                    </div>
-                  </button>
-                  
-                  <button
-                    onClick={() => setPaymentMethod('pix')}
-                    className={`w-full p-3 rounded-lg border-2 transition-all duration-300 flex items-center space-x-3 ${
-                      paymentMethod === 'pix'
-                        ? 'border-green-500 bg-green-50/50'
-                        : 'border-white/30 hover:border-green-300'
-                    }`}
-                  >
-                    <Smartphone className="w-5 h-5 text-gray-600" />
-                    <div className="text-left">
-                      <div className="font-medium">PIX</div>
-                      <div className="text-sm text-gray-600">Pagamento instantâneo</div>
-                    </div>
-                  </button>
-                  
-                  <button
-                    onClick={() => setPaymentMethod('crypto')}
-                    className={`w-full p-3 rounded-lg border-2 transition-all duration-300 flex items-center space-x-3 ${
-                      paymentMethod === 'crypto'
-                        ? 'border-green-500 bg-green-50/50'
-                        : 'border-white/30 hover:border-green-300'
-                    }`}
-                  >
-                    <Bitcoin className="w-5 h-5 text-gray-600" />
-                    <div className="text-left">
-                      <div className="font-medium">Criptomoedas</div>
-                      <div className="text-sm text-gray-600">Contato para pagamento</div>
-                    </div>
-                  </button>
-                </div>
-              </div>
+              {/* Opções de pagamento removidas: uso obrigatório do Checkout hospedado do Stripe */}
               
               <button
                 onClick={handleCheckout}

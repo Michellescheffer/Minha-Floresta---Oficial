@@ -1,4 +1,4 @@
-import { Heart, Target, Users, Zap, HandHeart, CreditCard, Smartphone, Building2, ArrowLeft, CheckCircle, MapPin, Calendar, Award } from 'lucide-react';
+import { Heart, Target, Users, Zap, HandHeart, Building2, ArrowLeft, CheckCircle, MapPin, Calendar, Award } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useStripeCheckout } from '../hooks/useStripeCheckout';
 import { GlassCard } from '../components/GlassCard';
@@ -14,8 +14,7 @@ export function DoacoesPage() {
   const [donorPhone, setDonorPhone] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [message, setMessage] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix' | 'bank_transfer'>('credit_card');
-  const [paymentExperience, setPaymentExperience] = useState<'embedded' | 'hosted'>('hosted');
+  // Fluxo hospedado: sem seleção de método/experiência
   const [isGeneralDonation, setIsGeneralDonation] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -454,14 +453,7 @@ export function DoacoesPage() {
                       <span className="font-medium text-green-800">{targetProject?.title}</span>
                     </div>
                   )}
-                  <div className="flex justify-between">
-                    <span className="text-green-700">Pagamento:</span>
-                    <span className="font-medium text-green-800">
-                      {paymentMethod === 'credit_card' && 'Cartão de Crédito'}
-                      {paymentMethod === 'pix' && 'PIX'}
-                      {paymentMethod === 'bank_transfer' && 'Transferência'}
-                    </span>
-                  </div>
+                  {/* Pagamento: sempre via Checkout hospedado do Stripe */}
                 </div>
               </div>
             )}
