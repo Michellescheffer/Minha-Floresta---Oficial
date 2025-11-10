@@ -150,26 +150,20 @@ export function CMSRealTimeStats({ stats }: RealTimeStatsProps) {
         </CardContent>
       </Card>
 
-      {/* Resumo das Estatísticas Principais */}
+      {/* Métricas Principais */}
       <Card className="bg-white/10 backdrop-blur-md border-white/20 md:col-span-2 lg:col-span-4">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-lg">Resumo Executivo</CardTitle>
-              <CardDescription>Visão geral das métricas principais</CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-gray-500">
-                Atualizado: {lastUpdate.toLocaleTimeString()}
-              </span>
-              <button
-                onClick={refresh}
-                disabled={isRefreshing}
-                className="p-1 hover:bg-white/10 rounded-full transition-colors"
-              >
-                <RefreshCw className={`h-4 w-4 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
+          <div className="flex items-center justify-end gap-2">
+            <span className="text-xs text-gray-500">
+              Atualizado: {lastUpdate.toLocaleTimeString()}
+            </span>
+            <button
+              onClick={refresh}
+              disabled={isRefreshing}
+              className="p-1 hover:bg-white/10 rounded-full transition-colors"
+            >
+              <RefreshCw className={`h-4 w-4 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </CardHeader>
         <CardContent>
@@ -183,9 +177,7 @@ export function CMSRealTimeStats({ stats }: RealTimeStatsProps) {
               <div className="text-xs text-gray-600">Vendas</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-emerald-600">
-                R$ {(stats.totalRevenue / 1000).toFixed(0)}K
-              </div>
+              <div className="text-2xl font-bold text-emerald-600">R$ {stats.totalRevenue.toLocaleString('pt-BR')}</div>
               <div className="text-xs text-gray-600">Receita</div>
             </div>
             <div className="text-center">
