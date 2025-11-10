@@ -223,6 +223,14 @@ export function CMSPage() {
   });
   const [salesData, setSalesData] = useState<Array<{ month: string; sales: number; revenue: number }>>([]);
   const [projectTypeData, setProjectTypeData] = useState<Array<{ name: string; value: number; color: string }>>([]);
+  const [recentActivity, setRecentActivity] = useState<Array<{
+    type: 'sale' | 'donation' | 'certificate';
+    user: string;
+    action: string;
+    time: string;
+    value?: string;
+    created_at: string;
+  }>>([]);
 
   const { projects, createProject, updateProject, refreshProjects, deleteProject } = useProjects();
   const { socialProjects } = useSocialProjects();
@@ -287,6 +295,47 @@ export function CMSPage() {
       const palette = ['#10b981','#3b82f6','#f59e0b','#06b6d4','#8b5cf6','#ef4444'];
       const typeArr = Object.entries(byType).map(([name, value], idx) => ({ name, value, color: palette[idx % palette.length] }));
       setProjectTypeData(typeArr);
+
+      // Atividade recente (últimos eventos)
+      const [recentIntentsRes, recentCertsRes] = await Promise.all([
+        supabase
+          .from('stripe_payment_intents')
+          .select('amount, status, created_at, purchases(email), donations(donor_email)')
+          .order('created_at', { ascending: false })
+          .limit(10),
+        supabase
+          .from('certificates')
+          .select('certificate_number, issued_at, status, purchases(email)')
+          .order('issued_at', { ascending: false })
+          .limit(10),
+      ]);
+
+      const recentIntents = (recentIntentsRes.data || [])
+        .filter((i: any) => i.status === 'succeeded')
+        .map((i: any) => ({
+          type: i.purchases ? 'sale' as const : 'donation' as const,
+          user: i.purchases?.email || i.donations?.donor_email || 'Usuário',
+          action: i.purchases ? 'realizou uma compra' : 'fez uma doação',
+          time: new Date(i.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+          value: `R$ ${Number(i.amount || 0).toLocaleString('pt-BR')}`,
+          created_at: i.created_at,
+        }));
+
+      const recentCerts = (recentCertsRes.data || [])
+        .filter((c: any) => c.status === 'issued')
+        .map((c: any) => ({
+          type: 'certificate' as const,
+          user: c.purchases?.email || 'Usuário',
+          action: `certificado ${c.certificate_number} emitido`,
+          time: c.issued_at ? new Date(c.issued_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '-',
+          value: '',
+          created_at: c.issued_at || new Date().toISOString(),
+        }));
+
+      const merged = [...recentIntents, ...recentCerts]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 8);
+      setRecentActivity(merged);
     } catch (e) {
       // Keep previous values if error
     }
@@ -818,7 +867,8 @@ export function CMSPage() {
         </Card>
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Activity */
+      }
       <Card className="bg-white/10 backdrop-blur-md border-white/20">
         <CardHeader>
           <CardTitle className="text-gray-800">Atividade Recente</CardTitle>
@@ -826,35 +876,34 @@ export function CMSPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {[
-              { type: 'sale', user: 'João Silva', action: 'comprou 50m² do projeto Amazônia Verde', time: '2 horas atrás', value: 'R$ 1.250' },
-              { type: 'donation', user: 'Maria Santos', action: 'fez doação para Educação Ambiental', time: '4 horas atrás', value: 'R$ 200' },
-              { type: 'certificate', user: 'Carlos Oliveira', action: 'solicitou certificado físico', time: '6 horas atrás', value: '' },
-              { type: 'sale', user: 'Ana Costa', action: 'comprou 25m² do projeto Mata Atlântica', time: '8 horas atrás', value: 'R$ 750' },
-            ].map((activity, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full ${
-                    activity.type === 'sale' ? 'bg-green-100 text-green-600' :
-                    activity.type === 'donation' ? 'bg-blue-100 text-blue-600' :
-                    'bg-purple-100 text-purple-600'
-                  }`}>
-                    {activity.type === 'sale' ? <ShoppingCart className="h-4 w-4" /> :
-                     activity.type === 'donation' ? <Heart className="h-4 w-4" /> :
-                     <Award className="h-4 w-4" />}
+            {recentActivity.length === 0 ? (
+              <div className="text-gray-600">Sem eventos recentes</div>
+            ) : (
+              recentActivity.map((activity, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${
+                      activity.type === 'sale' ? 'bg-green-100 text-green-600' :
+                      activity.type === 'donation' ? 'bg-blue-100 text-blue-600' :
+                      'bg-purple-100 text-purple-600'
+                    }`}>
+                      {activity.type === 'sale' ? <ShoppingCart className="h-4 w-4" /> :
+                       activity.type === 'donation' ? <Heart className="h-4 w-4" /> :
+                       <Award className="h-4 w-4" />}
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-800">{activity.user} {activity.action}</p>
+                      <p className="text-xs text-gray-500">{activity.time}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-800">{activity.user} {activity.action}</p>
-                    <p className="text-xs text-gray-500">{activity.time}</p>
-                  </div>
+                  {activity.value && (
+                    <Badge variant="outline" className="bg-white/10">
+                      {activity.value}
+                    </Badge>
+                  )}
                 </div>
-                {activity.value && (
-                  <Badge variant="outline" className="bg-white/10">
-                    {activity.value}
-                  </Badge>
-                )}
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
