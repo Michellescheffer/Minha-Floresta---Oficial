@@ -74,16 +74,16 @@ export function useCertificates() {
             projectName: cert.project_name || 'Projeto',
             buyerName: cert.user_name || currentUser.name,
             buyerEmail: currentUser.email,
-            area: cert.area_m2,
+            area: (cert.area_sqm ?? cert.area_m2) as number,
             price: 0,
-            issueDate: cert.issue_date,
+            issueDate: (cert.issued_at || cert.issue_date) as string,
             status: (cert.status as 'active' | 'expired' | 'transferred') || 'active',
             certificateNumber: cert.certificate_number,
             qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${cert.certificate_number}`,
             digitalUrl: `${window.location.origin}/verificar-certificado?numero=${cert.certificate_number}`,
             pdfUrl: cert.pdf_url || undefined,
-            co2Offset: cert.co2_offset_kg ?? Math.round((cert.area_m2 || 0) * 22),
-            validUntil: cert.valid_until || new Date(new Date(cert.issue_date || Date.now()).getTime() + 30*365*24*60*60*1000).toISOString().split('T')[0],
+            co2Offset: cert.co2_offset_kg ?? Math.round(((cert.area_sqm ?? cert.area_m2 ?? 0) as number) * 22),
+            validUntil: cert.valid_until || new Date(new Date((cert.issued_at || cert.issue_date || Date.now()) as string).getTime() + 30*365*24*60*60*1000).toISOString().split('T')[0],
             userId: cert.user_id
           }));
           
