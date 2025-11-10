@@ -70,7 +70,9 @@ export type PageType =
   | 'blue-carbon'
   | 'dashboard'
   | 'cms'
-  | 'cleanup-test';
+  | 'cleanup-test'
+  | 'checkout-success'
+  | 'checkout-cancel';
 
 export interface Project {
   id: string;

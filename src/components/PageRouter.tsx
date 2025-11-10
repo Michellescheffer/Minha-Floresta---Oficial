@@ -1,5 +1,6 @@
 import { useApp } from '../contexts/AppContext';
 import { useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { Hero } from './Hero';
 import { Benefits } from './Benefits';
 import { CTA } from './CTA';
@@ -210,6 +211,7 @@ function HomePage() {
 
 export function PageRouter() {
   const { currentPage } = useApp();
+  const { user } = useAuth();
 
   // Scroll para o topo sempre que a página mudar
   useEffect(() => {
@@ -249,7 +251,17 @@ export function PageRouter() {
     case 'dashboard':
       return <DashboardPage />;
     case 'cms':
-      return <CMSPage />;
+      return user && user.role === 'admin' ? (
+        <CMSPage />
+      ) : (
+        <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-50/80 via-orange-50/80 to-yellow-50/80"></div>
+          <div className="relative z-10 max-w-2xl mx-auto px-6 text-center">
+            <h1 className="text-gray-800 mb-4">Acesso Negado</h1>
+            <p className="text-gray-600">Você precisa ser administrador para acessar o CMS.</p>
+          </div>
+        </div>
+      );
     case 'cleanup-test':
       return <CleanupTestPage />;
     case 'checkout-success':

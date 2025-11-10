@@ -24,19 +24,18 @@ import {
 import { GlassCard } from '../components/GlassCard';
  
 import { useAuth } from '../contexts/AuthContext';
+import { useUserPanelData } from '../hooks/useUserPanelData';
 import { toast } from 'sonner';
 
 type DashboardTab = 'overview' | 'purchases' | 'donations' | 'certificates' | 'profile';
 
 export function DashboardPage() {
   const { 
-    user, 
-    userPurchases, 
-    userDonations, 
-    userCertificates, 
+    user,
     updateProfile,
     isLoading
   } = useAuth();
+  const { purchases, donations, certificates, loading, error } = useUserPanelData();
 
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -59,6 +58,13 @@ export function DashboardPage() {
           <h1 className="text-gray-800 mb-4">Acesso Negado</h1>
           <p className="text-gray-600">Você precisa estar logado para acessar o dashboard.</p>
         </div>
+
+        {loading && (
+          <div className="mb-6 text-gray-600">Carregando seus dados...</div>
+        )}
+        {error && (
+          <div className="mb-6 text-red-600">{error}</div>
+        )}
       </div>
     );
   }
@@ -144,7 +150,7 @@ export function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-gray-600 text-sm">Total Investido</p>
-                    <p className="text-gray-800 font-semibold">{formatCurrency(user.total_purchases)}</p>
+                    <p className="text-gray-800 font-semibold">{formatCurrency(purchases.reduce((s, p) => s + (p.total_amount || 0), 0))}</p>
                   </div>
                 </div>
               </GlassCard>
@@ -156,7 +162,7 @@ export function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-gray-600 text-sm">Área Adquirida</p>
-                    <p className="text-gray-800 font-semibold">{(user.total_m2_purchased || 0).toLocaleString()} m²</p>
+                    <p className="text-gray-800 font-semibold">{(purchases.reduce((s, p) => s + (p.area_total || 0), 0)).toLocaleString()} m²</p>
                   </div>
                 </div>
               </GlassCard>
@@ -168,7 +174,7 @@ export function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-gray-600 text-sm">CO₂ Compensado</p>
-                    <p className="text-gray-800 font-semibold">{user.total_co2_compensated.toLocaleString()} kg</p>
+                    <p className="text-gray-800 font-semibold">{(certificates.reduce((s, c) => s + Math.round((c.area_sqm || 0) * 22), 0)).toLocaleString()} kg</p>
                   </div>
                 </div>
               </GlassCard>
@@ -180,7 +186,7 @@ export function DashboardPage() {
                   </div>
                   <div>
                     <p className="text-gray-600 text-sm">Total Doado</p>
-                    <p className="text-gray-800 font-semibold">{formatCurrency(user.total_donations)}</p>
+                    <p className="text-gray-800 font-semibold">{formatCurrency(donations.reduce((s, d) => s + (d.amount || 0), 0))}</p>
                   </div>
                 </div>
               </GlassCard>
@@ -190,33 +196,33 @@ export function DashboardPage() {
             <GlassCard className="p-6">
               <h3 className="text-gray-800 mb-4">Atividade Recente</h3>
               <div className="space-y-4">
-                {userPurchases.slice(0, 3).map((purchase) => (
+                {purchases.slice(0, 3).map((purchase) => (
                   <div key={purchase.id} className="flex items-center justify-between p-4 bg-white/30 rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-green-500/20 rounded-lg">
                         <ShoppingBag className="w-4 h-4 text-green-600" />
                       </div>
                       <div>
-                        <p className="text-gray-800 font-medium">{purchase.projectName}</p>
-                        <p className="text-gray-600 text-sm">{purchase.m2Quantity} m² - {formatDate(purchase.purchaseDate)}</p>
+                        <p className="text-gray-800 font-medium">Compra</p>
+                        <p className="text-gray-600 text-sm">{formatDate(purchase.created_at)}</p>
                       </div>
                     </div>
-                    <span className="text-green-600 font-semibold">{formatCurrency(purchase.totalValue)}</span>
+                    <span className="text-green-600 font-semibold">{formatCurrency(purchase.total_amount || 0)}</span>
                   </div>
                 ))}
                 
-                {userDonations.slice(0, 2).map((donation) => (
+                {donations.slice(0, 2).map((donation) => (
                   <div key={donation.id} className="flex items-center justify-between p-4 bg-white/30 rounded-xl">
                     <div className="flex items-center gap-3">
                       <div className="p-2 bg-purple-500/20 rounded-lg">
                         <Heart className="w-4 h-4 text-purple-600" />
                       </div>
                       <div>
-                        <p className="text-gray-800 font-medium">{donation.projectTitle || 'Doação Geral'}</p>
-                        <p className="text-gray-600 text-sm">Doação - {formatDate(donation.donationDate)}</p>
+                        <p className="text-gray-800 font-medium">{donation.project_id ? `Doação para projeto ${donation.project_id}` : 'Doação Geral'}</p>
+                        <p className="text-gray-600 text-sm">Doação - {formatDate(donation.created_at)}</p>
                       </div>
                     </div>
-                    <span className="text-purple-600 font-semibold">{formatCurrency(donation.amount)}</span>
+                    <span className="text-purple-600 font-semibold">{formatCurrency(donation.amount || 0)}</span>
                   </div>
                 ))}
               </div>
@@ -229,69 +235,53 @@ export function DashboardPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-gray-800">Suas Compras</h2>
-              <span className="text-gray-600">{userPurchases.length} compra(s)</span>
+              <span className="text-gray-600">{purchases.length} compra(s)</span>
             </div>
 
             <div className="space-y-4">
-              {userPurchases.map((purchase) => (
+              {purchases.map((purchase) => (
                 <GlassCard key={purchase.id} className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-gray-800 font-semibold">{purchase.projectName}</h3>
-                      <p className="text-gray-600 text-sm">Compra realizada em {formatDate(purchase.purchaseDate)}</p>
+                      <h3 className="text-gray-800 font-semibold">{(purchase.project_names || ['Compra']).join(', ')}</h3>
+                      <p className="text-gray-600 text-sm">Compra realizada em {formatDate(purchase.created_at)}</p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm ${
-                      purchase.status === 'completed' 
-                        ? 'bg-green-100 text-green-700'
-                        : purchase.status === 'pending'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {purchase.status === 'completed' ? 'Concluída' : 
-                       purchase.status === 'pending' ? 'Pendente' : 'Cancelada'}
-                    </span>
+                    <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">Concluída</span>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                     <div>
                       <p className="text-gray-600 text-sm">Área</p>
-                      <p className="text-gray-800 font-medium">{purchase.m2Quantity} m²</p>
-                    </div>
-                    <div>
-                      <p className="text-gray-600 text-sm">Preço/m²</p>
-                      <p className="text-gray-800 font-medium">{formatCurrency(purchase.price_per_m2 || 0)}</p>
+                      <p className="text-gray-800 font-medium">{purchase.area_total || 0} m²</p>
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">Total</p>
-                      <p className="text-gray-800 font-medium">{formatCurrency(purchase.totalValue)}</p>
+                      <p className="text-gray-800 font-medium">{formatCurrency(purchase.total_amount || 0)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600 text-sm">Certificado</p>
-                      <p className="text-gray-800 font-medium">{purchase.certificateId ? 'Emitido' : 'Pendente'}</p>
+                      <p className="text-gray-600 text-sm">Certificados</p>
+                      <p className="text-gray-800 font-medium">{certificates.filter(c => c.purchase_id === purchase.id).length}</p>
                     </div>
                   </div>
 
-                  {purchase.certificateId && (
-                    <div className="flex gap-2">
-                      <button className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-700 rounded-lg hover:bg-green-500/30 transition-colors">
-                        <Eye className="w-4 h-4" />
-                        Ver Certificado
-                      </button>
-                      <button className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors">
-                        <Download className="w-4 h-4" />
-                        Download
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-end">
+                    <button
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors"
+                      onClick={() => setActiveTab('certificates')}
+                    >
+                      <Eye className="w-4 h-4" />
+                      Ver certificados
+                    </button>
+                  </div>
                 </GlassCard>
               ))}
 
-              {userPurchases.length === 0 && (
+              {purchases.length === 0 && (
                 <GlassCard className="p-8 text-center">
                   <ShoppingBag className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-gray-700 mb-2">Nenhuma compra ainda</h3>
                   <p className="text-gray-600 mb-4">Comece a compensar sua pegada de carbono!</p>
-                  <button className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all">
+                  <button className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all" onClick={() => { window.location.hash = 'loja'; }}>
                     Explorar Projetos
                   </button>
                 </GlassCard>
@@ -305,29 +295,18 @@ export function DashboardPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-gray-800">Suas Doações</h2>
-              <span className="text-gray-600">{userDonations.length} doação(ões)</span>
+              <span className="text-gray-600">{donations.length} doação(ões)</span>
             </div>
 
             <div className="space-y-4">
-              {userDonations.map((donation) => (
+              {donations.map((donation) => (
                 <GlassCard key={donation.id} className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-gray-800 font-semibold">
-                        {donation.projectTitle || 'Doação Geral'}
-                      </h3>
-                      <p className="text-gray-600 text-sm">Doação realizada em {formatDate(donation.donationDate)}</p>
+                      <h3 className="text-gray-800 font-semibold">{donation.project_id ? `Projeto ${donation.project_id}` : 'Doação Geral'}</h3>
+                      <p className="text-gray-600 text-sm">Doação realizada em {formatDate(donation.created_at)}</p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm ${
-                      donation.status === 'completed' 
-                        ? 'bg-green-100 text-green-700'
-                        : donation.status === 'pending'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-red-100 text-red-700'
-                    }`}>
-                      {donation.status === 'completed' ? 'Confirmada' : 
-                       donation.status === 'pending' ? 'Pendente' : 'Cancelada'}
-                    </span>
+                    <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">Confirmada</span>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -341,20 +320,17 @@ export function DashboardPage() {
                       </div>
                     </div>
                     
-                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors">
-                      <FileText className="w-4 h-4" />
-                      Recibo
-                    </button>
+                    
                   </div>
                 </GlassCard>
               ))}
 
-              {userDonations.length === 0 && (
+              {donations.length === 0 && (
                 <GlassCard className="p-8 text-center">
                   <Heart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-gray-700 mb-2">Nenhuma doação ainda</h3>
                   <p className="text-gray-600 mb-4">Apoie nossos projetos sociais!</p>
-                  <button className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all">
+                  <button className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all" onClick={() => { window.location.hash = 'doacoes'; }}>
                     Ver Projetos Sociais
                   </button>
                 </GlassCard>
@@ -368,54 +344,65 @@ export function DashboardPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-gray-800">Seus Certificados</h2>
-              <span className="text-gray-600">{userCertificates.length} certificado(s)</span>
+              <span className="text-gray-600">{certificates.length} certificado(s)</span>
             </div>
 
             <div className="space-y-4">
-              {userCertificates.map((certificate) => (
+              {certificates.map((certificate) => (
                 <GlassCard key={certificate.id} className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <div>
-                      <h3 className="text-gray-800 font-semibold">{certificate.projectName}</h3>
-                      <p className="text-gray-600 text-sm">Código: {certificate.code}</p>
+                      <h3 className="text-gray-800 font-semibold">{certificate.project_name || 'Projeto'}</h3>
+                      <p className="text-gray-600 text-sm">Código: {certificate.certificate_number}</p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-sm ${
-                      certificate.status === 'active' 
+                      certificate.status === 'issued' 
                         ? 'bg-green-100 text-green-700'
-                        : certificate.status === 'expired'
+                        : certificate.status === 'revoked'
                         ? 'bg-red-100 text-red-700'
                         : 'bg-gray-100 text-gray-700'
                     }`}>
-                      {certificate.status === 'active' ? 'Ativo' : 
-                       certificate.status === 'expired' ? 'Expirado' : 'Cancelado'}
+                      {certificate.status === 'issued' ? 'Emitido' : 
+                       certificate.status === 'revoked' ? 'Revogado' : 'Outro'}
                     </span>
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div>
                       <p className="text-gray-600 text-sm">Área</p>
-                      <p className="text-gray-800 font-medium">{certificate.m2Quantity} m²</p>
+                      <p className="text-gray-800 font-medium">{certificate.area_sqm} m²</p>
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">CO₂ Compensado</p>
-                      <p className="text-gray-800 font-medium">{certificate.co2Compensated} kg</p>
+                      <p className="text-gray-800 font-medium">{Math.round((certificate.area_sqm || 0) * 22)} kg</p>
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">Emitido em</p>
-                      <p className="text-gray-800 font-medium">{formatDate(certificate.issueDate)}</p>
+                      <p className="text-gray-800 font-medium">{formatDate(certificate.issued_at)}</p>
                     </div>
                     <div>
                       <p className="text-gray-600 text-sm">Válido até</p>
-                      <p className="text-gray-800 font-medium">{formatDate(certificate.validUntil)}</p>
+                      <p className="text-gray-800 font-medium">—</p>
                     </div>
                   </div>
 
                   <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-700 rounded-lg hover:bg-green-500/30 transition-colors">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-700 rounded-lg hover:bg-green-500/30 transition-colors" onClick={() => {
+                      window.location.hash = `verificar-certificado?numero=${certificate.certificate_number}`;
+                    }}>
                       <Eye className="w-4 h-4" />
                       Visualizar
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors">
+                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors" onClick={() => {
+                      if (certificate.pdf_url) {
+                        const link = document.createElement('a');
+                        link.href = certificate.pdf_url as string;
+                        link.download = `certificado-${certificate.certificate_number}.pdf`;
+                        link.click();
+                      } else {
+                        window.location.hash = `verificar-certificado?numero=${certificate.certificate_number}`;
+                      }
+                    }}>
                       <Download className="w-4 h-4" />
                       Download PDF
                     </button>
@@ -423,7 +410,7 @@ export function DashboardPage() {
                 </GlassCard>
               ))}
 
-              {userCertificates.length === 0 && (
+              {certificates.length === 0 && (
                 <GlassCard className="p-8 text-center">
                   <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-gray-700 mb-2">Nenhum certificado ainda</h3>
@@ -550,18 +537,9 @@ export function DashboardPage() {
                         <Calendar className="w-4 h-4 inline mr-2" />
                         Membro desde
                       </label>
-                      <p className="text-gray-800 p-3 bg-white/30 rounded-xl">{formatDate(user.createdAt)}</p>
+                      <p className="text-gray-800 p-3 bg-white/30 rounded-xl">{user.created_at ? formatDate(user.created_at as unknown as string) : '-'}</p>
                     </div>
 
-                    <div>
-                      <label className="block text-gray-700 mb-2">
-                        <Calendar className="w-4 h-4 inline mr-2" />
-                        Último acesso
-                      </label>
-                      <p className="text-gray-800 p-3 bg-white/30 rounded-xl">
-                        {user.lastLogin ? formatDate(user.lastLogin) : 'Nunca'}
-                      </p>
-                    </div>
                   </div>
 
                   <h3 className="text-gray-800 mb-4">Preferências</h3>

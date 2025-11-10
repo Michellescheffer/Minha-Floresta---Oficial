@@ -106,7 +106,7 @@ export function CarrinhoPage() {
           metadata: {
             certificate_type: 'digital',
             use_hosted: true,
-            success_url: `${window.location.origin}/#checkout-success`,
+            success_url: `${window.location.origin}/#checkout-success?session_id={CHECKOUT_SESSION_ID}`,
             cancel_url: `${window.location.origin}/#loja`,
           },
         } as any);

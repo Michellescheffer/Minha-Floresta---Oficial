@@ -10,7 +10,8 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { supabase } from '../services/supabaseClient';
-import { formatBRL } from '../utils/supabase/stripeConfig';
+import { formatBRL, STRIPE_EDGE_FUNCTION_URL } from '../utils/supabase/stripeConfig';
+import { publicAnonKey } from '../utils/supabase/info';
 
 interface PaymentDetails {
   type: 'purchase' | 'donation';
@@ -21,6 +22,7 @@ interface PaymentDetails {
     certificate_number: string;
     area_sqm: number;
     project_name: string;
+    pdf_url?: string | null;
   }>;
   email: string;
 }
@@ -34,9 +36,10 @@ export default function CheckoutSuccessPage() {
   const [error, setError] = useState<string | null>(null);
 
   // Support hash-based routing: extract params from window.location.hash when searchParams are empty
-  const { paymentIntentId, paymentIntentClientSecret } = useMemo(() => {
+  const { paymentIntentId, paymentIntentClientSecret, sessionId } = useMemo(() => {
     let id = searchParams.get('payment_intent');
     let secret = searchParams.get('payment_intent_client_secret');
+    let session = searchParams.get('session_id');
     if (!id || !secret) {
       const hash = window.location.hash || '';
       // Expected formats:
@@ -46,22 +49,44 @@ export default function CheckoutSuccessPage() {
         const query = new URLSearchParams(hash.substring(qIndex + 1));
         id = id || query.get('payment_intent') || undefined as any;
         secret = secret || query.get('payment_intent_client_secret') || undefined as any;
+        session = session || query.get('session_id') || undefined as any;
       }
     }
-    return { paymentIntentId: id || null, paymentIntentClientSecret: secret || null };
+    return { paymentIntentId: id || null, paymentIntentClientSecret: secret || null, sessionId: session || null };
   }, [searchParams]);
 
   useEffect(() => {
-    if (!paymentIntentId) {
-      setError('Informações de pagamento não encontradas');
-      setLoading(false);
-      return;
-    }
+    (async () => {
+      try {
+        setError(null);
+        // If we didn't get payment_intent, try resolving from session_id (Hosted Checkout)
+        if (!paymentIntentId && sessionId) {
+          const resp = await fetch(`${STRIPE_EDGE_FUNCTION_URL}/stripe-session?session_id=${encodeURIComponent(sessionId)}`, {
+            headers: { 'Authorization': `Bearer ${publicAnonKey}` },
+          });
+          const data = await resp.json();
+          if (resp.ok && data.payment_intent_id) {
+            await loadPaymentDetails(data.payment_intent_id);
+            return;
+          }
+          throw new Error('Não foi possível confirmar o pagamento');
+        }
 
-    loadPaymentDetails();
-  }, [paymentIntentId]);
+        if (!paymentIntentId) {
+          setError('Informações de pagamento não encontradas');
+          setLoading(false);
+          return;
+        }
 
-  const loadPaymentDetails = async () => {
+        await loadPaymentDetails(paymentIntentId);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Erro ao confirmar pagamento');
+        setLoading(false);
+      }
+    })();
+  }, [paymentIntentId, sessionId]);
+
+  const loadPaymentDetails = async (piId: string) => {
     try {
       setLoading(true);
 
@@ -69,7 +94,7 @@ export default function CheckoutSuccessPage() {
       const { data: paymentIntent, error: piError } = await supabase
         .from('stripe_payment_intents')
         .select('*, purchases(*), donations(*)')
-        .eq('stripe_payment_intent_id', paymentIntentId)
+        .eq('stripe_payment_intent_id', piId)
         .single();
 
       if (piError || !paymentIntent) {
@@ -236,7 +261,16 @@ export default function CheckoutSuccessPage() {
                     size="sm"
                     variant="outline"
                     className="gap-2"
-                    onClick={() => navigate(`/certificado/${cert.certificate_number}`)}
+                    onClick={() => {
+                      if ((cert as any).pdf_url) {
+                        const link = document.createElement('a');
+                        link.href = (cert as any).pdf_url as string;
+                        link.download = `certificado-${cert.certificate_number}.pdf`;
+                        link.click();
+                        return;
+                      }
+                      navigate(`/certificado/${cert.certificate_number}`);
+                    }}
                   >
                     <Download className="w-4 h-4" />
                     Baixar

@@ -15,6 +15,7 @@ export interface User {
   address?: any;
   created_at: string;
   preferences?: any;
+  role?: 'admin' | 'user';
 }
 
 export interface AuthResponse {

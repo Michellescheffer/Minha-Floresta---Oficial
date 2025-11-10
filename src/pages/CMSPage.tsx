@@ -59,7 +59,8 @@ import { useCertificates } from '../hooks/useCertificates';
 import { useDonations } from '../hooks/useDonations';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RechartsPieChart, Pie, Cell, LineChart, Line, Area, AreaChart } from 'recharts';
 import { apiRequest } from '../utils/database';
-import { toast } from 'sonner@2.0.3';
+import { supabase } from '../services/supabaseClient';
+import { toast } from 'sonner';
 import { CMSAdvancedFilters } from '../components/CMSAdvancedFilters';
 import { CMSRealTimeStats } from '../components/CMSRealTimeStats';
 import { CMSNotificationCenter } from '../components/CMSNotificationCenter';
@@ -75,6 +76,14 @@ interface CMSStats {
   totalCertificates: number;
   totalRevenue: number;
   activeUsers: number;
+}
+
+interface AdvancedFilters {
+  minValue?: string | number;
+  maxValue?: string | number;
+  location?: string;
+  status?: 'all' | 'active' | 'inactive';
+  type?: 'all' | 'reforestation' | 'restoration' | 'conservation' | 'blue-carbon';
 }
 
 // Modal and form interfaces
@@ -122,6 +131,30 @@ export function CMSPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [adminCertificates, setAdminCertificates] = useState<any[]>([]);
+  const [adminCertsLoading, setAdminCertsLoading] = useState(false);
+  const [certStatusFilter, setCertStatusFilter] = useState<'all' | 'issued' | 'revoked'>('all');
+  const [certProjectFilter, setCertProjectFilter] = useState<string>('all');
+  const [certSearch, setCertSearch] = useState('');
+  const [certPage, setCertPage] = useState(1);
+  const [certPageSize, setCertPageSize] = useState(10);
+  const [certTotal, setCertTotal] = useState(0);
+  const [adminTx, setAdminTx] = useState<any[]>([]);
+  const [adminTxLoading, setAdminTxLoading] = useState(false);
+  const [txSearch, setTxSearch] = useState('');
+  const [txStatus, setTxStatus] = useState<'all' | 'succeeded' | 'processing' | 'canceled'>('all');
+  const [txPage, setTxPage] = useState(1);
+  const [txPageSize, setTxPageSize] = useState(10);
+  const [txTotal, setTxTotal] = useState(0);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState<string | null>(null);
+  const [analyticsKpis, setAnalyticsKpis] = useState({
+    totalRevenue: 0,
+    totalCertificates: 0,
+    totalArea: 0,
+  });
+  const [analyticsMonthly, setAnalyticsMonthly] = useState<Array<{ month: string; issued: number }>>([]);
+  const [analyticsProjects, setAnalyticsProjects] = useState<Array<{ name: string; certificates: number; area: number }>>([]);
   
   // Modal states
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -138,7 +171,7 @@ export function CMSPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
-  const [advancedFilters, setAdvancedFilters] = useState({});
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({});
   
   // Form states
   const [newProjectForm, setNewProjectForm] = useState<NewProjectForm>({
@@ -189,7 +222,7 @@ export function CMSPage() {
     activeUsers: 0
   });
 
-  const { projects } = useProjects();
+  const { projects, createProject, updateProject, refreshProjects, deleteProject } = useProjects();
   const { socialProjects } = useSocialProjects();
   const { certificates } = useCertificates();
   const { donations, getDonationStats } = useDonations();
@@ -245,6 +278,151 @@ export function CMSPage() {
 
     calculateStats();
   }, [projects, getDonationStats]);
+
+  const reloadAdminCertificates = async () => {
+    try {
+      setAdminCertsLoading(true);
+      let query = supabase
+        .from('certificates')
+        .select(`id, certificate_number, area_sqm, issued_at, status, pdf_url, project_id, projects(name)`, { count: 'exact' })
+        .order('issued_at', { ascending: false });
+
+      if (certStatusFilter !== 'all') {
+        query = query.eq('status', certStatusFilter);
+      }
+      if (certProjectFilter !== 'all') {
+        query = query.eq('project_id', certProjectFilter);
+      }
+      if (certSearch.trim()) {
+        query = query.ilike('certificate_number', `%${certSearch.trim()}%`);
+      }
+
+      const from = (certPage - 1) * certPageSize;
+      const to = from + certPageSize - 1;
+      const { data, error, count } = await query.range(from, to);
+      if (!error && data) {
+        setAdminCertificates(data);
+        setCertTotal(count || 0);
+      }
+    } finally {
+      setAdminCertsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'certificates') {
+      reloadAdminCertificates();
+    }
+  }, [activeTab, certStatusFilter, certProjectFilter, certSearch, certPage, certPageSize]);
+
+  const reloadAdminTransactions = async () => {
+    try {
+      setAdminTxLoading(true);
+      let query = supabase
+        .from('stripe_payment_intents')
+        .select('stripe_payment_intent_id, amount, status, created_at, purchases(id,email), donations(id,donor_email)', { count: 'exact' })
+        .order('created_at', { ascending: false });
+
+      if (txStatus !== 'all') {
+        query = query.eq('status', txStatus);
+      }
+
+      if (txSearch.trim()) {
+        query = query.or(`stripe_payment_intent_id.ilike.%${txSearch.trim()}%,purchases.email.ilike.%${txSearch.trim()}%,donations.donor_email.ilike.%${txSearch.trim()}%`);
+      }
+
+      const from = (txPage - 1) * txPageSize;
+      const to = from + txPageSize - 1;
+      const { data, error, count } = await query.range(from, to);
+      if (!error && data) {
+        setAdminTx(data);
+        setTxTotal(count || 0);
+      }
+    } finally {
+      setAdminTxLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'transactions') {
+      reloadAdminTransactions();
+    }
+  }, [activeTab, txStatus, txSearch, txPage, txPageSize]);
+
+  const reloadAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      setAnalyticsError(null);
+
+      // KPIs
+      const [{ data: revRows }, { data: certRows }, { data: areaRows }] = await Promise.all([
+        supabase.from('stripe_payment_intents').select('amount, status'),
+        supabase.from('certificates').select('status'),
+        supabase.from('certificates').select('area_sqm, status'),
+      ]);
+
+      const totalRevenue = (revRows || [])
+        .filter(r => r.status === 'succeeded')
+        .reduce((sum: number, r: any) => sum + Number(r.amount || 0), 0);
+      const totalCertificates = (certRows || []).filter(r => r.status === 'issued').length;
+      const totalArea = (areaRows || [])
+        .filter(r => r.status === 'issued')
+        .reduce((sum: number, r: any) => sum + Number(r.area_sqm || 0), 0);
+
+      setAnalyticsKpis({ totalRevenue, totalCertificates, totalArea });
+
+      // Monthly certificates (last 6 months)
+      const since = new Date();
+      since.setMonth(since.getMonth() - 5);
+      const { data: monthlyRows } = await supabase
+        .from('certificates')
+        .select('issued_at, status')
+        .gte('issued_at', since.toISOString());
+
+      const months: Record<string, number> = {};
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        months[key] = 0;
+      }
+      (monthlyRows || []).forEach((r: any) => {
+        if (r.status !== 'issued' || !r.issued_at) return;
+        const d = new Date(r.issued_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (months[key] != null) months[key] += 1;
+      });
+      setAnalyticsMonthly(Object.entries(months).map(([k, v]) => ({ month: k, issued: v })));
+
+      // Projects aggregation by certificates
+      const { data: projRows } = await supabase
+        .from('certificates')
+        .select('status, area_sqm, projects(name)')
+        .eq('status', 'issued');
+      const agg: Record<string, { certificates: number; area: number }> = {};
+      (projRows || []).forEach((r: any) => {
+        const name = (r.projects as any)?.name || 'Projeto';
+        if (!agg[name]) agg[name] = { certificates: 0, area: 0 };
+        agg[name].certificates += 1;
+        agg[name].area += Number(r.area_sqm || 0);
+      });
+      const projData = Object.entries(agg).map(([name, v]) => ({ name, ...v }))
+        .sort((a, b) => b.certificates - a.certificates)
+        .slice(0, 8);
+      setAnalyticsProjects(projData);
+
+    } catch (e) {
+      setAnalyticsError(e instanceof Error ? e.message : 'Erro ao carregar analytics');
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'analytics') {
+      reloadAnalytics();
+    }
+  }, [activeTab]);
 
   // Utility functions
   const handleCreateProject = async () => {
@@ -323,9 +501,17 @@ export function CMSPage() {
     
     setLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      toast.success(`${type} excluído com sucesso!`);
-      // In real app, would remove from state/API
+      if (type === 'Projeto' || type === 'project') {
+        const { success, error } = await deleteProject(id);
+        if (!success) {
+          toast.error(error || 'Erro ao excluir projeto');
+          return;
+        }
+        toast.success('Projeto excluído com sucesso!');
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        toast.success(`${type} excluído com sucesso!`);
+      }
     } catch (error) {
       toast.error('Erro ao excluir item');
     } finally {
@@ -804,7 +990,7 @@ export function CMSPage() {
                   <Switch
                     id="status"
                     checked={newProjectForm.status === 'active'}
-                    onCheckedChange={(checked) => setNewProjectForm({...newProjectForm, status: checked ? 'active' : 'inactive'})}
+                    onCheckedChange={(checked: boolean) => setNewProjectForm({...newProjectForm, status: checked ? 'active' : 'inactive'})}
                   />
                   <Label htmlFor="status">Projeto Ativo</Label>
                 </div>
@@ -1037,7 +1223,7 @@ export function CMSPage() {
                   <Switch
                     id="edit-status"
                     checked={newProjectForm.status === 'active'}
-                    onCheckedChange={(checked) => setNewProjectForm({...newProjectForm, status: checked ? 'active' : 'inactive'})}
+                    onCheckedChange={(checked: boolean) => setNewProjectForm({...newProjectForm, status: checked ? 'active' : 'inactive'})}
                   />
                   <Label htmlFor="edit-status">Projeto Ativo</Label>
                 </div>
@@ -1149,7 +1335,7 @@ export function CMSPage() {
                 <div className="flex items-start gap-3 flex-1">
                   <Checkbox
                     checked={selectedItems.includes(project.id)}
-                    onCheckedChange={(checked) => {
+                    onCheckedChange={(checked: boolean) => {
                       if (checked) {
                         setSelectedItems([...selectedItems, project.id]);
                       } else {
@@ -1582,7 +1768,7 @@ export function CMSPage() {
                           <Switch
                             id="social-status"
                             checked={newSocialProjectForm.status === 'active'}
-                            onCheckedChange={(checked) => setNewSocialProjectForm({...newSocialProjectForm, status: checked ? 'active' : 'paused'})}
+                            onCheckedChange={(checked: boolean) => setNewSocialProjectForm({...newSocialProjectForm, status: checked ? 'active' : 'paused'})}
                           />
                           <Label htmlFor="social-status">Projeto Ativo</Label>
                         </div>
@@ -2004,32 +2190,34 @@ export function CMSPage() {
                     <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                       <Input 
-                        placeholder="Buscar por número, comprador ou projeto..."
+                        placeholder="Buscar por número..."
                         className="pl-10 bg-white/10 backdrop-blur-md border-white/20"
+                        value={certSearch}
+                        onChange={(e) => { setCertPage(1); setCertSearch(e.target.value); }}
                       />
                     </div>
-                    <Select defaultValue="all">
+                    <Select value={certStatusFilter} onValueChange={(v: 'all' | 'issued' | 'revoked') => { setCertPage(1); setCertStatusFilter(v); }}>
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todos Status</SelectItem>
-                        <SelectItem value="emitido">Emitidos</SelectItem>
-                        <SelectItem value="pendente">Pendentes</SelectItem>
-                        <SelectItem value="cancelado">Cancelados</SelectItem>
+                        <SelectItem value="issued">Emitidos</SelectItem>
+                        <SelectItem value="revoked">Revogados</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Select defaultValue="all">
-                      <SelectTrigger className="w-40">
-                        <SelectValue placeholder="Tipo" />
+                    <Select value={certProjectFilter} onValueChange={(v: string) => { setCertPage(1); setCertProjectFilter(v); }}>
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Projeto" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todos Tipos</SelectItem>
-                        <SelectItem value="digital">Digital</SelectItem>
-                        <SelectItem value="physical">Físico</SelectItem>
+                        <SelectItem value="all">Todos Projetos</SelectItem>
+                        {projects.map((p) => (
+                          <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={() => { setCertPage(1); reloadAdminCertificates(); }}>
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Atualizar
                     </Button>
@@ -2059,54 +2247,102 @@ export function CMSPage() {
                 ))}
               </div>
 
-              {/* Recent Certificates */}
               <Card className="bg-white/10 backdrop-blur-md border-white/20">
                 <CardHeader>
                   <CardTitle className="text-gray-800">Certificados Recentes</CardTitle>
                   <CardDescription className="text-gray-600">Últimos certificados emitidos</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    {[
-                      { id: 'MFC-2024-001', buyer: 'João Silva', project: 'Amazônia Verde', area: '100m²', date: '2024-03-01', status: 'Emitido' },
-                      { id: 'MFC-2024-002', buyer: 'Maria Santos', project: 'Mata Atlântica', area: '50m²', date: '2024-03-02', status: 'Emitido' },
-                      { id: 'MFC-2024-003', buyer: 'Carlos Oliveira', project: 'Cerrado Verde', area: '75m²', date: '2024-03-03', status: 'Pendente' },
-                      { id: 'MFC-2024-004', buyer: 'Ana Costa', project: 'Mangue Azul', area: '200m²', date: '2024-03-04', status: 'Emitido' },
-                    ].map((cert, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
-                          <div>
-                            <p className="font-medium text-gray-800">{cert.id}</p>
-                            <p className="text-sm text-gray-500">Número</p>
+                  {adminCertsLoading ? (
+                    <div className="text-gray-600">Carregando...</div>
+                  ) : adminCertificates.length === 0 ? (
+                    <div className="text-gray-600">Nenhum certificado encontrado</div>
+                  ) : (
+                    <div className="space-y-4">
+                      {adminCertificates.map((cert) => (
+                        <div key={cert.id} className="flex items-center justify-between p-4 bg-white/5 rounded-lg">
+                          <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div>
+                              <p className="font-medium text-gray-800">{cert.certificate_number}</p>
+                              <p className="text-sm text-gray-500">Número</p>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800">{(cert.projects as any)?.name || 'Projeto'}</p>
+                              <p className="text-sm text-gray-500">Projeto</p>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800">{Number(cert.area_sqm || 0)}m²</p>
+                              <p className="text-sm text-gray-500">Área</p>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-800">{new Date(cert.issued_at).toLocaleDateString('pt-BR')}</p>
+                              <p className="text-sm text-gray-500">Data</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant={cert.status === 'issued' ? 'default' : cert.status === 'revoked' ? 'destructive' : 'secondary'}>
+                                {cert.status === 'issued' ? 'Emitido' : cert.status === 'revoked' ? 'Revogado' : cert.status}
+                              </Badge>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-gray-800">{cert.buyer}</p>
-                            <p className="text-sm text-gray-500">Comprador</p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-800">{cert.project}</p>
-                            <p className="text-sm text-gray-500">Projeto</p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-800">{cert.area}</p>
-                            <p className="text-sm text-gray-500">Área</p>
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-800">{cert.date}</p>
-                            <p className="text-sm text-gray-500">Data</p>
+                          <div className="flex items-center gap-2">
+                            <Button size="sm" variant="outline" onClick={() => {
+                              window.location.hash = `verificar-certificado?numero=${cert.certificate_number}`;
+                            }}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant={cert.status === 'issued' ? 'destructive' : 'default'} onClick={async () => {
+                              try {
+                                const next = cert.status === 'issued' ? 'revoked' : 'issued';
+                                const { error } = await supabase
+                                  .from('certificates')
+                                  .update({ status: next })
+                                  .eq('id', cert.id);
+                                if (error) {
+                                  toast.error('Falha ao atualizar status');
+                                  return;
+                                }
+                                toast.success(next === 'revoked' ? 'Certificado invalidado' : 'Certificado revalidado');
+                                await reloadAdminCertificates();
+                              } catch {
+                                toast.error('Erro ao atualizar status');
+                              }
+                            }}>
+                              {cert.status === 'issued' ? 'Invalidar' : 'Revalidar'}
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={async () => {
+                              try {
+                                const { data, error } = await supabase.functions.invoke('certificates-pdf', {
+                                  body: { certificate_id: cert.id }
+                                });
+                                if (error) {
+                                  toast.error('Falha ao regerar PDF');
+                                  return;
+                                }
+                                toast.success('PDF regenerado com sucesso');
+                                await reloadAdminCertificates();
+                              } catch {
+                                toast.error('Erro ao chamar função de PDF');
+                              }
+                            }}>
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => {
+                              if (cert.pdf_url) {
+                                const link = document.createElement('a');
+                                link.href = cert.pdf_url as string;
+                                link.download = `certificado-${cert.certificate_number}.pdf`;
+                                link.click();
+                              } else {
+                                window.location.hash = `verificar-certificado?numero=${cert.certificate_number}`;
+                              }
+                            }}>
+                              <Download className="h-4 w-4" />
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant={cert.status === 'Emitido' ? 'default' : 'secondary'}>
-                            {cert.status}
-                          </Badge>
-                          <Button size="sm" variant="outline">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -2240,123 +2476,74 @@ export function CMSPage() {
                     <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                       <Input 
-                        placeholder="Buscar por ID, cliente ou projeto..."
+                        placeholder="Buscar por ID ou email..."
                         className="pl-10 bg-white/10 backdrop-blur-md border-white/20"
+                        value={txSearch}
+                        onChange={(e) => { setTxPage(1); setTxSearch(e.target.value); }}
                       />
                     </div>
-                    <Select defaultValue="all">
+                    <Select value={txStatus} onValueChange={(v: 'all' | 'succeeded' | 'processing' | 'canceled') => { setTxPage(1); setTxStatus(v); }}>
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todos</SelectItem>
-                        <SelectItem value="completed">Concluídas</SelectItem>
-                        <SelectItem value="pending">Pendentes</SelectItem>
-                        <SelectItem value="failed">Falharam</SelectItem>
+                        <SelectItem value="succeeded">Concluídas</SelectItem>
+                        <SelectItem value="processing">Processando</SelectItem>
+                        <SelectItem value="canceled">Canceladas</SelectItem>
                       </SelectContent>
                     </Select>
+                    <Button variant="outline" onClick={() => { setTxPage(1); reloadAdminTransactions(); }}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Atualizar
+                    </Button>
                   </div>
 
                   <div className="space-y-4">
-                    {[
-                      { 
-                        id: 'TXN-001', 
-                        customer: 'João Silva', 
-                        email: 'joao@email.com',
-                        project: 'Amazônia Verde', 
-                        amount: 2500, 
-                        area: '100m²',
-                        method: 'PIX', 
-                        date: '2024-03-01', 
-                        status: 'Concluída',
-                        certificate: 'MFC-2024-001'
-                      },
-                      { 
-                        id: 'TXN-002', 
-                        customer: 'Maria Santos', 
-                        email: 'maria@email.com',
-                        project: 'Mata Atlântica', 
-                        amount: 1500, 
-                        area: '60m²',
-                        method: 'Cartão', 
-                        date: '2024-03-02', 
-                        status: 'Concluída',
-                        certificate: 'MFC-2024-002'
-                      },
-                      { 
-                        id: 'TXN-003', 
-                        customer: 'Carlos Oliveira', 
-                        email: 'carlos@email.com',
-                        project: 'Cerrado Verde', 
-                        amount: 1875, 
-                        area: '75m²',
-                        method: 'Boleto', 
-                        date: '2024-03-03', 
-                        status: 'Pendente',
-                        certificate: null
-                      },
-                      { 
-                        id: 'TXN-004', 
-                        customer: 'Ana Costa', 
-                        email: 'ana@email.com',
-                        project: 'Mangue Azul', 
-                        amount: 7000, 
-                        area: '200m²',
-                        method: 'PIX', 
-                        date: '2024-03-04', 
-                        status: 'Concluída',
-                        certificate: 'MFC-2024-003'
-                      },
-                    ].map((transaction, index) => (
-                      <Card key={index} className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors">
+                    {adminTxLoading ? (
+                      <div className="text-gray-600">Carregando...</div>
+                    ) : adminTx.length === 0 ? (
+                      <div className="text-gray-600">Nenhuma transação encontrada</div>
+                    ) : (
+                      adminTx.map((tx) => (
+                      <Card key={tx.stripe_payment_intent_id} className="bg-white/5 border-white/10 hover:bg-white/10 transition-colors">
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between">
                             <div className="flex-1 grid grid-cols-1 md:grid-cols-7 gap-4">
                               <div>
-                                <p className="font-medium text-gray-800">{transaction.id}</p>
+                                <p className="font-medium text-gray-800">{tx.stripe_payment_intent_id}</p>
                                 <p className="text-xs text-gray-500">ID Transação</p>
                               </div>
                               <div>
-                                <p className="font-medium text-gray-800">{transaction.customer}</p>
+                                <p className="font-medium text-gray-800">{tx.purchases ? 'Compra' : 'Doação'}</p>
                                 <p className="text-xs text-gray-500 flex items-center gap-1">
                                   <Mail className="h-3 w-3" />
-                                  {transaction.email}
+                                  {tx.purchases?.email || tx.donations?.donor_email || '-'}
                                 </p>
                               </div>
                               <div>
-                                <p className="font-medium text-gray-800">{transaction.project}</p>
-                                <p className="text-xs text-gray-500">{transaction.area}</p>
+                                <p className="font-medium text-gray-800">-</p>
+                                <p className="text-xs text-gray-500">Projeto</p>
                               </div>
                               <div>
-                                <p className="font-medium text-green-600">R$ {transaction.amount.toLocaleString('pt-BR')}</p>
-                                <p className="text-xs text-gray-500">{transaction.method}</p>
+                                <p className="font-medium text-green-600">R$ {Number(tx.amount || 0).toLocaleString('pt-BR')}</p>
+                                <p className="text-xs text-gray-500">Stripe</p>
                               </div>
                               <div>
-                                <p className="font-medium text-gray-800">{transaction.date}</p>
+                                <p className="font-medium text-gray-800">{new Date(tx.created_at).toLocaleDateString('pt-BR')}</p>
                                 <p className="text-xs text-gray-500">Data compra</p>
                               </div>
                               <div>
-                                {transaction.certificate ? (
-                                  <div>
-                                    <p className="font-medium text-blue-600">{transaction.certificate}</p>
-                                    <p className="text-xs text-gray-500">Certificado</p>
-                                  </div>
-                                ) : (
-                                  <div>
-                                    <p className="font-medium text-gray-400">-</p>
-                                    <p className="text-xs text-gray-500">Sem certificado</p>
-                                  </div>
-                                )}
+                                <div>
+                                  <p className="font-medium text-gray-400">-</p>
+                                  <p className="text-xs text-gray-500">Certificado</p>
+                                </div>
                               </div>
                               <div className="flex items-center justify-end gap-2">
                                 <Badge 
-                                  variant={
-                                    transaction.status === 'Concluída' ? 'default' : 
-                                    transaction.status === 'Pendente' ? 'secondary' : 
-                                    'destructive'
-                                  }
+                                  variant={tx.status === 'succeeded' ? 'default' : tx.status === 'processing' ? 'secondary' : 'destructive'}
                                 >
-                                  {transaction.status}
+                                  {tx.status === 'succeeded' ? 'Concluída' : tx.status === 'processing' ? 'Processando' : 'Cancelada'}
                                 </Badge>
                               </div>
                             </div>
@@ -2369,33 +2556,14 @@ export function CMSPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent>
-                                  <DropdownMenuItem onClick={() => toast.info(`Visualizando detalhes da transação ${transaction.id}`)}>
+                                  <DropdownMenuItem onClick={() => toast.info(`Visualizando detalhes da transação ${tx.stripe_payment_intent_id}`)}>
                                     <Eye className="h-4 w-4 mr-2" />
                                     Ver Detalhes
                                   </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => toast.success(`Recibo da transação ${transaction.id} baixado`)}>
+                                  <DropdownMenuItem onClick={() => toast.success(`Recibo da transação ${tx.stripe_payment_intent_id} baixado`)}>
                                     <Download className="h-4 w-4 mr-2" />
                                     Baixar Recibo
                                   </DropdownMenuItem>
-                                  {transaction.certificate && (
-                                    <DropdownMenuItem onClick={() => handleGenerateCertificate(transaction.certificate)}>
-                                      <Award className="h-4 w-4 mr-2" />
-                                      Ver Certificado
-                                    </DropdownMenuItem>
-                                  )}
-                                  <DropdownMenuItem onClick={() => handleSendEmail(transaction.email)}>
-                                    <Mail className="h-4 w-4 mr-2" />
-                                    Enviar Email
-                                  </DropdownMenuItem>
-                                  {transaction.status === 'Pendente' && (
-                                    <>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem onClick={() => handleMarkAsPaid(transaction.id)}>
-                                        <Check className="h-4 w-4 mr-2" />
-                                        Marcar como Paga
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
                                 </DropdownMenuContent>
                               </DropdownMenu>
                             </div>
@@ -2407,12 +2575,28 @@ export function CMSPage() {
                   
                   {/* Pagination */}
                   <div className="flex items-center justify-between mt-6">
-                    <p className="text-sm text-gray-600">Mostrando 4 de 247 transações</p>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" disabled>
+                    <p className="text-sm text-gray-600">
+                      {adminTx.length > 0 ? (
+                        <>Mostrando {((txPage - 1) * txPageSize) + 1}–{Math.min(txPage * txPageSize, txTotal)} de {txTotal} transações</>
+                      ) : (
+                        <>Nenhuma transação</>
+                      )}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Select value={String(txPageSize)} onValueChange={(v: string) => { setTxPage(1); setTxPageSize(Number(v)); }}>
+                        <SelectTrigger className="w-28">
+                          <SelectValue placeholder="Itens/página" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value="25">25</SelectItem>
+                          <SelectItem value="50">50</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button size="sm" variant="outline" disabled={txPage <= 1} onClick={() => setTxPage((p) => Math.max(1, p - 1))}>
                         Anterior
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" disabled={txPage * txPageSize >= txTotal} onClick={() => setTxPage((p) => p + 1)}>
                         Próxima
                       </Button>
                     </div>
@@ -2423,7 +2607,99 @@ export function CMSPage() {
           </TabsContent>
 
           <TabsContent value="analytics">
-            {renderAnalytics()}
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">Analytics</h2>
+                  <p className="text-gray-600">Métricas consolidadas de certificados e receita</p>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" onClick={reloadAnalytics}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Atualizar
+                  </Button>
+                </div>
+              </div>
+
+              {analyticsError && (
+                <Alert>
+                  <AlertDescription>{analyticsError}</AlertDescription>
+                </Alert>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-white/10 backdrop-blur-md border-white/20">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-600">Receita Total</p>
+                    <p className="text-2xl font-bold text-green-600">R$ {analyticsKpis.totalRevenue.toLocaleString('pt-BR')}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white/10 backdrop-blur-md border-white/20">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-600">Certificados Emitidos</p>
+                    <p className="text-2xl font-bold text-blue-600">{analyticsKpis.totalCertificates}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-white/10 backdrop-blur-md border-white/20">
+                  <CardContent className="p-4">
+                    <p className="text-sm text-gray-600">Área Total (m²)</p>
+                    <p className="text-2xl font-bold text-emerald-600">{analyticsKpis.totalArea.toLocaleString('pt-BR')}</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="bg-white/10 backdrop-blur-md border-white/20">
+                  <CardHeader>
+                    <CardTitle className="text-gray-800">Certificados por Mês (6 meses)</CardTitle>
+                    <CardDescription className="text-gray-600">Total de certificados emitidos mensalmente</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-72">
+                    {analyticsLoading ? (
+                      <div className="text-gray-600">Carregando...</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={analyticsMonthly} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="colorIssued" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                              <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="month" />
+                          <YAxis />
+                          <Tooltip />
+                          <Area type="monotone" dataKey="issued" stroke="#3b82f6" fillOpacity={1} fill="url(#colorIssued)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-white/10 backdrop-blur-md border-white/20">
+                  <CardHeader>
+                    <CardTitle className="text-gray-800">Top Projetos por Certificados</CardTitle>
+                    <CardDescription className="text-gray-600">Projetos com mais certificados emitidos</CardDescription>
+                  </CardHeader>
+                  <CardContent className="h-72">
+                    {analyticsLoading ? (
+                      <div className="text-gray-600">Carregando...</div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={analyticsProjects}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" hide={false} />
+                          <YAxis />
+                          <Tooltip />
+                          <Bar dataKey="certificates" fill="#10b981" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="stripe">
@@ -2532,7 +2808,7 @@ export function CMSPage() {
                           <div className="flex items-center space-x-2">
                             <Switch
                               checked={systemSettings.paymentMethods[payment.key as keyof typeof systemSettings.paymentMethods]}
-                              onCheckedChange={(checked) => setSystemSettings({
+                              onCheckedChange={(checked: boolean) => setSystemSettings({
                                 ...systemSettings, 
                                 paymentMethods: {
                                   ...systemSettings.paymentMethods,

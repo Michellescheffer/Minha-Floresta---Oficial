@@ -64,7 +64,7 @@ export function DoacoesPage() {
           is_anonymous: isAnonymous,
           use_hosted: true,
           project_title: !isGeneralDonation ? (targetProject?.title || undefined) : undefined,
-          success_url: `${window.location.origin}/#checkout-success`,
+          success_url: `${window.location.origin}/#checkout-success?session_id={CHECKOUT_SESSION_ID}`,
           cancel_url: `${window.location.origin}/#doacoes`,
         },
       } as any);
