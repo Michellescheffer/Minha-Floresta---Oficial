@@ -3,7 +3,7 @@
  * Gerencia checkout com Stripe para compras e doações
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { loadStripe, Stripe, StripeElements } from '@stripe/stripe-js';
 import { 
   STRIPE_PUBLIC_KEY,
@@ -177,12 +177,21 @@ export function useStripe() {
   const [stripe, setStripe] = useState<Stripe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useState(() => {
-    getStripe().then(stripeInstance => {
+  useEffect(() => {
+    let mounted = true;
+    const promise = getStripe();
+    if (!promise) {
+      // Stripe não configurado ou fluxo hospedado sem necessidade de Stripe no client
+      setIsLoading(false);
+      return () => { mounted = false; };
+    }
+    promise.then(stripeInstance => {
+      if (!mounted) return;
       setStripe(stripeInstance);
       setIsLoading(false);
     });
-  });
+    return () => { mounted = false; };
+  }, []);
 
   return { stripe, isLoading };
 }
