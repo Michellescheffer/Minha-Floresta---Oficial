@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CertificatesAPI } from '../services/api';
 import { UserAPI } from '../services/api';
+import { supabase } from '../services/supabaseClient';
 
 export interface Certificate {
   id: string;
@@ -15,6 +16,7 @@ export interface Certificate {
   certificateNumber: string;
   qrCode: string;
   digitalUrl?: string;
+  pdfUrl?: string;
   physicalAddress?: {
     street: string;
     city: string;
@@ -65,22 +67,23 @@ export function useCertificates() {
         const { data, error: apiError } = await CertificatesAPI.getByUser(currentUser.id);
         
         if (data) {
-          // Transform API data to frontend format
-          const transformedCertificates = data.map(cert => ({
+          // Transform API data to frontend format (defensive mapping)
+          const transformedCertificates = (data as any[]).map((cert: any) => ({
             id: cert.id,
             projectId: cert.project_id,
             projectName: cert.project_name || 'Projeto',
             buyerName: cert.user_name || currentUser.name,
             buyerEmail: currentUser.email,
             area: cert.area_m2,
-            price: 0, // Price would need to be calculated or stored
+            price: 0,
             issueDate: cert.issue_date,
-            status: cert.status as 'active' | 'expired' | 'transferred',
+            status: (cert.status as 'active' | 'expired' | 'transferred') || 'active',
             certificateNumber: cert.certificate_number,
             qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${cert.certificate_number}`,
             digitalUrl: `${window.location.origin}/verificar-certificado?numero=${cert.certificate_number}`,
-            co2Offset: cert.co2_offset_kg,
-            validUntil: cert.valid_until,
+            pdfUrl: cert.pdf_url || undefined,
+            co2Offset: cert.co2_offset_kg ?? Math.round((cert.area_m2 || 0) * 22),
+            validUntil: cert.valid_until || new Date(new Date(cert.issue_date || Date.now()).getTime() + 30*365*24*60*60*1000).toISOString().split('T')[0],
             userId: cert.user_id
           }));
           
@@ -206,44 +209,59 @@ export function useCertificates() {
       setIsLoading(true);
       setError(null);
 
-      // Try API first
-      const { data, error: apiError } = await CertificatesAPI.getByNumber(certificateNumber);
-      
-      if (data) {
-        return {
-          id: data.id,
-          projectId: data.project_id,
-          projectName: data.project_name || 'Projeto',
-          buyerName: data.user_name || 'Usuário',
-          buyerEmail: 'email@exemplo.com',
-          area: data.area_m2,
-          price: 0,
-          issueDate: data.issue_date,
-          status: data.status as 'active' | 'expired' | 'transferred',
-          certificateNumber: data.certificate_number,
-          qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${data.certificate_number}`,
-          digitalUrl: `${window.location.origin}/verificar-certificado?numero=${data.certificate_number}`,
-          co2Offset: data.co2_offset_kg,
-          validUntil: data.valid_until,
-          userId: data.user_id
-        };
-      } else if (apiError) {
-        // Fallback to localStorage search
+      // Consultar diretamente o Supabase: certificates por certificate_number
+      const { data, error } = await supabase
+        .from('certificates')
+        .select(`
+          id,
+          purchase_id,
+          project_id,
+          area_sqm,
+          certificate_number,
+          certificate_type,
+          issued_at,
+          status,
+          pdf_url,
+          projects(name)
+        `)
+        .eq('certificate_number', certificateNumber)
+        .maybeSingle();
+
+      if (error || !data) {
+        // Fallback: localStorage
         const localCertificates = JSON.parse(localStorage.getItem('minha_floresta_certificates') || '[]');
-        const certificate = localCertificates.find((cert: Certificate) => 
-          cert.certificateNumber === certificateNumber
-        );
-        
-        if (certificate) {
-          return certificate;
-        } else {
-          setError('Certificado não encontrado');
-          return null;
-        }
+        const certificate = localCertificates.find((cert: Certificate) => cert.certificateNumber === certificateNumber);
+        if (certificate) return certificate;
+        setError('Certificado não encontrado');
+        return null;
       }
 
-      setError('Certificado não encontrado');
-      return null;
+      const issueDate = data.issued_at || new Date().toISOString();
+      const validityYears = 30; // padrão
+      const validUntil = new Date(new Date(issueDate).getTime() + validityYears * 365 * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split('T')[0];
+
+      const certificate: Certificate = {
+        id: data.id,
+        projectId: data.project_id,
+        projectName: (data.projects as any)?.name || 'Projeto',
+        buyerName: '',
+        buyerEmail: '',
+        area: data.area_sqm,
+        price: 0,
+        issueDate,
+        status: (data.status as any) || 'active',
+        certificateNumber: data.certificate_number,
+        qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${data.certificate_number}`,
+        digitalUrl: `${window.location.origin}/verificar-certificado?numero=${data.certificate_number}`,
+        pdfUrl: (data as any).pdf_url || undefined,
+        co2Offset: Math.round((data.area_sqm || 0) * 22),
+        validUntil,
+        userId: undefined,
+      };
+
+      return certificate;
     } catch (err) {
       console.error('Error verifying certificate:', err);
       setError('Erro ao verificar certificado');

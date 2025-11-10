@@ -47,16 +47,18 @@ export function VerificarCertificadoPage() {
   };
 
   const handleDownload = () => {
-    if (certificate) {
-      // Simulate certificate download
+    if (!certificate) return;
+    const code = certificate.certificateNumber || certificateCode;
+    // Se existir URL do PDF no backend, baixar diretamente
+    if (certificate.pdfUrl) {
       const link = document.createElement('a');
-      const downloadUrl = certificate.certificate_url || '#';
-      const code = certificate.code || certificateCode;
-      link.href = downloadUrl;
+      link.href = certificate.pdfUrl;
       link.download = `certificado-${code}.pdf`;
       link.click();
-      alert('Download do certificado iniciado!');
+      return;
     }
+    // Fallback: abrir diálogo de impressão para salvar em PDF
+    window.print();
   };
 
   const formatDate = (dateString: string) => {
@@ -206,28 +208,28 @@ export function VerificarCertificadoPage() {
                       <div>
                         <label className="text-gray-600 text-sm">Código do Certificado</label>
                         <div className="text-gray-800 font-mono bg-gray-50/50 p-3 rounded-lg">
-                          {certificate.code}
+                          {certificate.certificateNumber}
                         </div>
                       </div>
                       
                       <div>
                         <label className="text-gray-600 text-sm">ID da Transação</label>
                         <div className="text-gray-800 font-mono bg-gray-50/50 p-3 rounded-lg">
-                          {certificate.transactionId || 'N/A'}
+                          {'N/A'}
                         </div>
                       </div>
                       
                       <div>
                         <label className="text-gray-600 text-sm">Beneficiário</label>
                         <div className="text-gray-800 bg-gray-50/50 p-3 rounded-lg">
-                          {certificate.holderName || 'N/A'}
+                          {certificate.buyerName || 'N/A'}
                         </div>
                       </div>
                       
                       <div>
                         <label className="text-gray-600 text-sm">E-mail</label>
                         <div className="text-gray-800 bg-gray-50/50 p-3 rounded-lg">
-                          {certificate.holderEmail || 'N/A'}
+                          {certificate.buyerEmail || 'N/A'}
                         </div>
                       </div>
                     </div>
@@ -248,21 +250,21 @@ export function VerificarCertificadoPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="text-center p-6 bg-green-50/50 rounded-lg">
                       <div className="text-3xl font-medium text-green-600 mb-2">
-                        {(certificate.m2_quantity || 0).toLocaleString()}
+                        {(certificate.area || 0).toLocaleString()}
                       </div>
                       <div className="text-gray-600">metros quadrados</div>
                     </div>
                     
                     <div className="text-center p-6 bg-blue-50/50 rounded-lg">
                       <div className="text-3xl font-medium text-blue-600 mb-2">
-                        {(certificate.co2_compensated || 0).toLocaleString()}
+                        {(certificate.co2Offset || 0).toLocaleString()}
                       </div>
                       <div className="text-gray-600">kg CO₂ compensados</div>
                     </div>
                     
                     <div className="text-center p-6 bg-emerald-50/50 rounded-lg">
                       <div className="text-3xl font-medium text-emerald-600 mb-2">
-                        R$ {(certificate.total_value || 0).toLocaleString()}
+                        R$ {(certificate.price || 0).toLocaleString()}
                       </div>
                       <div className="text-gray-600">valor investido</div>
                     </div>

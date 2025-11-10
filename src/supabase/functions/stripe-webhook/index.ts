@@ -6,6 +6,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import Stripe from 'https://esm.sh/stripe@14.5.0';
+import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -235,17 +236,73 @@ async function handlePaymentIntentSucceeded(
       const certificateType = metadata.certificate_type || 'digital';
       
       for (const item of purchaseItems) {
+        const certificate_number = generateCertificateNumber();
         const certificateData = {
           purchase_id: purchaseId,
           project_id: item.project_id,
           area_sqm: item.quantity,
-          certificate_number: generateCertificateNumber(),
+          certificate_number,
           certificate_type: certificateType,
           issued_at: new Date().toISOString(),
           status: 'issued',
-        };
+        } as const;
 
-        await supabase.from('certificates').insert(certificateData);
+        const { data: inserted, error: certErr } = await supabase
+          .from('certificates')
+          .insert(certificateData)
+          .select('id, project_id, area_sqm, certificate_number')
+          .single();
+
+        if (certErr) {
+          console.error('Failed to insert certificate:', certErr);
+          continue;
+        }
+
+        try {
+          // Generate a simple PDF certificate
+          const pdfBytes = await generateCertificatePDF({
+            certificateNumber: inserted.certificate_number,
+            projectName: await getProjectName(supabase, inserted.project_id),
+            area: inserted.area_sqm,
+          });
+
+          // Upload to Supabase Storage
+          const bucket = Deno.env.get('CERTIFICATES_BUCKET') || 'certificates';
+          const path = `${inserted.certificate_number}.pdf`;
+          const uploadRes = await supabase
+            .storage
+            .from(bucket)
+            .upload(path, new Blob([pdfBytes.buffer], { type: 'application/pdf' }), { upsert: true, contentType: 'application/pdf' });
+
+          if ((uploadRes as any).error) {
+            console.error('Failed to upload certificate PDF:', (uploadRes as any).error);
+          } else {
+            const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
+            const pdfUrl = pub.publicUrl;
+            await supabase
+              .from('certificates')
+              .update({ pdf_url: pdfUrl })
+              .eq('id', inserted.id);
+          }
+        } catch (e) {
+          console.error('Error generating/uploading PDF:', e);
+        }
+      }
+
+      // Send email with certificate codes and verification links (optional)
+      const email = paymentIntent.receipt_email || metadata.email;
+      if (email && Deno.env.get('RESEND_API_KEY')) {
+        try {
+          const { data: certs } = await supabase
+            .from('certificates')
+            .select('certificate_number, pdf_url')
+            .eq('purchase_id', purchaseId);
+          const items = (certs || []).map((c: any) => `• Código: ${c.certificate_number}\n  Verificar: ${originUrl()}/verificar-certificado?numero=${c.certificate_number}\n  PDF: ${c.pdf_url || 'gerando...'}`).join('\n\n');
+          await sendEmail(email, 'Seus Certificados - Minha Floresta',
+            `Obrigado pela sua compra!\n\nAqui estão os detalhes dos seus certificados:\n\n${items}\n\n`);
+        } catch (e) {
+          console.error('Failed to send certificate email:', e);
+        }
       }
     }
 
@@ -553,4 +610,51 @@ function generateCertificateNumber(): string {
   const timestamp = Date.now().toString(36);
   const random = Math.random().toString(36).substring(2, 8);
   return `MFC-${timestamp}-${random}`.toUpperCase();
+}
+
+async function getProjectName(supabase: any, projectId: string): Promise<string> {
+  const { data } = await supabase
+    .from('projects')
+    .select('name')
+    .eq('id', projectId)
+    .maybeSingle();
+  return data?.name || 'Projeto';
+}
+
+async function generateCertificatePDF({ certificateNumber, projectName, area }: { certificateNumber: string; projectName: string; area: number; }): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595.28, 841.89]); // A4
+  const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const titleSize = 24;
+  const textSize = 12;
+  page.drawText('Certificado de Preservação', { x: 50, y: 780, size: titleSize, font, color: rgb(0.1, 0.5, 0.2) });
+  page.drawText(`Código: ${certificateNumber}`, { x: 50, y: 740, size: textSize, font });
+  page.drawText(`Projeto: ${projectName}`, { x: 50, y: 720, size: textSize, font });
+  page.drawText(`Área preservada: ${area} m²`, { x: 50, y: 700, size: textSize, font });
+  page.drawText('Obrigado por contribuir para a preservação da nossa floresta!', { x: 50, y: 660, size: textSize, font });
+  const pdfBytes = await pdfDoc.save();
+  return pdfBytes;
+}
+
+function originUrl(): string {
+  const fallback = 'https://minhaflorestaconservacoes.com';
+  return Deno.env.get('PUBLIC_SITE_URL') || fallback;
+}
+
+async function sendEmail(to: string, subject: string, text: string) {
+  const apiKey = Deno.env.get('RESEND_API_KEY');
+  if (!apiKey) return;
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'Minha Floresta <no-reply@minhafloresta.com>',
+      to: [to],
+      subject,
+      text,
+    }),
+  });
 }

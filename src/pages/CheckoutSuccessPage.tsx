@@ -87,6 +87,7 @@ export default function CheckoutSuccessPage() {
             id,
             certificate_number,
             area_sqm,
+            pdf_url,
             projects(name)
           `)
           .eq('purchase_id', paymentIntent.purchase_id)
@@ -101,6 +102,7 @@ export default function CheckoutSuccessPage() {
             certificate_number: cert.certificate_number,
             area_sqm: cert.area_sqm,
             project_name: (cert.projects as any)?.name || 'Projeto',
+            pdf_url: (cert as any).pdf_url || null,
           })) || [],
           email: paymentIntent.purchases?.email || '',
         });
