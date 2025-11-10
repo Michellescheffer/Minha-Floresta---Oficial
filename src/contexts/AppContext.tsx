@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../services/supabaseClient';
 
 export interface SocialProject {
@@ -121,11 +121,73 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [currentPage, setCurrentPage] = useState<PageType>('home');
+  const hashToPage = useCallback((hash: string): PageType => {
+    const h = (hash || '').replace(/^#/, '').trim();
+    const map: Record<string, PageType> = {
+      'home': 'home',
+      'como-funciona': 'como-funciona',
+      'sobre-projeto': 'sobre-projeto',
+      'certificado': 'certificado',
+      'verificar-certificado': 'verificar-certificado',
+      'informacoes-institucionais': 'informacoes-institucionais',
+      'loja': 'loja',
+      'doacoes': 'doacoes',
+      'projetos-sociais': 'projetos-sociais',
+      'incentivo-fiscal': 'incentivo-fiscal',
+      // manter compat com links antigos '#calculadora'
+      'calculadora': 'calculadora-pegada',
+      'calculadora-pegada': 'calculadora-pegada',
+      'carrinho': 'carrinho',
+      'contato': 'contato',
+      'blue-carbon': 'blue-carbon',
+      'dashboard': 'dashboard',
+      'cms': 'cms',
+      'cleanup-test': 'cleanup-test',
+      'checkout-success': 'checkout-success',
+      'checkout-cancel': 'checkout-cancel',
+    };
+    return map[h] || 'home';
+  }, []);
+
+  const pageToHash = useCallback((page: PageType): string => {
+    const map: Partial<Record<PageType, string>> = {
+      'calculadora-pegada': 'calculadora', // preferir hash curto
+    };
+    return `#${map[page] || page}`;
+  }, []);
+
+  const [currentPage, _setCurrentPage] = useState<PageType>(() => {
+    if (typeof window !== 'undefined') {
+      return hashToPage(window.location.hash);
+    }
+    return 'home';
+  });
+
+  const setCurrentPage = useCallback((page: PageType) => {
+    _setCurrentPage(page);
+    if (typeof window !== 'undefined') {
+      const newHash = pageToHash(page);
+      if (window.location.hash !== newHash) {
+        window.location.hash = newHash;
+      }
+      // garantir scroll top para páginas de seção longa
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [pageToHash]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [recommendedM2, setRecommendedM2] = useState<number>(0);
   const [socialProjects, setSocialProjects] = useState<SocialProject[]>([]);
   const [selectedDonationProject, setSelectedDonationProject] = useState<SocialProject | null>(null);
+
+  useEffect(() => {
+    // sincronizar ao mudar o hash manualmente ou via histórico
+    const onHashChange = () => {
+      const next = hashToPage(window.location.hash);
+      _setCurrentPage(prev => (prev === next ? prev : next));
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, [hashToPage]);
 
   useEffect(() => {
     const loadCart = async () => {

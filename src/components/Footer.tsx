@@ -53,11 +53,27 @@ export function Footer() {
             <div>
               <h3 className="text-white mb-4">Links Rápidos</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-gray-300 hover:text-green-400 transition-colors">Como Funciona</a></li>                
-                <li><a href="#" className="text-gray-300 hover:text-green-400 transition-colors">Sobre o Projeto</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-green-400 transition-colors">Projetos Sociais</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-green-400 transition-colors">Incentivo Fiscal</a></li>
-                <li><a href="#" className="text-gray-300 hover:text-green-400 transition-colors">Calculadora</a></li>
+                <li>
+                  <a href="#como-funciona" onClick={(e) => { e.preventDefault(); setCurrentPage('como-funciona'); }} className="text-gray-300 hover:text-green-400 transition-colors">Como Funciona</a>
+                </li>
+                <li>
+                  <a href="#sobre-projeto" onClick={(e) => { e.preventDefault(); setCurrentPage('sobre-projeto'); }} className="text-gray-300 hover:text-green-400 transition-colors">Sobre o Projeto</a>
+                </li>
+                <li>
+                  <a href="#projetos-sociais" onClick={(e) => { e.preventDefault(); setCurrentPage('projetos-sociais'); }} className="text-gray-300 hover:text-green-400 transition-colors">Projetos Sociais</a>
+                </li>
+                <li>
+                  <a href="#incentivo-fiscal" onClick={(e) => { e.preventDefault(); setCurrentPage('incentivo-fiscal'); }} className="text-gray-300 hover:text-green-400 transition-colors">Incentivo Fiscal</a>
+                </li>
+                <li>
+                  <a href="#calculadora" onClick={(e) => { e.preventDefault(); setCurrentPage('calculadora-pegada'); }} className="text-gray-300 hover:text-green-400 transition-colors">Calculadora</a>
+                </li>
+                <li className="pt-2">
+                  <a href="#dashboard" onClick={(e) => { e.preventDefault(); setCurrentPage('dashboard'); }} className="text-gray-300 hover:text-green-400 transition-colors">Dashboard</a>
+                </li>
+                <li>
+                  <a href="#cms" onClick={(e) => { e.preventDefault(); setCurrentPage('cms'); }} className="text-gray-300 hover:text-green-400 transition-colors">Admin (CMS)</a>
+                </li>
               </ul>
             </div>
             
@@ -89,12 +105,20 @@ export function Footer() {
               <a href="#" className="text-gray-400 hover:text-green-400 text-sm transition-colors">Política de Privacidade</a>
               <a href="#" className="text-gray-400 hover:text-green-400 text-sm transition-colors">Termos de Uso</a>
               <a href="#" className="text-gray-400 hover:text-green-400 text-sm transition-colors">Cookies</a>
-              <button 
-                onClick={() => setCurrentPage('cms')}
+              <a 
+                href="#dashboard"
+                onClick={(e) => { e.preventDefault(); setCurrentPage('dashboard'); }}
+                className="text-gray-400 hover:text-green-400 text-sm transition-colors"
+              >
+                Dashboard
+              </a>
+              <a 
+                href="#cms"
+                onClick={(e) => { e.preventDefault(); setCurrentPage('cms'); }}
                 className="text-gray-400 hover:text-green-400 text-sm transition-colors"
               >
                 Admin
-              </button>
+              </a>
             </div>
           </div>
         </GlassCard>
