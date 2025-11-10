@@ -221,63 +221,82 @@ export function CMSPage() {
     totalRevenue: 0,
     activeUsers: 0
   });
+  const [salesData, setSalesData] = useState<Array<{ month: string; sales: number; revenue: number }>>([]);
+  const [projectTypeData, setProjectTypeData] = useState<Array<{ name: string; value: number; color: string }>>([]);
 
   const { projects, createProject, updateProject, refreshProjects, deleteProject } = useProjects();
   const { socialProjects } = useSocialProjects();
   const { certificates } = useCertificates();
   const { donations, getDonationStats } = useDonations();
 
-  useEffect(() => {
-    const calculateStats = async () => {
-      try {
-        // Try to get real stats from API
-        const { data: apiData, error: apiError } = await apiRequest<any>('/analytics/dashboard', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('minha_floresta_auth_token')}`
-          }
-        });
+  const reloadDashboardStats = async () => {
+    try {
+      // Totais básicos
+      const [{ count: projCount }, { data: intents }, { count: donationsCount }, { count: certCount }] = await Promise.all([
+        supabase.from('projects').select('*', { count: 'exact', head: true }),
+        supabase.from('stripe_payment_intents').select('amount, status, created_at, purchases(email), donations(donor_email)'),
+        supabase.from('donations').select('*', { count: 'exact', head: true }),
+        supabase.from('certificates').select('*', { count: 'exact', head: true }).eq('status', 'issued'),
+      ]);
 
-        if (apiData && !apiError) {
-          setStats({
-            totalProjects: apiData.stats.totalProjects,
-            totalSales: apiData.stats.totalTransactions,
-            totalDonations: apiData.stats.totalDonations,
-            totalCertificates: apiData.stats.totalCertificates,
-            totalRevenue: apiData.stats.totalRevenue + apiData.stats.totalDonationAmount,
-            activeUsers: apiData.stats.totalUsers
-          });
-        } else {
-          // Fallback to localStorage calculations
-          await calculateLocalStats();
-        }
-      } catch (error) {
-        // Fallback to localStorage calculations
-        await calculateLocalStats();
-      }
-    };
+      const succeeded = (intents || []).filter((i: any) => i.status === 'succeeded');
+      const totalRevenue = succeeded.reduce((s: number, i: any) => s + Number(i.amount || 0), 0);
+      const totalSales = succeeded.length;
 
-    const calculateLocalStats = async () => {
-      const transactions = JSON.parse(localStorage.getItem('minha_floresta_transactions') || '[]');
-      const savedCertificates = JSON.parse(localStorage.getItem('minha_floresta_certificates') || '[]');
-      const savedDonations = JSON.parse(localStorage.getItem('minha_floresta_donations') || '[]');
-      
-      const donationStats = await getDonationStats();
+      // Usuários ativos (distinct emails entre compras e doações)
+      const emails = new Set<string>();
+      (intents || []).forEach((i: any) => {
+        if (i.purchases?.email) emails.add(i.purchases.email);
+        if (i.donations?.donor_email) emails.add(i.donations.donor_email);
+      });
 
       setStats({
-        totalProjects: projects.length,
-        totalSales: transactions.length,
-        totalDonations: savedDonations.length,
-        totalCertificates: savedCertificates.length,
-        totalRevenue: transactions.reduce((sum: number, t: any) => sum + (t.data?.total || 0), 0) + donationStats.totalAmount,
-        activeUsers: new Set([
-          ...transactions.map((t: any) => t.data?.email),
-          ...savedDonations.map((d: any) => d.donorEmail)
-        ].filter(Boolean)).size
+        totalProjects: projCount || 0,
+        totalSales,
+        totalDonations: donationsCount || 0,
+        totalCertificates: certCount || 0,
+        totalRevenue,
+        activeUsers: emails.size,
       });
-    };
 
-    calculateStats();
-  }, [projects, getDonationStats]);
+      // Vendas por mês (últimos 6 meses)
+      const months: Record<string, { sales: number; revenue: number }> = {};
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        months[key] = { sales: 0, revenue: 0 };
+      }
+      succeeded.forEach((i: any) => {
+        const d = new Date(i.created_at);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (months[key]) {
+          months[key].sales += 1;
+          months[key].revenue += Number(i.amount || 0);
+        }
+      });
+      const salesArr = Object.entries(months).map(([month, v]) => ({ month, sales: v.sales, revenue: v.revenue }));
+      setSalesData(salesArr);
+
+      // Tipos de projeto por contagem
+      const { data: projectRows } = await supabase.from('projects').select('type');
+      const byType: Record<string, number> = {};
+      (projectRows || []).forEach((p: any) => {
+        byType[p.type || 'other'] = (byType[p.type || 'other'] || 0) + 1;
+      });
+      const palette = ['#10b981','#3b82f6','#f59e0b','#06b6d4','#8b5cf6','#ef4444'];
+      const typeArr = Object.entries(byType).map(([name, value], idx) => ({ name, value, color: palette[idx % palette.length] }));
+      setProjectTypeData(typeArr);
+    } catch (e) {
+      // Keep previous values if error
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'dashboard') {
+      reloadDashboardStats();
+    }
+  }, [activeTab]);
 
   const reloadAdminCertificates = async () => {
     try {
@@ -679,21 +698,7 @@ export function CMSPage() {
   };
 
   // Mock data for charts
-  const salesData = [
-    { month: 'Jan', sales: 45, revenue: 12500 },
-    { month: 'Fev', sales: 67, revenue: 18900 },
-    { month: 'Mar', sales: 89, revenue: 24300 },
-    { month: 'Abr', sales: 72, revenue: 19800 },
-    { month: 'Mai', sales: 95, revenue: 27600 },
-    { month: 'Jun', sales: 108, revenue: 31400 },
-  ];
-
-  const projectTypeData = [
-    { name: 'Reflorestamento', value: 45, color: '#10b981' },
-    { name: 'Restauração', value: 30, color: '#3b82f6' },
-    { name: 'Conservação', value: 15, color: '#f59e0b' },
-    { name: 'Carbono Azul', value: 10, color: '#06b6d4' },
-  ];
+  
 
   const renderDashboard = () => (
     <div className="space-y-6">
