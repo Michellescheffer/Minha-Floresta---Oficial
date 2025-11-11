@@ -3,6 +3,7 @@ import { X, Eye, EyeOff, Loader2, Mail, Lock, User, Phone, MapPin, FileText } fr
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { toast } from 'sonner';
+import { apiRequest } from '../utils/database';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [showPassword, setShowPassword] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [showSlowHint, setShowSlowHint] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -49,6 +51,22 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
       document.body.style.overflow = 'unset';
     }
   }, [isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    (async () => {
+      await apiRequest('/health', {}, 1, 2000, 500);
+    })();
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isLoading) {
+      setShowSlowHint(false);
+      return;
+    }
+    const t = setTimeout(() => setShowSlowHint(true), 4000);
+    return () => clearTimeout(t);
+  }, [isLoading]);
 
   const handleClose = () => {
     setIsClosing(true);
@@ -278,6 +296,12 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
               mode === 'login' ? 'Entrar' : 'Criar Conta'
             )}
           </button>
+
+          {isLoading && showSlowHint && (
+            <div className="text-center text-xs text-gray-500 pt-2">
+              Servidor está lento, continuando a tentativa...
+            </div>
+          )}
 
           {/* Mode Switch */}
           <div className="text-center pt-4 border-t border-white/20">

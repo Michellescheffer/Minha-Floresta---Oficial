@@ -23,14 +23,16 @@ export const API_BASE_URL = `https://${projectId}.supabase.co/functions/v1/mf-ba
 export async function apiRequest<T>(
   endpoint: string, 
   options: RequestInit = {},
-  retries: number = 3
+  retries: number = 3,
+  timeoutMs: number = 15000,
+  maxBackoffMs: number = 5000
 ): Promise<{ data: T | null; error: string | null }> {
   
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      // Create abort controller for timeout (extended to 15 seconds)
+      // Create abort controller for timeout
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
@@ -64,7 +66,7 @@ export async function apiRequest<T>(
       if (attempt === retries) {
         if (error instanceof Error) {
           if (error.name === 'AbortError') {
-            console.log('🕒 Request timed out after 15 seconds - backend may be slow');
+            console.log(`🕒 Request timed out after ${timeoutMs} ms - backend may be slow`);
             return { data: null, error: 'Request timeout - please try again' };
           }
           if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
@@ -81,7 +83,7 @@ export async function apiRequest<T>(
       }
       
       // Wait before retry (exponential backoff)
-      const delay = Math.min(Math.pow(2, attempt) * 1000, 5000); // Max 5 second delay
+      const delay = Math.min(Math.pow(2, attempt) * 1000, maxBackoffMs);
       console.log(`⏳ Waiting ${delay}ms before retry...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }

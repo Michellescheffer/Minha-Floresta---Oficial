@@ -25,10 +25,16 @@ export interface AuthResponse {
 
 export class UserAPI {
   static async login(email: string, password: string): Promise<{ data: AuthResponse | null; error: string | null }> {
-    const result = await apiRequest<AuthResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, password })
-    }, 5); // 5 retry attempts for critical operations like login
+    const result = await apiRequest<AuthResponse>(
+      '/auth/login',
+      {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      },
+      1,
+      6000,
+      1000
+    );
 
     if (result.data) {
       setLocalStorageItem('minha_floresta_auth_token', result.data.token);
@@ -46,10 +52,16 @@ export class UserAPI {
     phone?: string;
     cpf?: string;
   }): Promise<{ data: AuthResponse | null; error: string | null }> {
-    const result = await apiRequest<AuthResponse>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData)
-    });
+    const result = await apiRequest<AuthResponse>(
+      '/auth/register',
+      {
+        method: 'POST',
+        body: JSON.stringify(userData)
+      },
+      1,
+      6000,
+      1000
+    );
 
     if (result.data) {
       setLocalStorageItem('minha_floresta_auth_token', result.data.token);
