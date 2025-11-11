@@ -28,10 +28,12 @@ serve(async (req: Request) => {
     const supabaseServiceRole = Deno.env.get('MF_SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseServiceRole);
 
+    console.log('stripe-webhook: invocation', { method: req.method, url: req.url });
     const sig = req.headers.get('stripe-signature');
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
     if (!sig || !webhookSecret) {
+      console.error('stripe-webhook: missing signature or secret', { hasSig: Boolean(sig), hasSecret: Boolean(webhookSecret) });
       return new Response(JSON.stringify({ error: 'Missing signature or secret' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -42,8 +44,11 @@ serve(async (req: Request) => {
 
     let event: Stripe.Event;
     try {
-      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+      await stripe.webhooks.verifySignatureHeaderAsync(rawBody, sig, webhookSecret);
+      event = JSON.parse(rawBody) as Stripe.Event;
+      console.log('stripe-webhook: event received', { id: event.id, type: event.type });
     } catch (err) {
+      console.error('stripe-webhook: invalid signature', err);
       return new Response(JSON.stringify({ error: 'Invalid signature' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
