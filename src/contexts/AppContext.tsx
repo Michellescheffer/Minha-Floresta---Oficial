@@ -123,6 +123,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export function AppProvider({ children }: { children: ReactNode }) {
   const hashToPage = useCallback((hash: string): PageType => {
     const h = (hash || '').replace(/^#/, '').trim();
+    // Ignorar querystring ao mapear a página (ex.: 'checkout-success?session_id=...' => 'checkout-success')
+    const path = h.split('?')[0] || '';
     const map: Record<string, PageType> = {
       'home': 'home',
       'como-funciona': 'como-funciona',
@@ -146,7 +148,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       'checkout-success': 'checkout-success',
       'checkout-cancel': 'checkout-cancel',
     };
-    return map[h] || 'home';
+    return map[path] || 'home';
   }, []);
 
   const pageToHash = useCallback((page: PageType): string => {
