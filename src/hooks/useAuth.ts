@@ -50,6 +50,17 @@ export function useAuth() {
       }
 
       const u = authData.user;
+      // Enforce email confirmation before allowing login
+      const confirmed = Boolean((u as any).email_confirmed_at);
+      if (!confirmed) {
+        await supabase.auth.signOut();
+        // Try resend confirmation
+        try { await supabase.auth.resend({ type: 'signup', email }); } catch {}
+        const msg = 'Confirme seu email para entrar. Reenviei o link para sua caixa de entrada.';
+        setError(msg);
+        return { success: false, error: msg };
+      }
+
       const base: User = {
         id: u.id,
         email: u.email || email,
@@ -84,7 +95,10 @@ export function useAuth() {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
-        options: { data: { name: userData.name, phone: userData.phone, cpf: userData.cpf } }
+        options: {
+          data: { name: userData.name, phone: userData.phone, cpf: userData.cpf },
+          emailRedirectTo: `${window.location.origin}/`
+        }
       });
 
       if (authError || !authData.user) {
@@ -93,18 +107,16 @@ export function useAuth() {
         return { success: false, error: msg };
       }
 
-      const u = authData.user;
-      const base: User = {
-        id: u.id,
-        email: u.email || userData.email,
-        name: userData.name || (u.email?.split('@')[0] || 'Usuário'),
+      // Do not auto-login on sign up; require email confirmation
+      try { await supabase.auth.signOut(); } catch {}
+      return { success: true, user: {
+        id: authData.user.id,
+        email: userData.email,
+        name: userData.name,
         created_at: new Date().toISOString(),
         role: 'user',
         preferences: { newsletter: false, notifications: false }
-      } as User;
-      setLocalStorageItem('minha_floresta_user', base);
-      setUser(base as AuthUser);
-      return { success: true, user: base };
+      } as any };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro no cadastro';
       setError(errorMessage);
