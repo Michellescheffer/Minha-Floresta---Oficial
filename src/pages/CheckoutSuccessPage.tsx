@@ -4,7 +4,6 @@
  */
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, Download, FileText, Mail, ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
@@ -12,6 +11,7 @@ import { Alert, AlertDescription } from '../components/ui/alert';
 import { supabase } from '../services/supabaseClient';
 import { formatBRL, STRIPE_EDGE_FUNCTION_URL } from '../utils/supabase/stripeConfig';
 import { publicAnonKey } from '../utils/supabase/info';
+import { useApp } from '../contexts/AppContext';
 
 interface PaymentDetails {
   type: 'purchase' | 'donation';
@@ -28,8 +28,7 @@ interface PaymentDetails {
 }
 
 export default function CheckoutSuccessPage() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const { setCurrentPage } = useApp();
   
   const [loading, setLoading] = useState(true);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
@@ -37,23 +36,19 @@ export default function CheckoutSuccessPage() {
 
   // Support hash-based routing: extract params from window.location.hash when searchParams are empty
   const { paymentIntentId, paymentIntentClientSecret, sessionId } = useMemo(() => {
-    let id = searchParams.get('payment_intent');
-    let secret = searchParams.get('payment_intent_client_secret');
-    let session = searchParams.get('session_id');
-    if (!id || !secret) {
-      const hash = window.location.hash || '';
-      // Expected formats:
-      // #checkout-success?payment_intent=pi_...&payment_intent_client_secret=...
-      const qIndex = hash.indexOf('?');
-      if (qIndex !== -1) {
-        const query = new URLSearchParams(hash.substring(qIndex + 1));
-        id = id || query.get('payment_intent') || undefined as any;
-        secret = secret || query.get('payment_intent_client_secret') || undefined as any;
-        session = session || query.get('session_id') || undefined as any;
-      }
+    const hash = window.location.hash || '';
+    const qIndex = hash.indexOf('?');
+    let id: string | null = null;
+    let secret: string | null = null;
+    let session: string | null = null;
+    if (qIndex !== -1) {
+      const query = new URLSearchParams(hash.substring(qIndex + 1));
+      id = query.get('payment_intent');
+      secret = query.get('payment_intent_client_secret');
+      session = query.get('session_id');
     }
-    return { paymentIntentId: id || null, paymentIntentClientSecret: secret || null, sessionId: session || null };
-  }, [searchParams]);
+    return { paymentIntentId: id, paymentIntentClientSecret: secret, sessionId: session };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -166,7 +161,7 @@ export default function CheckoutSuccessPage() {
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-          <Button onClick={() => navigate('/loja')} className="w-full">
+          <Button onClick={() => { window.location.hash = 'loja'; }} className="w-full">
             Voltar à Loja
           </Button>
         </Card>
@@ -282,7 +277,7 @@ export default function CheckoutSuccessPage() {
                         link.click();
                         return;
                       }
-                      navigate(`/certificado/${cert.certificate_number}`);
+                      window.location.hash = `verificar-certificado?numero=${encodeURIComponent(cert.certificate_number)}`;
                     }}
                   >
                     <Download className="w-4 h-4" />
@@ -321,7 +316,7 @@ export default function CheckoutSuccessPage() {
           <Button
             size="lg"
             variant="outline"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => { window.location.hash = 'dashboard'; setCurrentPage('dashboard'); }}
             className="gap-2 h-14"
           >
             Ver Meu Painel
@@ -330,7 +325,7 @@ export default function CheckoutSuccessPage() {
           
           <Button
             size="lg"
-            onClick={() => navigate('/loja')}
+            onClick={() => { window.location.hash = 'loja'; setCurrentPage('loja'); }}
             className="gap-2 h-14 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
           >
             Continuar Comprando
