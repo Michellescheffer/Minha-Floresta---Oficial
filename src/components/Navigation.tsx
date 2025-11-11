@@ -89,9 +89,10 @@ export function Navigation() {
       }`}>
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <div 
+          <a 
             className="flex items-center cursor-pointer"
-            onClick={() => handleNavClick('home')}
+            href="#home"
+            onClick={(e) => { e.preventDefault(); handleNavClick('home'); }}
           >
             <div className="w-20 h-20 sm:w-32 sm:h-32 flex items-center justify-center">
               <img 
@@ -100,14 +101,15 @@ export function Navigation() {
                 className={`w-full h-full object-contain transition-all duration-300 ${logoFilterClass}`}
               />
             </div>
-          </div>
+          </a>
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-4 xl:space-x-6">
             {navItems.slice(0, 6).map((item) => (
-              <button 
+              <a
                 key={item.page}
-                onClick={() => handleNavClick(item.page)}
+                href={item.href}
+                onClick={(e) => { e.preventDefault(); handleNavClick(item.page); }}
                 className={`transition-all duration-300 font-medium text-sm xl:text-base px-2 py-1 rounded-lg hover:bg-white/10 ${
                   currentPage === item.page 
                     ? `${activeTextColorClass} bg-white/15`
@@ -115,23 +117,25 @@ export function Navigation() {
                 }`}
               >
                 {item.name}
-              </button>
+              </a>
             ))}
           </div>
 
           {/* Actions */}
           <div className="hidden md:flex items-center space-x-2 lg:space-x-4">
-            <button
-              onClick={() => handleNavClick('verificar-certificado')}
+            <a
+              href="#verificar-certificado"
+              onClick={(e) => { e.preventDefault(); handleNavClick('verificar-certificado'); }}
               className={`flex items-center space-x-1 sm:space-x-2 p-1.5 sm:p-2 transition-all duration-300 ${iconColorClass}`}
               title="Verificar Certificado"
             >
               <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
               <span className="text-xs sm:text-sm hidden lg:inline">Verificar</span>
-            </button>
+            </a>
             
-            <button
-              onClick={() => handleNavClick('carrinho')}
+            <a
+              href="#carrinho"
+              onClick={(e) => { e.preventDefault(); handleNavClick('carrinho'); }}
               className={`relative p-1.5 sm:p-2 transition-all duration-300 ${iconColorClass}`}
             >
               <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -140,7 +144,7 @@ export function Navigation() {
                   {totalItems}
                 </span>
               )}
-            </button>
+            </a>
 
             {/* User Authentication */}
             {isAuthenticated ? (
@@ -163,8 +167,10 @@ export function Navigation() {
                       <p className="text-gray-600 text-xs truncate">{user?.email}</p>
                     </div>
                     <div className="py-2">
-                      <button
-                        onClick={() => {
+                      <a
+                        href="#dashboard"
+                        onClick={(e) => {
+                          e.preventDefault();
                           handleNavClick('dashboard');
                           setIsUserMenuOpen(false);
                         }}
@@ -172,9 +178,11 @@ export function Navigation() {
                       >
                         <Settings className="w-4 h-4" />
                         Dashboard
-                      </button>
-                      <button
-                        onClick={() => {
+                      </a>
+                      <a
+                        href="#cms"
+                        onClick={(e) => {
+                          e.preventDefault();
                           handleNavClick('cms');
                           setIsUserMenuOpen(false);
                         }}
@@ -182,9 +190,11 @@ export function Navigation() {
                       >
                         <Settings className="w-4 h-4" />
                         Admin (CMS)
-                      </button>
-                      <button
-                        onClick={() => {
+                      </a>
+                      <a
+                        href="#cleanup-test"
+                        onClick={(e) => {
+                          e.preventDefault();
                           handleNavClick('cleanup-test');
                           setIsUserMenuOpen(false);
                         }}
@@ -192,7 +202,7 @@ export function Navigation() {
                       >
                         <Settings className="w-4 h-4" />
                         🧹 Limpar DB
-                      </button>
+                      </a>
                       <button
                         onClick={() => {
                           logout();
@@ -232,9 +242,10 @@ export function Navigation() {
           <div className="lg:hidden mt-4 pt-4 border-t border-white/20">
             <div className="flex flex-col space-y-4">
               {navItems.map((item) => (
-                <button 
+                <a
                   key={item.page}
-                  onClick={() => handleNavClick(item.page)}
+                  href={item.href}
+                  onClick={(e) => { e.preventDefault(); handleNavClick(item.page); }}
                   className={`text-left transition-all duration-300 ${
                     currentPage === item.page 
                       ? activeTextColorClass
@@ -242,31 +253,35 @@ export function Navigation() {
                   }`}
                 >
                   {item.name}
-                </button>
+                </a>
               ))}
               
-              <button
-                onClick={() => handleNavClick('verificar-certificado')}
+              <a
+                href="#verificar-certificado"
+                onClick={(e) => { e.preventDefault(); handleNavClick('verificar-certificado'); }}
                 className={`text-left flex items-center space-x-2 transition-all duration-300 ${iconColorClass}`}
               >
                 <QrCode className="w-4 h-4" />
                 <span>Verificar Certificado</span>
-              </button>
+              </a>
               
 
               
               {/* Mobile User Section */}
               {isAuthenticated ? (
                 <>
-                  <button
-                    onClick={() => handleNavClick('dashboard')}
+                  <a
+                    href="#dashboard"
+                    onClick={(e) => { e.preventDefault(); handleNavClick('dashboard'); }}
                     className={`text-left flex items-center space-x-2 transition-all duration-300 ${iconColorClass}`}
                   >
                     <Settings className="w-4 h-4" />
                     <span>Dashboard</span>
-                  </button>
-                  <button
-                    onClick={() => {
+                  </a>
+                  <a
+                    href="#cms"
+                    onClick={(e) => {
+                      e.preventDefault();
                       handleNavClick('cms');
                       setIsMenuOpen(false);
                     }}
@@ -274,9 +289,11 @@ export function Navigation() {
                   >
                     <Settings className="w-4 h-4" />
                     <span>Admin (CMS)</span>
-                  </button>
-                  <button
-                    onClick={() => {
+                  </a>
+                  <a
+                    href="#cleanup-test"
+                    onClick={(e) => {
+                      e.preventDefault();
                       handleNavClick('cleanup-test');
                       setIsMenuOpen(false);
                     }}
@@ -284,7 +301,7 @@ export function Navigation() {
                   >
                     <Trash2 className="w-4 h-4" />
                     <span>🧹 Limpeza DB (TESTE)</span>
-                  </button>
+                  </a>
                   <button
                     onClick={() => {
                       logout();
@@ -310,8 +327,9 @@ export function Navigation() {
               )}
               
               <div className="flex items-center pt-4">
-                <button
-                  onClick={() => handleNavClick('carrinho')}
+                <a
+                  href="#carrinho"
+                  onClick={(e) => { e.preventDefault(); handleNavClick('carrinho'); }}
                   className={`relative p-2 transition-all duration-300 ${iconColorClass}`}
                 >
                   <ShoppingCart className="w-6 h-6" />
@@ -320,7 +338,7 @@ export function Navigation() {
                       {totalItems}
                     </span>
                   )}
-                </button>
+                </a>
               </div>
             </div>
           </div>

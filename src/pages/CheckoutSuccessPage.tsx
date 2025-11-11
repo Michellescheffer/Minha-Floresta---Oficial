@@ -55,14 +55,27 @@ export default function CheckoutSuccessPage() {
     (async () => {
       try {
         setError(null);
-        // If we didn't get payment_intent, try resolving from session_id (Hosted Checkout)
+        // If we didn't get payment_intent, try resolving from session_id (Hosted Checkout) with retries
         if (!paymentIntentId && sessionId) {
-          const resp = await fetch(`${STRIPE_EDGE_FUNCTION_URL}/stripe-session?session_id=${encodeURIComponent(sessionId)}`, {
-            headers: { 'Authorization': `Bearer ${publicAnonKey}` },
-          });
-          const data = await resp.json();
-          if (resp.ok && data.payment_intent_id) {
-            await loadPaymentDetails(data.payment_intent_id);
+          let resolvedPi: string | null = null;
+          let attempt = 0;
+          const maxAttempts = 10;
+          while (attempt < maxAttempts) {
+            const resp = await fetch(`${STRIPE_EDGE_FUNCTION_URL}/stripe-session?session_id=${encodeURIComponent(sessionId)}`, {
+              headers: { 'Authorization': `Bearer ${publicAnonKey}` },
+            });
+            const data = await resp.json().catch(() => ({}));
+            if (resp.ok && data && data.payment_intent_id) {
+              resolvedPi = data.payment_intent_id as string;
+              break;
+            }
+            attempt += 1;
+            const waitMs = Math.min(1000 * attempt, 8000);
+            await new Promise(res => setTimeout(res, waitMs));
+          }
+
+          if (resolvedPi) {
+            await loadPaymentDetails(resolvedPi);
             return;
           }
           throw new Error('Não foi possível confirmar o pagamento');

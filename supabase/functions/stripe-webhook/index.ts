@@ -24,10 +24,9 @@ serve(async (req: Request) => {
       apiVersion: '2023-10-16',
     });
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('MF_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || '';
+    const supabaseServiceRole = Deno.env.get('MF_SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+    const supabase = createClient(supabaseUrl, supabaseServiceRole);
 
     const sig = req.headers.get('stripe-signature');
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
@@ -117,13 +116,75 @@ serve(async (req: Request) => {
         }
       }
 
-      // 3) Update payment intents table if exists
+      // 3) Upsert payment intents table (hosted flows may not exist yet)
       try {
-        await supabase
+        const { data: existing } = await supabase
           .from('stripe_payment_intents')
-          .update({ status: pi.status })
-          .eq('stripe_payment_intent_id', pi.id);
-      } catch {}
+          .select('id')
+          .eq('stripe_payment_intent_id', pi.id)
+          .limit(1)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from('stripe_payment_intents')
+            .update({ status: pi.status })
+            .eq('stripe_payment_intent_id', pi.id);
+        } else {
+          await supabase
+            .from('stripe_payment_intents')
+            .insert({
+              stripe_payment_intent_id: pi.id,
+              stripe_client_secret: pi.client_secret ?? null,
+              purchase_id: null,
+              donation_id: null,
+              amount,
+              currency: (pi.currency || 'brl'),
+              status: pi.status,
+              metadata: pi.metadata || {},
+            });
+        }
+      } catch (e) {
+        console.error('stripe_payment_intents upsert error', e);
+      }
+    }
+
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const piId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id || null;
+      const amount = (session.amount_total ?? 0) / 100;
+      const email = session.customer_details?.email || session.customer_email || null;
+      const currency = session.currency || 'brl';
+      const metadata = (session.metadata || {}) as Record<string, string>;
+
+      if (piId) {
+        try {
+          const { data: existing } = await supabase
+            .from('stripe_payment_intents')
+            .select('id')
+            .eq('stripe_payment_intent_id', piId)
+            .limit(1)
+            .maybeSingle();
+
+          if (!existing) {
+            await supabase
+              .from('stripe_payment_intents')
+              .insert({
+                stripe_payment_intent_id: piId,
+                stripe_client_secret: null,
+                purchase_id: null,
+                donation_id: null,
+                amount,
+                currency,
+                status: 'succeeded',
+                metadata,
+                email,
+              } as any);
+          }
+        } catch (e) {
+          console.error('stripe_payment_intents insert (session.completed) error', e);
+        }
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {
