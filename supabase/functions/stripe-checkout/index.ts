@@ -28,10 +28,10 @@ serve(async (req: Request) => {
       apiVersion: '2023-10-16',
     });
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabaseAnon = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY') ?? '');
 
     // ========================================================================
     // 2. VALIDAÇÃO DA REQUEST
@@ -54,6 +54,29 @@ serve(async (req: Request) => {
       email,
       metadata = {},
     } = body;
+
+    // Exigir usuário autenticado (JWT no header)
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    const token = authHeader?.toString().startsWith('Bearer ')
+      ? authHeader.toString().slice(7)
+      : undefined;
+
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: missing bearer token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { data: userData, error: userErr } = await supabaseAnon.auth.getUser(token);
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: invalid session' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const authUserId = userData.user.id;
 
     // Validação básica
     if (!type || !email) {
@@ -143,7 +166,7 @@ serve(async (req: Request) => {
           allow_promotion_codes: false,
           metadata: {
             type: 'purchase',
-            user_id: user_id || 'anonymous',
+            user_id: authUserId,
             email,
             item_count: String(items.length),
             project_ids: items.map((i: any) => i.project_id).join(','),
@@ -164,7 +187,7 @@ serve(async (req: Request) => {
         metadata: {
           type: 'purchase',
           purchase_id: 'none',
-          user_id: user_id || 'anonymous',
+          user_id: authUserId,
           email,
           certificate_type: metadata.certificate_type || 'digital',
           item_count: String(items.length),
@@ -246,7 +269,7 @@ serve(async (req: Request) => {
           metadata: {
             type: 'donation',
             project_id: donation_project_id || 'general',
-            user_id: user_id || 'anonymous',
+            user_id: authUserId,
             email,
             donor_name: metadata?.donor_name || '',
             donor_phone: metadata?.donor_phone || '',
@@ -269,7 +292,7 @@ serve(async (req: Request) => {
         metadata: {
           type: 'donation',
           donation_id: 'none',
-          user_id: user_id || 'anonymous',
+          user_id: authUserId,
           email,
           project_id: donation_project_id || 'general',
           donor_name: metadata?.donor_name || '',

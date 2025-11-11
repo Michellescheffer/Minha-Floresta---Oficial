@@ -32,9 +32,12 @@ export async function apiRequest<T = any>(
   options: RequestInit = {},
   retries = 3
 ): Promise<T> {
+  // Prefer authenticated user token for Edge Functions; fallback to anon key
+  const { data: sessionData } = await supabase.auth.getSession();
+  const bearer = sessionData?.session?.access_token || publicAnonKey;
   const defaultOptions: RequestInit = {
     headers: {
-      'Authorization': `Bearer ${publicAnonKey}`,
+      'Authorization': `Bearer ${bearer}`,
       'Content-Type': 'application/json',
       ...options.headers,
     },

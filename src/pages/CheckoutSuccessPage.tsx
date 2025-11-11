@@ -69,6 +69,22 @@ export default function CheckoutSuccessPage() {
               resolvedPi = data.payment_intent_id as string;
               break;
             }
+            // Se a stripe-session falhar na 1ª tentativa, acione a reconciliação imediatamente pelo session_id
+            if (attempt === 0) {
+              try {
+                const params = new URLSearchParams();
+                params.set('session_id', sessionId);
+                const r = await fetch(`${STRIPE_EDGE_FUNCTION_URL}/stripe-reconcile?${params.toString()}`, {
+                  method: 'POST',
+                  headers: { 'Authorization': `Bearer ${publicAnonKey}` },
+                });
+                const rjson = await r.json().catch(() => ({}));
+                if (r.ok && rjson && rjson.payment_intent_id) {
+                  resolvedPi = rjson.payment_intent_id as string;
+                  break;
+                }
+              } catch {}
+            }
             attempt += 1;
             const waitMs = Math.min(1000 * attempt, 8000);
             await new Promise(res => setTimeout(res, waitMs));

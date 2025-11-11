@@ -6,10 +6,12 @@ import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { toast } from 'sonner';
 import { useStripeCheckout } from '../hooks/useStripeCheckout';
 import { useAuth } from '../contexts/AuthContext';
+import { AuthModal } from '../components/AuthModal';
 
 export function CarrinhoPage() {
   const { cartItems, updateQuantity, removeFromCart, totalPrice, total_m2, clearCart } = useApp();
   const { user } = useAuth();
+  const [authOpen, setAuthOpen] = useState(false);
   // Fluxo hospedado do Stripe: sem seleção de método local
   const [showCheckout, setShowCheckout] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -91,6 +93,12 @@ export function CarrinhoPage() {
 
     // Checkout hospedado: sempre redireciona para o Stripe
 
+    if (!user) {
+      setAuthOpen(true);
+      toast.error('Entre ou crie uma conta para continuar.');
+      return;
+    }
+
     if (!buyerEmail.trim()) {
       toast.error('Informe seu email para continuar.');
       return;
@@ -110,7 +118,7 @@ export function CarrinhoPage() {
         const resp = await createPaymentIntent({
           type: 'purchase',
           items,
-          user_id: null,
+          user_id: (user as any)?.id || null,
           email: buyerEmail,
           metadata: {
             certificate_type: 'digital',
@@ -259,11 +267,11 @@ export function CarrinhoPage() {
                   <span className="text-gray-600">Equivale a:</span>
                   <span className="font-medium text-blue-600">{impact.treesEquivalent} árvores</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="text-gray-600">
                   <span>Subtotal:</span>
                   <span>R$ {totalPrice.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="text-gray-600">
                   <span>Taxas Stripe:</span>
                   <span>Incluídas</span>
                 </div>
@@ -306,6 +314,12 @@ export function CarrinhoPage() {
             </GlassCard>
 
             {/* Stripe Elements desativado: fluxo obrigatório via Checkout hospedado do Stripe */}
+
+            {(!user) && (
+              <div className="text-center text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                Faça login para finalizar sua compra.
+              </div>
+            )}
 
             {/* Impact Details */}
             <GlassCard className="p-6">

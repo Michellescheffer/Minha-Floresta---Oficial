@@ -13,6 +13,8 @@ type ReconcileResponse = {
   status?: string | null;
   email?: string | null;
   created?: number | null;
+  amount?: number | null;
+  currency?: string | null;
 };
 
 serve(async (req: Request) => {
@@ -100,6 +102,8 @@ serve(async (req: Request) => {
       status,
       email,
       created,
+      amount,
+      currency,
     };
 
     return new Response(JSON.stringify(body), {
