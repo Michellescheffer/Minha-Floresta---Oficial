@@ -193,6 +193,19 @@ export default function CheckoutSuccessPage() {
           </div>
         </div>
 
+        {(sessionId || paymentIntentId) && (
+          <Card className="p-4 bg-yellow-50 border-yellow-200 text-yellow-800 text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <span className="font-medium">session_id:</span> {sessionId || '—'}
+              </div>
+              <div>
+                <span className="font-medium">payment_intent:</span> {paymentIntentId || '—'}
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Payment Summary */}
         <Card className="glass-card p-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
           <div className="space-y-6">
