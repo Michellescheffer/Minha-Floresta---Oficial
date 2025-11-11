@@ -33,6 +33,7 @@ export default function CheckoutSuccessPage() {
   const [loading, setLoading] = useState(true);
   const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reloadTick, setReloadTick] = useState(0);
 
   // Support hash-based routing: extract params from window.location.hash when searchParams are empty
   const { paymentIntentId, paymentIntentClientSecret, sessionId } = useMemo(() => {
@@ -79,20 +80,33 @@ export default function CheckoutSuccessPage() {
         setLoading(false);
       }
     })();
-  }, [paymentIntentId, sessionId]);
+  }, [paymentIntentId, sessionId, reloadTick]);
 
   const loadPaymentDetails = async (piId: string) => {
     try {
       setLoading(true);
 
-      // Buscar payment intent
-      const { data: paymentIntent, error: piError } = await supabase
-        .from('stripe_payment_intents')
-        .select('*, purchases(*), donations(*)')
-        .eq('stripe_payment_intent_id', piId)
-        .single();
+      // Tentar buscar por até ~60s (10 tentativas com backoff leve)
+      let paymentIntent: any = null;
+      let attempt = 0;
+      const maxAttempts = 10;
+      while (attempt < maxAttempts) {
+        const { data, error: piError } = await supabase
+          .from('stripe_payment_intents')
+          .select('*, purchases(*), donations(*)')
+          .eq('stripe_payment_intent_id', piId)
+          .single();
+        if (!piError && data) {
+          paymentIntent = data;
+          break;
+        }
+        // esperar e tentar novamente (1s,2s,3s,...)
+        attempt += 1;
+        const waitMs = Math.min(1000 * attempt, 8000);
+        await new Promise(res => setTimeout(res, waitMs));
+      }
 
-      if (piError || !paymentIntent) {
+      if (!paymentIntent) {
         throw new Error('Pagamento não encontrado');
       }
 
@@ -161,9 +175,22 @@ export default function CheckoutSuccessPage() {
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-          <Button onClick={() => { window.location.hash = 'loja'; }} className="w-full">
-            Voltar à Loja
-          </Button>
+          {(sessionId || paymentIntentId) && (
+            <Card className="p-3 bg-yellow-50 border-yellow-200 text-yellow-800 text-xs text-left">
+              <div className="space-y-1">
+                <div><span className="font-medium">session_id:</span> {sessionId || '—'}</div>
+                <div><span className="font-medium">payment_intent:</span> {paymentIntentId || '—'}</div>
+              </div>
+            </Card>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Button onClick={() => { window.location.hash = 'loja'; }} className="w-full" variant="outline">
+              Voltar à Loja
+            </Button>
+            <Button onClick={() => { setLoading(true); setError(null); setReloadTick(t => t + 1); }} className="w-full">
+              Tentar novamente
+            </Button>
+          </div>
         </Card>
       </div>
     );
