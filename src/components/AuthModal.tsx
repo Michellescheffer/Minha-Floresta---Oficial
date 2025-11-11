@@ -97,19 +97,27 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
 
     try {
       if (mode === 'login') {
-        await login({
+        const res = await login({
           email: formData.email,
           password: formData.password
         });
+        if (!res.success) {
+          toast.error(res.error || 'Falha no login');
+          return;
+        }
         toast.success('Login realizado com sucesso!');
       } else {
-        await register({
+        const res = await register({
           email: formData.email,
           password: formData.password,
           name: formData.name,
           phone: formData.phone,
           cpf: formData.cpf
         });
+        if (!res.success) {
+          toast.error(res.error || 'Falha ao criar conta');
+          return;
+        }
         toast.success('Conta criada com sucesso!');
       }
       setCurrentPage('dashboard');
