@@ -1,19 +1,28 @@
 import { Minus, Plus, Trash2, CreditCard, Download, Leaf, MapPin, Award, ShoppingCart, Building2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GlassCard } from '../components/GlassCard';
 import { useApp } from '../contexts/AppContext';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { toast } from 'sonner';
 import { useStripeCheckout } from '../hooks/useStripeCheckout';
+import { useAuth } from '../contexts/AuthContext';
 
 export function CarrinhoPage() {
   const { cartItems, updateQuantity, removeFromCart, totalPrice, total_m2, clearCart } = useApp();
+  const { user } = useAuth();
   // Fluxo hospedado do Stripe: sem seleção de método local
   const [showCheckout, setShowCheckout] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [buyerEmail, setBuyerEmail] = useState('');
+  const [buyerEmail, setBuyerEmail] = useState(user?.email || '');
 
   const { createPaymentIntent, error: stripeError, isLoading } = useStripeCheckout();
+
+  useEffect(() => {
+    // Se o usuário logar e o campo estiver vazio, preenche automaticamente
+    if (user?.email && !buyerEmail) {
+      setBuyerEmail(user.email);
+    }
+  }, [user?.email]);
 
   if (cartItems.length === 0) {
     return (
