@@ -7,6 +7,7 @@ import { Footer } from "./components/Footer";
 import { Toaster } from "./components/ui/sonner";
 import { SEOHead } from "./components/SEOHead";
 import { NotificationProvider } from "./components/NotificationSystem";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { initializeErrorHandler } from "./utils/errorHandler";
 
 export default function App() {
@@ -22,7 +23,9 @@ export default function App() {
             <div className="min-h-screen">
               <Navigation />
               <main>
-                <PageRouter />
+                <ErrorBoundary>
+                  <PageRouter />
+                </ErrorBoundary>
               </main>
               <Footer />
               <Toaster
