@@ -16,7 +16,7 @@ export function useAuth() {
     const savedUser = UserAPI.getCurrentUser();
     const savedToken = UserAPI.getAuthToken();
     
-    if (savedUser && savedToken) {
+    if (savedUser && savedToken && !String(savedToken).startsWith('local-')) {
       const base = {
         preferences: { newsletter: false, notifications: false },
         ...savedUser,
@@ -42,32 +42,8 @@ export function useAuth() {
       const { data, error: apiError } = await UserAPI.login(email, password);
 
       if (apiError) {
-        if (email.toLowerCase() === 'nei@ampler.me' && password === 'Qwe123@#') {
-          const adminUser: User = {
-            id: 'admin-local',
-            email: 'nei@ampler.me',
-            name: 'Administrador',
-            created_at: new Date().toISOString(),
-            role: 'admin',
-            preferences: { newsletter: false, notifications: false }
-          } as User;
-          setLocalStorageItem('minha_floresta_auth_token', 'local-admin-token');
-          setLocalStorageItem('minha_floresta_user', adminUser);
-          setUser(adminUser as AuthUser);
-          return { success: true, user: adminUser };
-        }
-        const localUser: User = {
-          id: `user-local-${Date.now()}`,
-          email,
-          name: email.split('@')[0] || 'Usuário',
-          created_at: new Date().toISOString(),
-          role: 'user',
-          preferences: { newsletter: false, notifications: false }
-        } as User;
-        setLocalStorageItem('minha_floresta_auth_token', 'local-user-token');
-        setLocalStorageItem('minha_floresta_user', localUser);
-        setUser(localUser as AuthUser);
-        return { success: true, user: localUser };
+        setError(apiError);
+        return { success: false, error: apiError };
       }
 
       if (data) {
