@@ -3,7 +3,7 @@ import { X, Eye, EyeOff, Loader2, Mail, Lock, User, Phone, MapPin, FileText } fr
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
 import { toast } from 'sonner';
-import { apiRequest } from '../utils/database';
+// removed apiRequest prewarm to avoid offline banner
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -52,12 +52,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
     }
   }, [isOpen, onClose]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    (async () => {
-      await apiRequest('/health', {}, 1, 2000, 500);
-    })();
-  }, [isOpen]);
+  // removed pre-warm health ping to avoid triggering offline mode banners
 
   useEffect(() => {
     if (!isLoading) {
@@ -280,14 +275,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
             </div>
           </div>
 
-          {/* Demo credentials info */}
-          {mode === 'login' && (
-            <div className="p-3 bg-blue-50/50 rounded-lg border border-blue-200/50">
-              <p className="text-sm text-blue-700">
-                <strong>Demo:</strong> Use qualquer email válido e senha "123456"
-              </p>
-            </div>
-          )}
+          {/* Demo credentials info removed for production */}
 
           {/* Submit Button */}
           <button

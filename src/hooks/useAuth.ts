@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UserAPI, type User } from '../services/api';
-import { setLocalStorageItem, getLocalStorageItem } from '../utils/database';
+import { setLocalStorageItem } from '../utils/database';
+import { supabase } from '../services/supabaseClient';
 
 export interface AuthUser extends User {
   // Additional frontend-specific properties can be added here
@@ -12,26 +13,27 @@ export function useAuth() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Check if user is already logged in
-    const savedUser = UserAPI.getCurrentUser();
-    const savedToken = UserAPI.getAuthToken();
-    
-    if (savedUser && savedToken && !String(savedToken).startsWith('local-')) {
-      const base = {
-        preferences: { newsletter: false, notifications: false },
-        ...savedUser,
-      } as User;
-      const promoted =
-        base.email?.toLowerCase() === 'nei@ampler.me'
-          ? { ...base, role: 'admin' as const }
-          : base;
-      if (promoted !== savedUser) {
-        setLocalStorageItem('minha_floresta_user', promoted);
+    (async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const session = data.session;
+        if (session?.user) {
+          const u = session.user;
+          const base: User = {
+            id: u.id,
+            email: u.email || '',
+            name: (u.user_metadata?.name as string) || (u.email?.split('@')[0] || 'Usuário'),
+            created_at: new Date().toISOString(),
+            role: 'user',
+            preferences: { newsletter: false, notifications: false }
+          } as User;
+          setLocalStorageItem('minha_floresta_user', base);
+          setUser(base as AuthUser);
+        }
+      } finally {
+        setIsLoading(false);
       }
-      setUser(promoted as AuthUser);
-    }
-    
-    setIsLoading(false);
+    })();
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -39,27 +41,26 @@ export function useAuth() {
       setIsLoading(true);
       setError(null);
 
-      const { data, error: apiError } = await UserAPI.login(email, password);
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
-      if (apiError) {
-        setError(apiError);
-        return { success: false, error: apiError };
+      if (authError || !authData.user) {
+        const msg = authError?.message || 'Falha no login';
+        setError(msg);
+        return { success: false, error: msg };
       }
 
-      if (data) {
-        const withDefaults = { preferences: { newsletter: false, notifications: false }, ...data.user } as User;
-        const promoted =
-          withDefaults.email?.toLowerCase() === 'nei@ampler.me'
-            ? { ...withDefaults, role: 'admin' as const }
-            : withDefaults;
-        if (promoted !== data.user) {
-          setLocalStorageItem('minha_floresta_user', promoted);
-        }
-        setUser(promoted as AuthUser);
-        return { success: true, user: data.user };
-      }
-
-      return { success: false, error: 'Erro desconhecido no login' };
+      const u = authData.user;
+      const base: User = {
+        id: u.id,
+        email: u.email || email,
+        name: (u.user_metadata?.name as string) || (u.email?.split('@')[0] || 'Usuário'),
+        created_at: new Date().toISOString(),
+        role: 'user',
+        preferences: { newsletter: false, notifications: false }
+      } as User;
+      setLocalStorageItem('minha_floresta_user', base);
+      setUser(base as AuthUser);
+      return { success: true, user: base };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro no login';
       setError(errorMessage);
@@ -80,26 +81,30 @@ export function useAuth() {
       setIsLoading(true);
       setError(null);
 
-      const { data, error: apiError } = await UserAPI.register(userData);
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: userData.email,
+        password: userData.password,
+        options: { data: { name: userData.name, phone: userData.phone, cpf: userData.cpf } }
+      });
 
-      if (apiError) {
-        setError(apiError);
-        return { success: false, error: apiError };
+      if (authError || !authData.user) {
+        const msg = authError?.message || 'Falha ao criar conta';
+        setError(msg);
+        return { success: false, error: msg };
       }
 
-      if (data) {
-        const promoted =
-          data.user.email?.toLowerCase() === 'nei@ampler.me'
-            ? { ...data.user, role: 'admin' as const }
-            : data.user;
-        if (promoted !== data.user) {
-          setLocalStorageItem('minha_floresta_user', promoted);
-        }
-        setUser(promoted as AuthUser);
-        return { success: true, user: data.user };
-      }
-
-      return { success: false, error: 'Erro desconhecido no cadastro' };
+      const u = authData.user;
+      const base: User = {
+        id: u.id,
+        email: u.email || userData.email,
+        name: userData.name || (u.email?.split('@')[0] || 'Usuário'),
+        created_at: new Date().toISOString(),
+        role: 'user',
+        preferences: { newsletter: false, notifications: false }
+      } as User;
+      setLocalStorageItem('minha_floresta_user', base);
+      setUser(base as AuthUser);
+      return { success: true, user: base };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Erro no cadastro';
       setError(errorMessage);
@@ -109,7 +114,8 @@ export function useAuth() {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await supabase.auth.signOut();
     UserAPI.logout();
     setUser(null);
     setError(null);
