@@ -75,6 +75,15 @@ export default function CheckoutSuccessPage() {
           }
 
           if (resolvedPi) {
+            // Instant reconcile before any polling
+            try {
+              const params = new URLSearchParams();
+              params.set('payment_intent_id', resolvedPi);
+              await fetch(`${STRIPE_EDGE_FUNCTION_URL}/stripe-reconcile?${params.toString()}`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${publicAnonKey}` },
+              }).catch(() => {});
+            } catch {}
             await loadPaymentDetails(resolvedPi);
             return;
           }
@@ -86,6 +95,16 @@ export default function CheckoutSuccessPage() {
           setLoading(false);
           return;
         }
+
+        // If we already have payment_intent_id, reconcile first to speed up
+        try {
+          const params = new URLSearchParams();
+          params.set('payment_intent_id', paymentIntentId);
+          await fetch(`${STRIPE_EDGE_FUNCTION_URL}/stripe-reconcile?${params.toString()}`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${publicAnonKey}` },
+          }).catch(() => {});
+        } catch {}
 
         await loadPaymentDetails(paymentIntentId);
       } catch (e) {
@@ -99,10 +118,10 @@ export default function CheckoutSuccessPage() {
     try {
       setLoading(true);
 
-      // Tentar buscar por até ~60s (10 tentativas com backoff leve)
+      // Tentar buscar rapidamente e acionar reconciliação cedo
       let paymentIntent: any = null;
       let attempt = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 6;
       while (attempt < maxAttempts) {
         const { data, error: piError } = await supabase
           .from('stripe_payment_intents')
@@ -113,8 +132,8 @@ export default function CheckoutSuccessPage() {
           paymentIntent = data;
           break;
         }
-        // Reconciliar após algumas tentativas iniciais para reduzir espera
-        if (attempt === 2) {
+        // Reconciliar imediatamente na primeira falha para reduzir espera
+        if (attempt === 0) {
           try {
             const params = new URLSearchParams();
             if (sessionId) params.set('session_id', sessionId);
@@ -125,9 +144,10 @@ export default function CheckoutSuccessPage() {
             }).catch(() => {});
           } catch {}
         }
-        // esperar e tentar novamente (1s,2s,3s,...)
+        // esperar e tentar novamente (0.5s,0.8s,1.2s,1.8s,2.5s,3.5s)
         attempt += 1;
-        const waitMs = Math.min(1000 * attempt, 8000);
+        const backoffs = [500, 800, 1200, 1800, 2500, 3500];
+        const waitMs = backoffs[Math.min(attempt - 1, backoffs.length - 1)];
         await new Promise(res => setTimeout(res, waitMs));
       }
 
