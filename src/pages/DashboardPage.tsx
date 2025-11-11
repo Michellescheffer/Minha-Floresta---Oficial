@@ -24,6 +24,7 @@ import {
 import { GlassCard } from '../components/GlassCard';
  
 import { useAuth } from '../contexts/AuthContext';
+import { projectId } from '../utils/supabase/info';
 import { useUserPanelData } from '../hooks/useUserPanelData';
 import { toast } from 'sonner';
 
@@ -35,9 +36,10 @@ export function DashboardPage() {
     updateProfile,
     isLoading
   } = useAuth();
-  const { purchases, donations, certificates, loading, error } = useUserPanelData();
+  const { purchases, donations, certificates, loading, error, reload } = useUserPanelData();
 
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
+  const [reconcileInfo, setReconcileInfo] = useState<{ amount?: number; currency?: string; pi?: string } | null>(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileForm, setProfileForm] = useState({
     name: user?.name || '',
@@ -116,6 +118,29 @@ export function DashboardPage() {
     }
   }, []);
 
+  // Se houver session_id na URL, reconcilia imediatamente e recarrega dados
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    const [, query = ''] = hash.replace(/^#/, '').split('?');
+    const params = new URLSearchParams(query);
+    const sessionId = params.get('session_id');
+    if (!sessionId) return;
+
+    setActiveTab('purchases');
+
+    (async () => {
+      try {
+        const url = `https://${projectId}.supabase.co/functions/v1/stripe-reconcile?session_id=${encodeURIComponent(sessionId)}`;
+        const res = await fetch(url, { method: 'GET' });
+        if (res.ok) {
+          const data = await res.json();
+          setReconcileInfo({ amount: data.amount, currency: data.currency, pi: data.payment_intent_id });
+          await reload();
+        }
+      } catch {}
+    })();
+  }, [reload]);
+
   return (
     <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
       <div className="absolute inset-0 bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-blue-50/80"></div>
@@ -131,6 +156,13 @@ export function DashboardPage() {
 
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-2 mb-8">
+          {reconcileInfo && (
+            <div className="w-full">
+              <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-green-800 text-sm">
+                Pagamento confirmado{reconcileInfo.amount ? ` • ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: (reconcileInfo.currency || 'BRL').toUpperCase() }).format(reconcileInfo.amount)}` : ''}
+              </div>
+            </div>
+          )}
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
