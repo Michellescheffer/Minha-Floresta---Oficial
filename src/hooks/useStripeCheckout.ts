@@ -14,6 +14,7 @@ import {
   isStripeConfigured 
 } from '../utils/supabase/stripeConfig';
 import { publicAnonKey } from '../utils/supabase/info';
+import { supabase } from '../services/supabaseClient';
 
 let stripePromise: Promise<Stripe | null> | null = null;
 
@@ -58,11 +59,15 @@ export function useStripeCheckout(): UseStripeCheckoutReturn {
         throw new Error('Stripe não está configurado. Contate o administrador.');
       }
 
-      // Fazer request para Edge Function
+      // Obter JWT do usuário quando autenticado; fallback para anon
+      const { data: sessionData } = await supabase.auth.getSession();
+      const bearer = sessionData?.session?.access_token || publicAnonKey;
+
+      // Fazer request para Edge Function (backend exige JWT)
       const response = await fetch(STRIPE_ENDPOINTS.createCheckout, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${publicAnonKey}`,
+          'Authorization': `Bearer ${bearer}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(params),

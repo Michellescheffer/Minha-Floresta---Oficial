@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   User, 
   ShoppingBag, 
@@ -103,6 +103,18 @@ export function DashboardPage() {
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
+
+  // Seleciona a aba inicial via hash query param: #dashboard?p=purchases
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    const [, query = ''] = hash.replace(/^#/, '').split('?');
+    const params = new URLSearchParams(query);
+    const p = params.get('p');
+    const allowed: DashboardTab[] = ['overview','purchases','donations','certificates','profile'];
+    if (p && (allowed as string[]).includes(p)) {
+      setActiveTab(p as DashboardTab);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
