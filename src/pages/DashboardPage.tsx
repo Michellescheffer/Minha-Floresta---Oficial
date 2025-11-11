@@ -45,8 +45,8 @@ export function DashboardPage() {
     cpf: user?.cpf || '',
     address: user?.address || '',
     preferences: {
-      newsletter: user?.preferences.newsletter || false,
-      notifications: user?.preferences.notifications || false
+      newsletter: user?.preferences?.newsletter || false,
+      notifications: user?.preferences?.notifications || false
     }
   });
 
@@ -561,9 +561,9 @@ export function DashboardPage() {
                         />
                       ) : (
                         <span className={`px-2 py-1 rounded text-xs ${
-                          user.preferences.notifications ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                          user.preferences?.notifications ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
-                          {user.preferences.notifications ? 'Ativo' : 'Inativo'}
+                          {user.preferences?.notifications ? 'Ativo' : 'Inativo'}
                         </span>
                       )}
                     </div>
@@ -585,9 +585,9 @@ export function DashboardPage() {
                         />
                       ) : (
                         <span className={`px-2 py-1 rounded text-xs ${
-                          user.preferences.newsletter ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                          user.preferences?.newsletter ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
                         }`}>
-                          {user.preferences.newsletter ? 'Ativo' : 'Inativo'}
+                          {user.preferences?.newsletter ? 'Ativo' : 'Inativo'}
                         </span>
                       )}
                     </div>
@@ -624,8 +624,8 @@ export function DashboardPage() {
                         cpf: user?.cpf || '',
                         address: user?.address || '',
                         preferences: {
-                          newsletter: user?.preferences.newsletter || false,
-                          notifications: user?.preferences.notifications || false
+                          newsletter: user?.preferences?.newsletter || false,
+                          notifications: user?.preferences?.notifications || false
                         }
                       });
                     }}

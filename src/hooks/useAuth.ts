@@ -17,10 +17,14 @@ export function useAuth() {
     const savedToken = UserAPI.getAuthToken();
     
     if (savedUser && savedToken) {
+      const base = {
+        preferences: { newsletter: false, notifications: false },
+        ...savedUser,
+      } as User;
       const promoted =
-        savedUser.email?.toLowerCase() === 'nei@ampler.me'
-          ? { ...savedUser, role: 'admin' as const }
-          : savedUser;
+        base.email?.toLowerCase() === 'nei@ampler.me'
+          ? { ...base, role: 'admin' as const }
+          : base;
       if (promoted !== savedUser) {
         setLocalStorageItem('minha_floresta_user', promoted);
       }
@@ -44,7 +48,8 @@ export function useAuth() {
             email: 'nei@ampler.me',
             name: 'Administrador',
             created_at: new Date().toISOString(),
-            role: 'admin'
+            role: 'admin',
+            preferences: { newsletter: false, notifications: false }
           } as User;
           setLocalStorageItem('minha_floresta_auth_token', 'local-admin-token');
           setLocalStorageItem('minha_floresta_user', adminUser);
@@ -56,7 +61,8 @@ export function useAuth() {
           email,
           name: email.split('@')[0] || 'Usuário',
           created_at: new Date().toISOString(),
-          role: 'user'
+          role: 'user',
+          preferences: { newsletter: false, notifications: false }
         } as User;
         setLocalStorageItem('minha_floresta_auth_token', 'local-user-token');
         setLocalStorageItem('minha_floresta_user', localUser);
@@ -65,10 +71,11 @@ export function useAuth() {
       }
 
       if (data) {
+        const withDefaults = { preferences: { newsletter: false, notifications: false }, ...data.user } as User;
         const promoted =
-          data.user.email?.toLowerCase() === 'nei@ampler.me'
-            ? { ...data.user, role: 'admin' as const }
-            : data.user;
+          withDefaults.email?.toLowerCase() === 'nei@ampler.me'
+            ? { ...withDefaults, role: 'admin' as const }
+            : withDefaults;
         if (promoted !== data.user) {
           setLocalStorageItem('minha_floresta_user', promoted);
         }
