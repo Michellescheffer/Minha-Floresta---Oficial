@@ -2624,7 +2624,7 @@ export function CMSPage() {
                           </div>
                         </CardContent>
                       </Card>
-                    ))}
+                    )))}
                   </div>
                   
                   {/* Pagination */}
