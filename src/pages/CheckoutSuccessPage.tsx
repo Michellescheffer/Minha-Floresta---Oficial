@@ -113,6 +113,18 @@ export default function CheckoutSuccessPage() {
           paymentIntent = data;
           break;
         }
+        // Reconciliar após algumas tentativas iniciais para reduzir espera
+        if (attempt === 2) {
+          try {
+            const params = new URLSearchParams();
+            if (sessionId) params.set('session_id', sessionId);
+            else params.set('payment_intent_id', piId);
+            await fetch(`${STRIPE_EDGE_FUNCTION_URL}/stripe-reconcile?${params.toString()}`, {
+              method: 'POST',
+              headers: { 'Authorization': `Bearer ${publicAnonKey}` },
+            }).catch(() => {});
+          } catch {}
+        }
         // esperar e tentar novamente (1s,2s,3s,...)
         attempt += 1;
         const waitMs = Math.min(1000 * attempt, 8000);
