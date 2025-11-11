@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, Eye, EyeOff, Loader2, Mail, Lock, User, Phone, MapPin, FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { toast } from 'sonner@2.0.3';
+import { useApp } from '../contexts/AppContext';
+import { toast } from 'sonner';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
   });
 
   const { login, register, isLoading } = useAuth();
+  const { setCurrentPage } = useApp();
 
   // Prevent body scroll when modal is open and handle escape key
   useEffect(() => {
@@ -88,11 +90,11 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
           password: formData.password,
           name: formData.name,
           phone: formData.phone,
-          cpf: formData.cpf,
-          address: formData.address
+          cpf: formData.cpf
         });
         toast.success('Conta criada com sucesso!');
       }
+      setCurrentPage('dashboard');
       handleClose();
       // Reset form
       setFormData({
