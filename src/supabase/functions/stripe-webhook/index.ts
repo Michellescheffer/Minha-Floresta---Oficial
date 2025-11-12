@@ -200,21 +200,77 @@ async function handlePaymentIntentSucceeded(
     .eq('stripe_payment_intent_id', paymentIntent.id);
 
   if (type === 'purchase') {
-    const purchaseId = metadata.purchase_id;
+    let purchaseId = metadata.purchase_id;
 
-    // Atualizar purchase
-    const { error: updateError } = await supabase
-      .from('purchases')
-      .update({
-        payment_status: 'paid',
-        payment_date: new Date().toISOString(),
-        stripe_charge_id: paymentIntent.latest_charge,
-      })
-      .eq('id', purchaseId);
+    // Se não houver purchase_id (checkout hospedado), criar purchase e itens a partir do metadata
+    if (!purchaseId || purchaseId === 'none') {
+      try {
+        const totalAmount = (paymentIntent.amount_received ?? paymentIntent.amount ?? 0) / 100;
+        const currency = paymentIntent.currency || 'brl';
+        const userId = metadata.user_id || null;
+        const buyerEmail = metadata.email || paymentIntent.receipt_email || null;
 
-    if (updateError) {
-      console.error('Error updating purchase:', updateError);
-      throw updateError;
+        // Criar purchase
+        const { data: createdPurchase, error: createPurchaseErr } = await supabase
+          .from('purchases')
+          .insert({
+            user_id: userId,
+            total_amount: totalAmount,
+            currency,
+            payment_method: 'stripe',
+            payment_status: 'paid',
+            payment_date: new Date().toISOString(),
+            stripe_payment_intent_id: paymentIntent.id,
+            buyer_email: buyerEmail,
+          })
+          .select('id')
+          .single();
+
+        if (createPurchaseErr) {
+          console.error('Failed to create purchase:', createPurchaseErr);
+          throw createPurchaseErr;
+        }
+
+        purchaseId = createdPurchase.id;
+
+        // Reconstituir itens
+        let items: Array<{ project_id: string; quantity: number; price?: number } > = [];
+        if (metadata.items_json) {
+          try { items = JSON.parse(String(metadata.items_json)); } catch (_) { items = []; }
+        } else if (metadata.project_ids && metadata.item_count) {
+          const ids = String(metadata.project_ids).split(',');
+          items = ids.map((pid: string) => ({ project_id: pid, quantity: 1 }));
+        }
+
+        if (items.length > 0) {
+          const rows = items.map((it) => ({ purchase_id: purchaseId, project_id: it.project_id, quantity: Math.max(1, Number(it.quantity) || 1), unit_price: it.price ?? null }));
+          const { error: insertItemsErr } = await supabase
+            .from('purchase_items')
+            .insert(rows);
+          if (insertItemsErr) {
+            console.error('Failed to insert purchase_items:', insertItemsErr);
+          }
+        }
+      } catch (e) {
+        console.error('Hosted checkout create purchase fallback failed:', e);
+      }
+    }
+
+    // Atualizar purchase existente (ou recém-criada) com dados finais
+    if (purchaseId) {
+      const { error: updateError } = await supabase
+        .from('purchases')
+        .update({
+          payment_status: 'paid',
+          payment_date: new Date().toISOString(),
+          stripe_charge_id: paymentIntent.latest_charge,
+        })
+        .eq('id', purchaseId);
+
+      if (updateError) {
+        console.error('Error updating purchase:', updateError);
+        throw updateError;
+      }
     }
 
     // Buscar purchase_items

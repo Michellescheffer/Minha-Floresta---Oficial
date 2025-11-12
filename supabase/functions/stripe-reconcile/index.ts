@@ -97,6 +97,86 @@ serve(async (req: Request) => {
         });
     }
 
+    // If purchase flow and no purchase exists yet, create purchase and items, then insert basic certificates
+    try {
+      const meta = pi.metadata || {} as any;
+      if (meta.type === 'purchase') {
+        // Check if a purchase already exists for this PI
+        const { data: existingPurchase } = await supabase
+          .from('purchases')
+          .select('id')
+          .eq('stripe_payment_intent_id', payment_intent_id)
+          .maybeSingle();
+
+        let createdPurchaseId = existingPurchase?.id as string | undefined;
+        if (!createdPurchaseId) {
+          const buyerEmail = meta.email || pi.receipt_email || email || null;
+          const { data: created, error: createErr } = await supabase
+            .from('purchases')
+            .insert({
+              user_id: meta.user_id || null,
+              total_amount: amount,
+              currency,
+              payment_method: 'stripe',
+              payment_status: status || 'succeeded',
+              payment_date: new Date().toISOString(),
+              stripe_payment_intent_id: payment_intent_id,
+              buyer_email: buyerEmail,
+            })
+            .select('id')
+            .single();
+
+          if (!createErr) {
+            createdPurchaseId = created.id;
+          } else {
+            console.error('reconcile create purchase error', createErr);
+          }
+
+          // Insert purchase_items from metadata
+          if (createdPurchaseId) {
+            let items: Array<{ project_id: string; quantity: number; price?: number }> = [];
+            if (meta.items_json) {
+              try { items = JSON.parse(String(meta.items_json)); } catch (_) { items = []; }
+            } else if (meta.project_ids && meta.item_count) {
+              const ids = String(meta.project_ids).split(',');
+              items = ids.map((pid: string) => ({ project_id: pid, quantity: 1 }));
+            }
+            if (items.length > 0) {
+              const rows = items.map((it) => ({ purchase_id: createdPurchaseId!, project_id: it.project_id, quantity: Math.max(1, Number(it.quantity) || 1), unit_price: it.price ?? null }));
+              const { error: itemsErr } = await supabase
+                .from('purchase_items')
+                .insert(rows);
+              if (itemsErr) {
+                console.error('reconcile insert purchase_items error', itemsErr);
+              } else {
+                // Insert basic certificates (no PDF) so they appear immediately; webhook may enrich later
+                const certificateType = meta.certificate_type || 'digital';
+                for (const it of rows) {
+                  const certNumber = `MF-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+                  const { error: certErr } = await supabase
+                    .from('certificates')
+                    .insert({
+                      purchase_id: createdPurchaseId!,
+                      project_id: it.project_id,
+                      area_sqm: it.quantity,
+                      certificate_number: certNumber,
+                      certificate_type: certificateType,
+                      issued_at: new Date().toISOString(),
+                      status: 'issued',
+                    });
+                  if (certErr) {
+                    console.error('reconcile insert certificate error', certErr);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('reconcile purchase/items/cert generation error', e);
+    }
+
     const body: ReconcileResponse = {
       payment_intent_id,
       status,

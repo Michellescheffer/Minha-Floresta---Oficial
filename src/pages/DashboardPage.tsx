@@ -72,6 +72,19 @@ export function DashboardPage() {
   }
 
   const handleProfileUpdate = async () => {
+    // Validações leves: CPF (11 dígitos), Telefone (10-11 dígitos)
+    const onlyDigits = (s: string) => (s || '').replace(/\D+/g, '');
+    const cpfDigits = onlyDigits(profileForm.cpf);
+    const phoneDigits = onlyDigits(profileForm.phone);
+    if (profileForm.cpf && cpfDigits.length > 0 && cpfDigits.length !== 11) {
+      toast.error('CPF inválido. Use 11 dígitos.');
+      return;
+    }
+    if (profileForm.phone && phoneDigits.length > 0 && (phoneDigits.length < 10 || phoneDigits.length > 11)) {
+      toast.error('Telefone inválido. Use DDD + número (10-11 dígitos).');
+      return;
+    }
+
     try {
       await updateProfile({
         name: profileForm.name,
@@ -178,7 +191,7 @@ export function DashboardPage() {
               </span>
               <button
                 onClick={() => setActiveTab('certificates')}
-                className="ml-3 px-3 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+                className="ml-3 px-3 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/50"
               >
                 Ver certificados
               </button>
@@ -205,7 +218,7 @@ export function DashboardPage() {
                     isActive
                       ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent shadow-lg'
                       : 'bg-white/40 hover:bg-white/60 text-gray-700 border-white/30 backdrop-blur'
-                  }`}
+                  } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40`}
                   role="tab"
                   aria-selected={isActive}
                   aria-controls={`panel-${tab.id}`}
@@ -372,7 +385,7 @@ export function DashboardPage() {
 
                   <div className="flex items-center justify-end">
                     <button
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                       onClick={() => setActiveTab('certificates')}
                     >
                       <Eye className="w-4 h-4" />
@@ -562,7 +575,7 @@ export function DashboardPage() {
               {!isEditingProfile && (
                 <button
                   onClick={() => setIsEditingProfile(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
                 >
                   <Edit className="w-4 h-4" />
                   Editar
@@ -731,7 +744,7 @@ export function DashboardPage() {
                   <button
                     onClick={handleProfileUpdate}
                     disabled={isLoading}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all disabled:opacity-50"
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/40"
                   >
                     {isLoading ? (
                       <>
@@ -759,7 +772,7 @@ export function DashboardPage() {
                         }
                       });
                     }}
-                    className="flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-300/60"
                   >
                     <X className="w-4 h-4" />
                     Cancelar
