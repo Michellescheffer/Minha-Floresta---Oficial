@@ -166,8 +166,22 @@ export function DashboardPage() {
         <div className="flex flex-wrap gap-2 mb-8">
           {reconcileInfo && (
             <div className="w-full">
-              <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-green-800 text-sm">
-                Pagamento confirmado{reconcileInfo.amount ? ` • ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: (reconcileInfo.currency || 'BRL').toUpperCase() }).format(reconcileInfo.amount)}` : ''}
+              <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-green-800 text-sm flex items-center justify-between">
+                <span>
+                  Pagamento confirmado
+                  {reconcileInfo.amount
+                    ? ` • ${new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: (reconcileInfo.currency || 'BRL').toUpperCase(),
+                      }).format(reconcileInfo.amount)}`
+                    : ''}
+                </span>
+                <button
+                  onClick={() => setActiveTab('certificates')}
+                  className="ml-3 px-3 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
+                >
+                  Ver certificados
+                </button>
               </div>
             </div>
           )}
@@ -192,6 +206,16 @@ export function DashboardPage() {
 
         {/* Overview */}
         {activeTab === 'overview' && (
+          loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(4)].map((_, i) => (
+                <GlassCard key={i} className="p-6 animate-pulse">
+                  <div className="h-6 w-32 bg-gray-200 rounded mb-4" />
+                  <div className="h-4 w-24 bg-gray-200 rounded" />
+                </GlassCard>
+              ))}
+            </div>
+          ) : (
           <div className="space-y-8">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -280,10 +304,24 @@ export function DashboardPage() {
               </div>
             </GlassCard>
           </div>
-        )}
+        ))}
 
         {/* Purchases Tab */}
         {activeTab === 'purchases' && (
+          loading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <GlassCard key={i} className="p-6 animate-pulse">
+                  <div className="h-5 w-48 bg-gray-200 rounded mb-3" />
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {[...Array(3)].map((__, j) => (
+                      <div key={j} className="h-4 w-24 bg-gray-200 rounded" />
+                    ))}
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-gray-800">Suas Compras</h2>
@@ -340,10 +378,20 @@ export function DashboardPage() {
               )}
             </div>
           </div>
-        )}
+        ))}
 
         {/* Donations Tab */}
         {activeTab === 'donations' && (
+          loading ? (
+            <div className="space-y-4">
+              {[...Array(2)].map((_, i) => (
+                <GlassCard key={i} className="p-6 animate-pulse">
+                  <div className="h-5 w-56 bg-gray-200 rounded mb-4" />
+                  <div className="h-4 w-24 bg-gray-200 rounded" />
+                </GlassCard>
+              ))}
+            </div>
+          ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-gray-800">Suas Doações</h2>
@@ -368,7 +416,7 @@ export function DashboardPage() {
                       </div>
                       <div>
                         <p className="text-gray-600 text-sm">Valor Doado</p>
-                        <p className="text-gray-800 font-semibold text-lg">{formatCurrency(donation.amount)}</p>
+                        <p className="text-gray-800 font-medium">{formatCurrency(donation.amount)}</p>
                       </div>
                     </div>
                     
@@ -389,10 +437,24 @@ export function DashboardPage() {
               )}
             </div>
           </div>
-        )}
+        ))}
 
         {/* Certificates Tab */}
         {activeTab === 'certificates' && (
+          loading ? (
+            <div className="space-y-4">
+              {[...Array(2)].map((_, i) => (
+                <GlassCard key={i} className="p-6 animate-pulse">
+                  <div className="h-5 w-56 bg-gray-200 rounded mb-4" />
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[...Array(4)].map((__, j) => (
+                      <div key={j} className="h-4 w-24 bg-gray-200 rounded" />
+                    ))}
+                  </div>
+                </GlassCard>
+              ))}
+            </div>
+          ) : (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-gray-800">Seus Certificados</h2>

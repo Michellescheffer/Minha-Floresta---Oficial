@@ -9,6 +9,7 @@ import { Toaster } from "./components/ui/sonner";
 import { SEOHead } from "./components/SEOHead";
 import { NotificationProvider } from "./components/NotificationSystem";
 import { initializeErrorHandler } from "./utils/errorHandler";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { supabase } from "./services/supabaseClient";
 import { toast } from "sonner";
 
@@ -42,7 +43,9 @@ export default function App() {
               <SessionHashHandler />
               <Navigation />
               <main>
-                <PageRouter />
+                <ErrorBoundary>
+                  <PageRouter />
+                </ErrorBoundary>
               </main>
               <Footer />
               <Toaster
