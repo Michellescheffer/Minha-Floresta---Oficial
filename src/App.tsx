@@ -50,7 +50,7 @@ export default function App() {
               </main>
               <Footer />
               <Toaster
-                position="top-right"
+                position="bottom-right"
                 closeButton={true}
                 richColors={true}
                 expand={false}

@@ -122,6 +122,7 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const ENABLE_REMOTE_CART = false;
   const hashToPage = useCallback((hash: string): PageType => {
     const h = (hash || '').replace(/^#/, '').trim();
     // Ignorar querystring ao mapear a página (ex.: 'checkout-success?session_id=...' => 'checkout-success')
@@ -195,6 +196,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const loadCart = async () => {
+      if (!ENABLE_REMOTE_CART) return;
       try {
         const { data: userData } = await supabase.auth.getUser();
         if (!userData?.user) return;
@@ -219,6 +221,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const syncUpsertCartItem = async (projectId: string, m2Quantity: number, pricePerM2: number) => {
+    if (!ENABLE_REMOTE_CART) return;
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData?.user) return;
@@ -238,6 +241,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const syncDeleteCartItem = async (projectId: string) => {
+    if (!ENABLE_REMOTE_CART) return;
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData?.user) return;
@@ -251,6 +255,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const syncClearCart = async () => {
+    if (!ENABLE_REMOTE_CART) return;
     try {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData?.user) return;
