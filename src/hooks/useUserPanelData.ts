@@ -43,16 +43,16 @@ export function useUserPanelData() {
     setLoading(true);
     setError(null);
     try {
-      // Purchases by email
+      // Purchases by email (support different schemas: email or buyer_email)
       const { data: purchaseRows } = await supabase
         .from('purchases')
-        .select('id, email, total_amount, created_at')
-        .eq('email', user.email)
+        .select('id, email, buyer_email, total_amount, created_at')
+        .or(`email.eq.${user.email},buyer_email.eq.${user.email}`)
         .order('created_at', { ascending: false });
 
       const basePurchases: UserPurchase[] = (purchaseRows || []).map((p: any) => ({
         id: p.id,
-        email: p.email,
+        email: p.email || p.buyer_email || user.email,
         total_amount: p.total_amount ?? 0,
         created_at: p.created_at,
       }));
@@ -83,47 +83,51 @@ export function useUserPanelData() {
         setPurchases(basePurchases);
       }
 
-      // Donations by donor_email
+      // Donations by donor_email (support different schemas: donor_email or email)
       const { data: donationRows } = await supabase
         .from('donations')
-        .select('id, donor_email, amount, project_id, created_at')
-        .eq('donor_email', user.email)
+        .select('id, donor_email, email, amount, project_id, created_at')
+        .or(`donor_email.eq.${user.email},email.eq.${user.email}`)
         .order('created_at', { ascending: false });
 
       setDonations((donationRows || []).map((d: any) => ({
         id: d.id,
-        donor_email: d.donor_email,
+        donor_email: d.donor_email || d.email || user.email,
         amount: d.amount ?? 0,
         project_id: d.project_id ?? null,
         created_at: d.created_at,
       })));
 
-      // Certificates linked to user's purchases (join via purchases)
-      const { data: certRows } = await supabase
-        .from('certificates')
-        .select(`
-          id,
-          certificate_number,
-          area_sqm,
-          pdf_url,
-          issued_at,
-          status,
-          purchase_id,
-          projects(name),
-          purchases(email)
-        `)
-        .in('purchase_id', (purchaseRows || []).map((p: any) => p.id));
+      // Certificates linked to user's purchases (only if we have purchaseIds)
+      const purchaseIds = (purchaseRows || []).map((p: any) => p.id);
+      if (purchaseIds.length > 0) {
+        const { data: certRows } = await supabase
+          .from('certificates')
+          .select(`
+            id,
+            certificate_number,
+            area_sqm,
+            pdf_url,
+            issued_at,
+            status,
+            purchase_id,
+            projects(name)
+          `)
+          .in('purchase_id', purchaseIds);
 
-      setCertificates((certRows || []).map((c: any) => ({
-        id: c.id,
-        certificate_number: c.certificate_number,
-        area_sqm: c.area_sqm,
-        pdf_url: c.pdf_url || null,
-        issued_at: c.issued_at,
-        status: c.status,
-        project_name: (c.projects as any)?.name || 'Projeto',
-        purchase_id: c.purchase_id,
-      })));
+        setCertificates((certRows || []).map((c: any) => ({
+          id: c.id,
+          certificate_number: c.certificate_number,
+          area_sqm: c.area_sqm,
+          pdf_url: c.pdf_url || null,
+          issued_at: c.issued_at,
+          status: c.status,
+          project_name: (c.projects as any)?.name || 'Projeto',
+          purchase_id: c.purchase_id,
+        })));
+      } else {
+        setCertificates([]);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Falha ao carregar dados');
     } finally {
