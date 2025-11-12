@@ -101,6 +101,17 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
           return;
         }
         toast.success('Login realizado com sucesso!');
+        setCurrentPage('dashboard');
+        handleClose();
+        // Reset form
+        setFormData({
+          email: '',
+          password: '',
+          name: '',
+          phone: '',
+          cpf: '',
+          address: ''
+        });
       } else {
         const res = await register({
           email: formData.email,
@@ -113,19 +124,19 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
           toast.error(res.error || 'Falha ao criar conta');
           return;
         }
-        toast.success('Conta criada com sucesso!');
+        toast.success('Conta criada com sucesso! Verifique seu e-mail para confirmar.');
+        toast.info('Enviamos um e-mail de confirmação. Confira sua caixa de entrada e spam.');
+        setMode('login');
+        // Keep email, clear password and optional fields for login
+        setFormData(prev => ({
+          ...prev,
+          password: '',
+          name: '',
+          phone: '',
+          cpf: '',
+          address: ''
+        }));
       }
-      setCurrentPage('dashboard');
-      handleClose();
-      // Reset form
-      setFormData({
-        email: '',
-        password: '',
-        name: '',
-        phone: '',
-        cpf: '',
-        address: ''
-      });
     } catch (error) {
       // Error is already handled in auth context
     }
