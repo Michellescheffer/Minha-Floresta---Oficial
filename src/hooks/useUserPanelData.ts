@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../services/supabaseClient';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { useAuth } from '../contexts/AuthContext';
 
 export interface UserPurchase {
@@ -43,41 +44,17 @@ export function useUserPanelData() {
     setLoading(true);
     setError(null);
     try {
-      // Single source: stripe_payment_intents (schema-agnostic)
-      const { data: spiRows, error: spiErr } = await supabase
-        .from('stripe_payment_intents')
-        .select('stripe_payment_intent_id, amount, currency, status, created_at, email, metadata')
-        .eq('email', user.email)
-        .eq('status', 'succeeded')
-        .order('created_at', { ascending: false });
-
-      const rows = (!spiErr && Array.isArray(spiRows)) ? spiRows : [];
-
-      const purchasesLike = rows.filter((r: any) => {
-        try { return (r.metadata && (r.metadata as any).type) === 'purchase'; } catch { return false; }
+      const url = `https://${projectId}.supabase.co/functions/v1/user-dashboard?` + new URLSearchParams({ email: user.email }).toString();
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${publicAnonKey}` },
       });
-      const donationsLike = rows.filter((r: any) => {
-        try { return (r.metadata && (r.metadata as any).type) === 'donation'; } catch { return false; }
-      });
+      if (!res.ok) throw new Error('Falha ao carregar seus dados');
+      const data = await res.json();
 
-      const basePurchases: UserPurchase[] = purchasesLike.map((r: any) => ({
-        id: r.stripe_payment_intent_id,
-        email: r.email || user.email,
-        total_amount: r.amount ?? 0,
-        created_at: r.created_at,
-      }));
-      setPurchases(basePurchases);
-
-      setDonations(donationsLike.map((r: any) => ({
-        id: r.stripe_payment_intent_id,
-        donor_email: r.email || user.email,
-        amount: r.amount ?? 0,
-        project_id: null,
-        created_at: r.created_at,
-      })));
-
-      // Certificates: require purchases table linkage; if absent, skip quietly
-      setCertificates([]);
+      setPurchases((data?.purchases || []) as UserPurchase[]);
+      setDonations((data?.donations || []) as UserDonation[]);
+      setCertificates((data?.certificates || []) as UserCertificate[]);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Falha ao carregar dados');
     } finally {
@@ -86,7 +63,23 @@ export function useUserPanelData() {
   }, [user?.email]);
 
   useEffect(() => {
-    load();
+    // Preferir pequeno polling por alguns segundos após retorno do checkout
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    const cameFromCheckout = (hash || '').includes('checkout-return');
+    if (!cameFromCheckout) {
+      load();
+      return;
+    }
+    let cancelled = false;
+    const schedule = [500, 1000, 2000, 3000, 5000, 8000];
+    (async () => {
+      for (const ms of schedule) {
+        if (cancelled) return;
+        await load();
+        await new Promise(r => setTimeout(r, ms));
+      }
+    })();
+    return () => { cancelled = true; };
   }, [load]);
 
   return { loading, error, purchases, donations, certificates, reload: load };
