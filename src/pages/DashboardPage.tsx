@@ -31,6 +31,8 @@ import { toast } from 'sonner';
 type DashboardTab = 'overview' | 'purchases' | 'donations' | 'certificates' | 'profile';
 
 export function DashboardPage() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const { 
     user,
     updateProfile,
@@ -51,6 +53,11 @@ export function DashboardPage() {
       notifications: user?.preferences?.notifications || false
     }
   });
+
+  // Avoid SSR/hydration/order issues: render only after first client effect
+  if (!mounted) {
+    return null;
+  }
 
   // Stabilize first render while auth is resolving to avoid transient states
   if (isLoading) {
