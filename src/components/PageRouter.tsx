@@ -20,6 +20,7 @@ import { CMSPage } from '../pages/CMSPage';
 import { CleanupTestPage } from '../pages/CleanupTestPage';
 import CheckoutSuccessPage from '../pages/CheckoutSuccessPage';
 import CheckoutCancelPage from '../pages/CheckoutCancelPage';
+import CheckoutReturnPage from '../pages/CheckoutReturnPage';
 
 
 // Páginas simples restantes
@@ -268,6 +269,8 @@ export function PageRouter() {
       return <CheckoutSuccessPage />;
     case 'checkout-cancel':
       return <CheckoutCancelPage />;
+    case 'checkout-return':
+      return <CheckoutReturnPage />;
     default:
       return <HomePage />;
   }

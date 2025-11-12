@@ -120,40 +120,7 @@ export function DashboardPage() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Se houver session_id na URL, reconcilia imediatamente e recarrega dados (com guarda e limpeza do hash)
-  const reconcileRanRef = useRef(false);
-  useEffect(() => {
-    let raf = 0;
-    raf = requestAnimationFrame(() => {
-      if (reconcileRanRef.current) return;
-      const hash = window.location.hash || '';
-      const [path, query = ''] = hash.replace(/^#/, '').split('?');
-      const params = new URLSearchParams(query);
-      const sessionId = params.get('session_id');
-      if (!sessionId) return;
-
-      reconcileRanRef.current = true;
-      setActiveTab('purchases');
-
-      // Limpa o session_id do hash imediatamente para evitar reprocesso
-      params.delete('session_id');
-      const newHash = '#' + path + (params.toString() ? `?${params.toString()}` : '');
-      history.replaceState(null, '', window.location.pathname + window.location.search + newHash);
-
-      (async () => {
-        try {
-          const url = `https://${projectId}.supabase.co/functions/v1/stripe-reconcile?session_id=${encodeURIComponent(sessionId)}`;
-          const res = await fetch(url, { method: 'GET' });
-          if (res.ok) {
-            const data = await res.json();
-            setReconcileInfo({ amount: data.amount, currency: data.currency, pi: data.payment_intent_id });
-            await reload();
-          }
-        } catch {}
-      })();
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [reload]);
+  // Reconciliação removida do Dashboard. Feita em #checkout-return para maior estabilidade.
 
   return (
     <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">

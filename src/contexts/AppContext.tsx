@@ -72,7 +72,8 @@ export type PageType =
   | 'cms'
   | 'cleanup-test'
   | 'checkout-success'
-  | 'checkout-cancel';
+  | 'checkout-cancel'
+  | 'checkout-return';
 
 export interface Project {
   id: string;
@@ -147,6 +148,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       'cleanup-test': 'cleanup-test',
       'checkout-success': 'checkout-success',
       'checkout-cancel': 'checkout-cancel',
+      'checkout-return': 'checkout-return',
     };
     return map[path] || 'home';
   }, []);

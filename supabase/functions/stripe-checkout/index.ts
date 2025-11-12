@@ -133,7 +133,8 @@ serve(async (req: Request) => {
           quantity: Math.max(1, Math.round(item.quantity)),
         }));
 
-        const successUrl = (metadata && (metadata as any).success_url) || `${new URL(req.url).origin}/#checkout-success`;
+        const successUrl = (metadata && (metadata as any).success_url)
+          || `${new URL(req.url).origin}/#checkout-return?p=purchases&session_id={CHECKOUT_SESSION_ID}`;
         const cancelUrl = (metadata && (metadata as any).cancel_url) || `${new URL(req.url).origin}/#loja`;
 
         const session = await stripe.checkout.sessions.create({
@@ -219,7 +220,8 @@ serve(async (req: Request) => {
 
       const amountInCents = Math.round(donation_amount * 100);
       const useHosted = Boolean((metadata && (metadata as any).use_hosted) || false);
-      const successUrl = (metadata && (metadata as any).success_url) || `${new URL(req.url).origin}/#checkout-success`;
+      const successUrl = (metadata && (metadata as any).success_url)
+        || `${new URL(req.url).origin}/#checkout-return?p=donations&session_id={CHECKOUT_SESSION_ID}`;
       const cancelUrl = (metadata && (metadata as any).cancel_url) || `${new URL(req.url).origin}/#doacoes`;
 
       // Hosted Checkout (Stripe Checkout Session)
