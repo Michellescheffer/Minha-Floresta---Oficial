@@ -121,7 +121,7 @@ serve(async (req: Request) => {
       // Construir mapas a partir dos próprios intents
       const projectIds: string[] = [];
       const areaByIntent = new Map<string, number>();
-      const namesByIntent = new Map<string, Set<string>>();
+      const projectIdsByIntent = new Map<string, string[]>();
       for (const r of purchasesLike as any[]) {
         const meta = (r.metadata || {}) as any;
         let items: Array<{ project_id: string; quantity: number } > = [];
@@ -134,7 +134,9 @@ serve(async (req: Request) => {
         if (items.length > 0) {
           const totalArea = items.reduce((s, it) => s + Math.max(1, Number(it.quantity) || 0), 0);
           areaByIntent.set(r.stripe_payment_intent_id, totalArea);
-          items.forEach(it => projectIds.push(it.project_id));
+          const pids = items.map(it => it.project_id).filter(Boolean);
+          projectIdsByIntent.set(r.stripe_payment_intent_id, pids);
+          pids.forEach(pid => projectIds.push(pid));
         }
       }
       // Buscar nomes dos projetos quando possível
@@ -155,12 +157,9 @@ serve(async (req: Request) => {
           if (typeof a === 'number') {
             bp.area_total = a;
           }
-          const projectNames = new Set<string>();
-          // Não temos os itens aqui para cada bp com precisão dos nomes, mas podemos inferir pelo total + namesById se necessário
-          // Como não temos os pids por intent mapeados aqui depois, manter somente área; nomes podem vir dos certificados carregados
-          if (projectNames.size > 0) {
-            bp.project_names = Array.from(projectNames);
-          }
+          const pids = projectIdsByIntent.get(bp.id) || [];
+          const projectNames = pids.map(pid => namesById.get(pid) || 'Projeto');
+          if (projectNames.length > 0) bp.project_names = Array.from(new Set(projectNames));
         }
       });
     } catch {}
@@ -195,6 +194,21 @@ serve(async (req: Request) => {
       }))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 10);
+
+    // 3b) cert_count por purchase
+    try {
+      const counts = new Map<string, number>();
+      for (const c of certificates) {
+        const pid = c.purchase_id;
+        if (!pid) continue;
+        counts.set(pid, (counts.get(pid) || 0) + 1);
+      }
+      basePurchases.forEach(bp => {
+        // Quando bp.id foi trocado para purchase_id real acima, o count casa direto
+        const cnt = counts.get(bp.id);
+        if (typeof cnt === 'number') (bp as any).cert_count = cnt;
+      });
+    } catch {}
 
     const body = { purchases: basePurchases, donations: baseDonations, certificates, activity };
     return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
