@@ -136,6 +136,31 @@ export function DashboardPage() {
             Olá, <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600">{user.name}!</span>
           </h1>
           <p className="text-gray-600">Gerencie suas compras, doações e certificados</p>
+          {/* User summary */}
+          <div className="mt-4">
+            <GlassCard className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-400 to-emerald-500 text-white flex items-center justify-center font-medium">
+                  {String(user.name || user.email || 'U').charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <div className="text-gray-800 font-medium">{user.email}</div>
+                  <div className="text-gray-600 text-sm">Membro desde {user.created_at ? formatDate(user.created_at as unknown as string) : '-'}</div>
+                </div>
+              </div>
+              <div className="hidden sm:flex items-center gap-3 text-sm text-gray-600">
+                <div className="px-3 py-1 rounded-lg bg-white/40 border border-white/30">
+                  {purchases.length} compras
+                </div>
+                <div className="px-3 py-1 rounded-lg bg-white/40 border border-white/30">
+                  {donations.length} doações
+                </div>
+                <div className="px-3 py-1 rounded-lg bg-white/40 border border-white/30">
+                  {certificates.length} certificados
+                </div>
+              </div>
+            </GlassCard>
+          </div>
         </div>
 
         {/* Success banner */}
@@ -264,9 +289,9 @@ export function DashboardPage() {
               <h3 className="text-gray-800 mb-4">Atividade Recente</h3>
               <div className="space-y-4">
                 {purchases.slice(0, 3).map((purchase) => (
-                  <div key={purchase.id} className="flex items-center justify-between p-4 bg-white/30 rounded-xl">
+                  <div key={purchase.id} className="flex items-center justify-between p-4 bg-white/40 rounded-xl border border-white/30 transition-all duration-200 hover:bg-white/60">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-500/20 rounded-lg">
+                      <div className="p-2 rounded-lg bg-gradient-to-br from-green-400/20 to-emerald-400/20">
                         <ShoppingBag className="w-4 h-4 text-green-600" />
                       </div>
                       <div>
@@ -274,22 +299,22 @@ export function DashboardPage() {
                         <p className="text-gray-600 text-sm">{formatDate(purchase.created_at)}</p>
                       </div>
                     </div>
-                    <span className="text-green-600 font-semibold">{formatCurrency(purchase.total_amount || 0)}</span>
+                    <span className="text-green-700 font-semibold">{formatCurrency(purchase.total_amount || 0)}</span>
                   </div>
                 ))}
                 
                 {donations.slice(0, 2).map((donation) => (
-                  <div key={donation.id} className="flex items-center justify-between p-4 bg-white/30 rounded-xl">
+                  <div key={donation.id} className="flex items-center justify-between p-4 bg-white/40 rounded-xl border border-white/30 transition-all duration-200 hover:bg-white/60">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-purple-500/20 rounded-lg">
+                      <div className="p-2 rounded-lg bg-gradient-to-br from-purple-400/20 to-pink-400/20">
                         <Heart className="w-4 h-4 text-purple-600" />
                       </div>
                       <div>
                         <p className="text-gray-800 font-medium">{donation.project_id ? `Doação para projeto ${donation.project_id}` : 'Doação Geral'}</p>
-                        <p className="text-gray-600 text-sm">Doação - {formatDate(donation.created_at)}</p>
+                        <p className="text-gray-600 text-sm">Doação • {formatDate(donation.created_at)}</p>
                       </div>
                     </div>
-                    <span className="text-purple-600 font-semibold">{formatCurrency(donation.amount || 0)}</span>
+                    <span className="text-purple-700 font-semibold">{formatCurrency(donation.amount || 0)}</span>
                   </div>
                 ))}
               </div>
