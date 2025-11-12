@@ -44,13 +44,14 @@ export function useUserPanelData() {
     setError(null);
     try {
       // Purchases by email (support different schemas: email or buyer_email)
-      const { data: purchaseRows } = await supabase
+      const { data: purchaseRows, error: purchaseErr } = await supabase
         .from('purchases')
         .select('id, email, buyer_email, total_amount, created_at')
         .or(`email.eq.${user.email},buyer_email.eq.${user.email}`)
         .order('created_at', { ascending: false });
+      const safePurchaseRows = purchaseErr ? [] : (purchaseRows || []);
 
-      const basePurchases: UserPurchase[] = (purchaseRows || []).map((p: any) => ({
+      const basePurchases: UserPurchase[] = safePurchaseRows.map((p: any) => ({
         id: p.id,
         email: p.email || p.buyer_email || user.email,
         total_amount: p.total_amount ?? 0,
@@ -60,14 +61,15 @@ export function useUserPanelData() {
       // Purchase items to compute total area and list of project names
       if (basePurchases.length > 0) {
         const purchaseIds = basePurchases.map(p => p.id);
-        const { data: itemRows } = await supabase
+        const { data: itemRows, error: itemsErr } = await supabase
           .from('purchase_items')
           .select('purchase_id, quantity, project_id, projects(name)')
           .in('purchase_id', purchaseIds);
+        const safeItemRows = itemsErr ? [] : (itemRows || []);
 
         const areaMap = new Map<string, number>();
         const namesMap = new Map<string, Set<string>>();
-        for (const it of (itemRows || [])) {
+        for (const it of safeItemRows) {
           areaMap.set(it.purchase_id, (areaMap.get(it.purchase_id) || 0) + (it.quantity || 0));
           const set = namesMap.get(it.purchase_id) || new Set<string>();
           set.add(((it.projects as any)?.name) || 'Projeto');
@@ -84,13 +86,14 @@ export function useUserPanelData() {
       }
 
       // Donations by donor_email (support different schemas: donor_email or email)
-      const { data: donationRows } = await supabase
+      const { data: donationRows, error: donationErr } = await supabase
         .from('donations')
         .select('id, donor_email, email, amount, project_id, created_at')
         .or(`donor_email.eq.${user.email},email.eq.${user.email}`)
         .order('created_at', { ascending: false });
+      const safeDonationRows = donationErr ? [] : (donationRows || []);
 
-      setDonations((donationRows || []).map((d: any) => ({
+      setDonations(safeDonationRows.map((d: any) => ({
         id: d.id,
         donor_email: d.donor_email || d.email || user.email,
         amount: d.amount ?? 0,
@@ -99,9 +102,9 @@ export function useUserPanelData() {
       })));
 
       // Certificates linked to user's purchases (only if we have purchaseIds)
-      const purchaseIds = (purchaseRows || []).map((p: any) => p.id);
+      const purchaseIds = safePurchaseRows.map((p: any) => p.id);
       if (purchaseIds.length > 0) {
-        const { data: certRows } = await supabase
+        const { data: certRows, error: certErr } = await supabase
           .from('certificates')
           .select(`
             id,
@@ -114,8 +117,9 @@ export function useUserPanelData() {
             projects(name)
           `)
           .in('purchase_id', purchaseIds);
+        const safeCertRows = certErr ? [] : (certRows || []);
 
-        setCertificates((certRows || []).map((c: any) => ({
+        setCertificates(safeCertRows.map((c: any) => ({
           id: c.id,
           certificate_number: c.certificate_number,
           area_sqm: c.area_sqm,
