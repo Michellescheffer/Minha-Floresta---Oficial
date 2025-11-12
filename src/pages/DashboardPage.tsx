@@ -321,7 +321,7 @@ export function DashboardPage() {
 
             <div className="space-y-4">
               {purchases.map((purchase) => (
-                <GlassCard key={purchase.id} className="p-6">
+                <GlassCard key={purchase.id} className="p-6 group transition-all duration-300 hover:shadow-lg hover:shadow-black/5 focus-within:ring-2 focus-within:ring-green-500/20">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-gray-800 font-semibold">{(purchase.project_names || ['Compra']).join(', ')}</h3>
@@ -347,7 +347,7 @@ export function DashboardPage() {
 
                   <div className="flex items-center justify-end">
                     <button
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
                       onClick={() => setActiveTab('certificates')}
                     >
                       <Eye className="w-4 h-4" />
@@ -391,7 +391,7 @@ export function DashboardPage() {
 
             <div className="space-y-4">
               {donations.map((donation) => (
-                <GlassCard key={donation.id} className="p-6">
+                <GlassCard key={donation.id} className="p-6 group transition-all duration-300 hover:shadow-lg hover:shadow-black/5 focus-within:ring-2 focus-within:ring-green-500/20">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-gray-800 font-semibold">{donation.project_id ? `Projeto ${donation.project_id}` : 'Doação Geral'}</h3>
@@ -454,7 +454,7 @@ export function DashboardPage() {
 
             <div className="space-y-4">
               {certificates.map((certificate) => (
-                <GlassCard key={certificate.id} className="p-6">
+                <GlassCard key={certificate.id} className="p-6 group transition-all duration-300 hover:shadow-lg hover:shadow-black/5 focus-within:ring-2 focus-within:ring-green-500/20">
                   <div className="flex items-center justify-between mb-4">
                     <div>
                       <h3 className="text-gray-800 font-semibold">{certificate.project_name || 'Projeto'}</h3>
@@ -498,7 +498,7 @@ export function DashboardPage() {
                       <Eye className="w-4 h-4" />
                       Visualizar
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors" onClick={() => {
+                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98]" onClick={() => {
                       if (certificate.pdf_url) {
                         const link = document.createElement('a');
                         link.href = certificate.pdf_url as string;
