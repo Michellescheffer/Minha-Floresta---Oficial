@@ -172,6 +172,59 @@ serve(async (req: Request) => {
             }
           }
         }
+
+        // At this point, either we created the purchase or it already existed.
+        // Ensure certificates exist for each purchase_item (idempotent):
+        if (createdPurchaseId) {
+          let { data: itemsForCert } = await supabase
+            .from('purchase_items')
+            .select('project_id, quantity')
+            .eq('purchase_id', createdPurchaseId);
+          // If there are no items yet (legacy), rebuild from metadata
+          if (!itemsForCert || itemsForCert.length === 0) {
+            let items: Array<{ project_id: string; quantity: number; price?: number }> = [];
+            if (meta.items_json) {
+              try { items = JSON.parse(String(meta.items_json)); } catch (_) { items = []; }
+            } else if (meta.project_ids && meta.item_count) {
+              const ids = String(meta.project_ids).split(',').filter(Boolean);
+              items = ids.map((pid: string) => ({ project_id: pid, quantity: 1 }));
+            }
+            if (items.length > 0) {
+              const rows = items.map((it) => ({ purchase_id: createdPurchaseId!, project_id: it.project_id, quantity: Math.max(1, Number(it.quantity) || 1), unit_price: it.price ?? null }));
+              const { error: insertItemsErr } = await supabase
+                .from('purchase_items')
+                .insert(rows);
+              if (!insertItemsErr) {
+                itemsForCert = rows.map(r => ({ project_id: r.project_id, quantity: r.quantity }));
+              }
+            }
+          }
+          if (Array.isArray(itemsForCert) && itemsForCert.length > 0) {
+            const { data: existingCerts } = await supabase
+              .from('certificates')
+              .select('project_id')
+              .eq('purchase_id', createdPurchaseId);
+            const hasCertForProject = new Set<string>((existingCerts || []).map((c: any) => String(c.project_id)));
+            const certificateType = meta.certificate_type || 'digital';
+            for (const it of itemsForCert) {
+              const pid = String(it.project_id);
+              if (!hasCertForProject.has(pid)) {
+                const certNumber = `MF-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+                await supabase
+                  .from('certificates')
+                  .insert({
+                    purchase_id: createdPurchaseId,
+                    project_id: it.project_id,
+                    area_sqm: Math.max(1, Number(it.quantity) || 1),
+                    certificate_number: certNumber,
+                    certificate_type: certificateType,
+                    issued_at: new Date().toISOString(),
+                    status: 'issued',
+                  });
+              }
+            }
+          }
+        }
       }
     } catch (e) {
       console.error('reconcile purchase/items/cert generation error', e);

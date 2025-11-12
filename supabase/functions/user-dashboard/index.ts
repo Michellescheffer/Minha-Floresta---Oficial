@@ -58,11 +58,12 @@ serve(async (req: Request) => {
     // 2) Enriquecimento opcional usando purchases/purchase_items/certificates quando existir
     let certificates: any[] = [];
     try {
-      // Mapear PI -> purchase.id
+      // Mapear PI -> purchase.id usando a lista de intents do email (mais robusto que filtrar por email na tabela purchases)
+      const piIds = (purchasesLike as any[]).map(r => r.stripe_payment_intent_id);
       const { data: purchaseRows } = await supabase
         .from('purchases')
-        .select('id, stripe_payment_intent_id, email, buyer_email, total_amount, created_at')
-        .or(`email.eq.${email},buyer_email.eq.${email}`);
+        .select('id, stripe_payment_intent_id')
+        .in('stripe_payment_intent_id', piIds);
 
       const purchaseMap = new Map<string, string>();
       (purchaseRows || []).forEach((p: any) => purchaseMap.set(p.stripe_payment_intent_id, p.id));
@@ -110,6 +111,22 @@ serve(async (req: Request) => {
           project_name: (c.projects as any)?.name || 'Projeto',
           purchase_id: c.purchase_id,
         }));
+
+        // Fallback: se nenhuma linha em certificates, sintetizar a partir de purchase_items para exibição imediata
+        if ((!certificates || certificates.length === 0) && (items || []).length > 0) {
+          const firstId = (ids && ids[0]) || 'temp';
+          const synth = (items || []).map((it: any, idx: number) => ({
+            id: `synth-${firstId}-${idx}`,
+            certificate_number: `PENDENTE-${firstId}-${idx}`,
+            area_sqm: Math.max(1, Number(it.quantity) || 1),
+            pdf_url: null,
+            issued_at: new Date().toISOString(),
+            status: 'issued',
+            project_name: (it.projects as any)?.name || 'Projeto',
+            purchase_id: it.purchase_id,
+          }));
+          certificates = synth;
+        }
       }
     } catch (_) {
       // Ignorar se schema não existir

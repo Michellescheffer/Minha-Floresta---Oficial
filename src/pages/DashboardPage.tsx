@@ -364,6 +364,7 @@ export function DashboardPage() {
                     <div>
                       <h3 className="text-gray-800 font-semibold">{(purchase.project_names || ['Compra']).join(', ')}</h3>
                       <p className="text-gray-600 text-sm">Compra realizada em {formatDate(purchase.created_at)}</p>
+                      <p className="text-gray-500 text-xs mt-1 break-all">ID: {purchase.id}</p>
                     </div>
                     <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-700">Concluída</span>
                   </div>

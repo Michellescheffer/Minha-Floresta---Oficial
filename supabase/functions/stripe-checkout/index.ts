@@ -262,15 +262,29 @@ serve(async (req: Request) => {
           success_url: successUrl,
           cancel_url: cancelUrl,
           allow_promotion_codes: false,
+          payment_intent_data: {
+            metadata: {
+              type: 'donation',
+              project_id: donation_project_id || 'general',
+              user_id: user_id || 'anonymous',
+              email,
+              donor_name: metadata?.donor_name || '',
+              donor_phone: metadata?.donor_phone || '',
+              message: metadata?.message || '',
+              is_anonymous: String(metadata?.is_anonymous || false),
+              source: 'minha_floresta_web',
+            }
+          },
           metadata: {
             type: 'donation',
             project_id: donation_project_id || 'general',
-            user_id: user_id,
+            user_id: user_id || 'anonymous',
             email,
             donor_name: metadata?.donor_name || '',
             donor_phone: metadata?.donor_phone || '',
             message: metadata?.message || '',
             is_anonymous: String(metadata?.is_anonymous || false),
+            source: 'minha_floresta_web',
           },
         });
 
