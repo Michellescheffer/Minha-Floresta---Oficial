@@ -47,7 +47,7 @@ serve(async (req: Request) => {
       created_at: r.created_at,
     }));
 
-    const baseDonations = donationsLike.map((r: any) => ({
+    let baseDonations = donationsLike.map((r: any) => ({
       id: r.stripe_payment_intent_id,
       donor_email: r.email || email,
       amount: r.amount ?? 0,
@@ -115,6 +115,76 @@ serve(async (req: Request) => {
       // Ignorar se schema não existir
       certificates = [];
     }
+
+    // 2b) Fallback de área e projetos a partir do metadata.items_json quando não houver purchase_items
+    try {
+      // Construir mapas a partir dos próprios intents
+      const projectIds: string[] = [];
+      const areaByIntent = new Map<string, number>();
+      const namesByIntent = new Map<string, Set<string>>();
+      for (const r of purchasesLike as any[]) {
+        const meta = (r.metadata || {}) as any;
+        let items: Array<{ project_id: string; quantity: number } > = [];
+        if (meta.items_json) {
+          try { items = JSON.parse(String(meta.items_json)); } catch { items = []; }
+        } else if (meta.project_ids && meta.item_count) {
+          const ids = String(meta.project_ids).split(',').filter(Boolean);
+          items = ids.map((pid: string) => ({ project_id: pid, quantity: 1 }));
+        }
+        if (items.length > 0) {
+          const totalArea = items.reduce((s, it) => s + Math.max(1, Number(it.quantity) || 0), 0);
+          areaByIntent.set(r.stripe_payment_intent_id, totalArea);
+          items.forEach(it => projectIds.push(it.project_id));
+        }
+      }
+      // Buscar nomes dos projetos quando possível
+      let namesById = new Map<string, string>();
+      if (projectIds.length > 0) {
+        try {
+          const { data: prows } = await supabase
+            .from('projects')
+            .select('id, name')
+            .in('id', Array.from(new Set(projectIds)));
+          (prows || []).forEach((p: any) => namesById.set(p.id, p.name || 'Projeto'));
+        } catch {}
+      }
+      // Aplicar fallback apenas quando purchaseId real não foi encontrado
+      basePurchases.forEach(bp => {
+        if (typeof bp.area_total === 'undefined') {
+          const a = areaByIntent.get(bp.id);
+          if (typeof a === 'number') {
+            bp.area_total = a;
+          }
+          const projectNames = new Set<string>();
+          // Não temos os itens aqui para cada bp com precisão dos nomes, mas podemos inferir pelo total + namesById se necessário
+          // Como não temos os pids por intent mapeados aqui depois, manter somente área; nomes podem vir dos certificados carregados
+          if (projectNames.size > 0) {
+            bp.project_names = Array.from(projectNames);
+          }
+        }
+      });
+    } catch {}
+
+    // 2c) Doações: além dos intents, buscar tabela donations quando existir
+    try {
+      const { data: donationRows } = await supabase
+        .from('donations')
+        .select('id, donor_email, email, amount, project_id, created_at')
+        .or(`donor_email.eq.${email},email.eq.${email}`)
+        .order('created_at', { ascending: false });
+      if (Array.isArray(donationRows) && donationRows.length > 0) {
+        const mapped = donationRows.map((d: any) => ({
+          id: d.id,
+          donor_email: d.donor_email || d.email || email,
+          amount: d.amount ?? 0,
+          project_id: d.project_id ?? null,
+          created_at: d.created_at,
+        }));
+        // Mesclar (evitar duplicatas por id); priorizar registros da tabela donations
+        const seen = new Set<string>();
+        baseDonations = [...mapped, ...baseDonations.filter(d => { const k = d.id; if (seen.has(k)) return false; seen.add(k); return true; })];
+      }
+    } catch {}
 
     // 3) Activity (últimos eventos simples)
     const activity = [...basePurchases, ...baseDonations]
