@@ -106,19 +106,7 @@ export function DashboardPage() {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  // Seleciona a aba inicial via hash: #dashboard?p=purchases (adiada para o próximo frame)
-  useEffect(() => {
-    let raf = 0;
-    raf = requestAnimationFrame(() => {
-      const hash = window.location.hash || '';
-      const [, query = ''] = hash.replace(/^#/, '').split('?');
-      const params = new URLSearchParams(query);
-      const p = params.get('p');
-      const allowed: DashboardTab[] = ['overview', 'purchases', 'donations', 'certificates', 'profile'];
-      if (p && (allowed as string[]).includes(p)) setActiveTab(p as DashboardTab);
-    });
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  // Leitura do hash para aba inicial desativada para estabilidade do primeiro render.
 
   // Reconciliação removida do Dashboard. Feita em #checkout-return para maior estabilidade.
 

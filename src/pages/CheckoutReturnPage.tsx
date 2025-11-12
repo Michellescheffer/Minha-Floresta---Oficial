@@ -18,7 +18,7 @@ export default function CheckoutReturnPage() {
           setStatus('error');
           toast.error('Sessão de pagamento não encontrada.');
           // Fallback: enviar ao dashboard
-          window.location.hash = 'dashboard?p=purchases';
+          window.location.hash = 'dashboard';
           return;
         }
 
@@ -35,8 +35,8 @@ export default function CheckoutReturnPage() {
         if (cancelled) return;
         setStatus('ok');
         toast.success('Pagamento confirmado!');
-        // Redireciona ao dashboard (aba compras)
-        window.location.hash = 'dashboard?p=purchases';
+        // Redireciona ao dashboard
+        window.location.hash = 'dashboard';
       } catch (e) {
         if (cancelled) return;
         setStatus('error');
