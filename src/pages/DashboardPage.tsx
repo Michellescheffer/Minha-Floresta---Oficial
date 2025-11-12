@@ -536,7 +536,7 @@ export function DashboardPage() {
               )}
             </div>
           </div>
-        )}
+        ))}
 
         {/* Profile Tab */}
         {activeTab === 'profile' && (
