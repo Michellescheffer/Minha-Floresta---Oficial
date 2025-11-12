@@ -20,7 +20,8 @@ if (typeof window !== 'undefined') {
     if (hash) {
       const [path, query = ''] = hash.replace(/^#/, '').split('?');
       const params = new URLSearchParams(query);
-      if (params.has('session_id')) {
+      // Não remover o session_id quando estamos na rota de retorno do checkout
+      if (path !== 'checkout-return' && params.has('session_id')) {
         params.delete('session_id');
         const newHash = '#' + path + (params.toString() ? `?${params.toString()}` : '');
         history.replaceState(null, '', window.location.pathname + window.location.search + newHash);
