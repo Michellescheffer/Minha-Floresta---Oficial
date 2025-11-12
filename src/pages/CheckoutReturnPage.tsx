@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { projectId } from '../utils/supabase/info';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
 
 export default function CheckoutReturnPage() {
@@ -29,7 +29,7 @@ export default function CheckoutReturnPage() {
 
         // Reconcile
         const url = `https://${projectId}.supabase.co/functions/v1/stripe-reconcile?session_id=${encodeURIComponent(sessionId)}`;
-        const res = await fetch(url, { method: 'GET' });
+        const res = await fetch(url, { method: 'GET', headers: { 'Authorization': `Bearer ${publicAnonKey}` } });
         if (!res.ok) throw new Error('Falha ao reconciliar pagamento');
         const data = await res.json();
         if (cancelled) return;
