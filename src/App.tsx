@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { AppProvider, useApp } from "./contexts/AppContext";
+import { useEffect, useRef } from "react";
+import { AppProvider } from "./contexts/AppContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { SupabaseProvider } from "./contexts/SupabaseContext";
 import { Navigation } from "./components/Navigation";
@@ -48,8 +48,9 @@ export default function App() {
 }
 
 function SessionHashHandler() {
-  const { setCurrentPage } = useApp();
+  const ranRef = useRef(false);
   useEffect(() => {
+    if (ranRef.current) return;
     const h = window.location.hash || "";
     if (!h) return;
     const params = new URLSearchParams(h.startsWith("#") ? h.slice(1) : h);
@@ -63,15 +64,17 @@ function SessionHashHandler() {
     const access_token = params.get("access_token");
     const refresh_token = params.get("refresh_token");
     if (access_token && refresh_token) {
+      ranRef.current = true;
       supabase.auth.setSession({ access_token, refresh_token }).then(() => {
         toast.success("E-mail confirmado!");
         history.replaceState(null, "", window.location.pathname + window.location.search);
-        setCurrentPage("dashboard");
+        // Evita depender de contextos aqui; usa hash para navegar
+        window.location.hash = "dashboard";
       }).catch(() => {
         toast.error("Não foi possível conectar. Tente fazer login novamente.");
         history.replaceState(null, "", window.location.pathname + window.location.search);
       });
     }
-  }, [setCurrentPage]);
+  }, []);
   return null;
 }
