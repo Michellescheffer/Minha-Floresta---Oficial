@@ -8,10 +8,25 @@ import { Footer } from "./components/Footer";
 import { Toaster } from "./components/ui/sonner";
 import { SEOHead } from "./components/SEOHead";
 import { NotificationProvider } from "./components/NotificationSystem";
-import { ErrorBoundary } from "./components/ErrorBoundary";
 import { initializeErrorHandler } from "./utils/errorHandler";
 import { supabase } from "./services/supabaseClient";
 import { toast } from "sonner";
+
+// Pre-render cleanup: remove session_id from hash to avoid re-entrant effects on first render
+if (typeof window !== 'undefined') {
+  try {
+    const hash = window.location.hash || '';
+    if (hash) {
+      const [path, query = ''] = hash.replace(/^#/, '').split('?');
+      const params = new URLSearchParams(query);
+      if (params.has('session_id')) {
+        params.delete('session_id');
+        const newHash = '#' + path + (params.toString() ? `?${params.toString()}` : '');
+        history.replaceState(null, '', window.location.pathname + window.location.search + newHash);
+      }
+    }
+  } catch {}
+}
 
 export default function App() {
   // Initialize error handler
@@ -27,9 +42,7 @@ export default function App() {
               <SessionHashHandler />
               <Navigation />
               <main>
-                <ErrorBoundary>
-                  <PageRouter />
-                </ErrorBoundary>
+                <PageRouter />
               </main>
               <Footer />
               <Toaster

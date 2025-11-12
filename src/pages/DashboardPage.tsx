@@ -52,6 +52,19 @@ export function DashboardPage() {
     }
   });
 
+  // Stabilize first render while auth is resolving to avoid transient states
+  if (isLoading) {
+    return (
+      <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
+        <div className="absolute inset-0 bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-blue-50/80"></div>
+        <div className="relative z-10 max-w-2xl mx-auto px-6 text-center">
+          <h1 className="text-gray-800 mb-4">Carregando...</h1>
+          <p className="text-gray-600">Preparando seu painel</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
