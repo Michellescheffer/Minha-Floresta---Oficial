@@ -31,39 +31,11 @@ import { toast } from 'sonner';
 type DashboardTab = 'overview' | 'purchases' | 'donations' | 'certificates' | 'profile';
 
 export function DashboardPage() {
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
-  const { user, isLoading } = useAuth();
-
-  if (!mounted) return null;
-  if (isLoading) {
-    return (
-      <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
-        <div className="absolute inset-0 bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-blue-50/80"></div>
-        <div className="relative z-10 max-w-2xl mx-auto px-6 text-center">
-          <h1 className="text-gray-800 mb-4">Carregando...</h1>
-          <p className="text-gray-600">Preparando seu painel</p>
-        </div>
-      </div>
-    );
-  }
-  if (!user) {
-    return (
-      <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-50/80 via-orange-50/80 to-yellow-50/80"></div>
-        <div className="relative z-10 max-w-2xl mx-auto px-6 text-center">
-          <h1 className="text-gray-800 mb-4">Acesso Negado</h1>
-          <p className="text-gray-600">Você precisa estar logado para acessar o dashboard.</p>
-        </div>
-      </div>
-    );
-  }
-
-  return <DashboardContent />;
-}
-
-function DashboardContent() {
-  const { user, updateProfile } = useAuth();
+  const { 
+    user,
+    updateProfile,
+    isLoading
+  } = useAuth();
   const { purchases, donations, certificates, loading, error, reload } = useUserPanelData();
 
   const [activeTab, setActiveTab] = useState<DashboardTab>('overview');
@@ -79,6 +51,25 @@ function DashboardContent() {
       notifications: user?.preferences?.notifications || false
     }
   });
+
+  if (!user) {
+    return (
+      <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
+        <div className="absolute inset-0 bg-gradient-to-br from-red-50/80 via-orange-50/80 to-yellow-50/80"></div>
+        <div className="relative z-10 max-w-2xl mx-auto px-6 text-center">
+          <h1 className="text-gray-800 mb-4">Acesso Negado</h1>
+          <p className="text-gray-600">Você precisa estar logado para acessar o dashboard.</p>
+        </div>
+
+        {loading && (
+          <div className="mb-6 text-gray-600">Carregando seus dados...</div>
+        )}
+        {error && (
+          <div className="mb-6 text-red-600">{error}</div>
+        )}
+      </div>
+    );
+  }
 
   const handleProfileUpdate = async () => {
     try {
@@ -699,7 +690,7 @@ function DashboardContent() {
               )}
             </GlassCard>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
