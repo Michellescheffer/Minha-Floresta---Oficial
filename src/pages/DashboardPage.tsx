@@ -110,6 +110,21 @@ export function DashboardPage() {
 
   // Reconciliação removida do Dashboard. Feita em #checkout-return para maior estabilidade.
 
+  // A11y: suporte a navegação por teclado nas abas
+  const tabOrder: DashboardTab[] = ['overview', 'purchases', 'donations', 'certificates', 'profile'];
+  const onTabsKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const current = tabOrder.indexOf(activeTab);
+    if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      const next = (current + 1) % tabOrder.length;
+      setActiveTab(tabOrder[next]);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prev = (current - 1 + tabOrder.length) % tabOrder.length;
+      setActiveTab(tabOrder[prev]);
+    }
+  };
+
   return (
     <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
       <div className="absolute inset-0 bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-blue-50/80"></div>
@@ -123,47 +138,62 @@ export function DashboardPage() {
           <p className="text-gray-600">Gerencie suas compras, doações e certificados</p>
         </div>
 
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {reconcileInfo && (
-            <div className="w-full">
-              <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-green-800 text-sm flex items-center justify-between">
-                <span>
-                  Pagamento confirmado
-                  {reconcileInfo.amount
-                    ? ` • ${new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: (reconcileInfo.currency || 'BRL').toUpperCase(),
-                      }).format(reconcileInfo.amount)}`
-                    : ''}
-                </span>
-                <button
-                  onClick={() => setActiveTab('certificates')}
-                  className="ml-3 px-3 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
-                >
-                  Ver certificados
-                </button>
-              </div>
-            </div>
-          )}
-          {tabs.map((tab) => {
-            const Icon = tab.icon;
-            return (
+        {/* Success banner */}
+        {reconcileInfo && (
+          <div className="mb-4">
+            <div className="p-3 rounded-xl bg-green-50 border border-green-200 text-green-800 text-sm flex items-center justify-between">
+              <span>
+                Pagamento confirmado
+                {reconcileInfo.amount
+                  ? ` • ${new Intl.NumberFormat('pt-BR', {
+                      style: 'currency',
+                      currency: (reconcileInfo.currency || 'BRL').toUpperCase(),
+                    }).format(reconcileInfo.amount)}`
+                  : ''}
+              </span>
               <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as DashboardTab)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 ${
-                  activeTab === tab.id
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-lg'
-                    : 'bg-white/50 hover:bg-white/70 text-gray-700 border border-white/30'
-                }`}
+                onClick={() => setActiveTab('certificates')}
+                className="ml-3 px-3 py-1 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors"
               >
-                <Icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{tab.label}</span>
+                Ver certificados
               </button>
-            );
-          })}
-        </div>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation Tabs (glass segmented) */}
+        <GlassCard className="p-2 mb-8">
+          <div
+            className="flex flex-wrap gap-2"
+            role="tablist"
+            aria-label="Navegação do dashboard"
+            onKeyDown={onTabsKeyDown}
+          >
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as DashboardTab)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 border ${
+                    isActive
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-transparent shadow-lg'
+                      : 'bg-white/40 hover:bg-white/60 text-gray-700 border-white/30 backdrop-blur'
+                  }`}
+                  role="tab"
+                  aria-selected={isActive}
+                  aria-controls={`panel-${tab.id}`}
+                  id={`tab-${tab.id}`}
+                  tabIndex={isActive ? 0 : -1}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="text-sm font-medium">{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </GlassCard>
 
         {/* Overview */}
         {activeTab === 'overview' && (
@@ -177,7 +207,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-          <div className="space-y-8">
+          <div className="space-y-8" role="tabpanel" aria-labelledby="tab-overview" id="panel-overview">
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <GlassCard className="p-6">
@@ -283,7 +313,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-          <div className="space-y-6">
+          <div className="space-y-6" role="tabpanel" aria-labelledby="tab-purchases" id="panel-purchases">
             <div className="flex items-center justify-between">
               <h2 className="text-gray-800">Suas Compras</h2>
               <span className="text-gray-600">{purchases.length} compra(s)</span>
@@ -330,7 +360,7 @@ export function DashboardPage() {
               {purchases.length === 0 && (
                 <GlassCard className="p-8 text-center">
                   <ShoppingBag className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-gray-700 mb-2">Nenhuma compra ainda</h3>
+                  <h3 className="text-gray-800 mb-2">Nenhuma compra ainda</h3>
                   <p className="text-gray-600 mb-4">Comece a compensar sua pegada de carbono!</p>
                   <button className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all" onClick={() => { window.location.hash = 'loja'; }}>
                     Explorar Projetos
@@ -353,7 +383,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-          <div className="space-y-6">
+          <div className="space-y-6" role="tabpanel" aria-labelledby="tab-donations" id="panel-donations">
             <div className="flex items-center justify-between">
               <h2 className="text-gray-800">Suas Doações</h2>
               <span className="text-gray-600">{donations.length} doação(ões)</span>
@@ -389,7 +419,7 @@ export function DashboardPage() {
               {donations.length === 0 && (
                 <GlassCard className="p-8 text-center">
                   <Heart className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-gray-700 mb-2">Nenhuma doação ainda</h3>
+                  <h3 className="text-gray-800 mb-2">Nenhuma doação ainda</h3>
                   <p className="text-gray-600 mb-4">Apoie nossos projetos sociais!</p>
                   <button className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all" onClick={() => { window.location.hash = 'doacoes'; }}>
                     Ver Projetos Sociais
@@ -416,7 +446,7 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-          <div className="space-y-6">
+          <div className="space-y-6" role="tabpanel" aria-labelledby="tab-certificates" id="panel-certificates">
             <div className="flex items-center justify-between">
               <h2 className="text-gray-800">Seus Certificados</h2>
               <span className="text-gray-600">{certificates.length} certificado(s)</span>
@@ -488,7 +518,7 @@ export function DashboardPage() {
               {certificates.length === 0 && (
                 <GlassCard className="p-8 text-center">
                   <Award className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-gray-700 mb-2">Nenhum certificado ainda</h3>
+                  <h3 className="text-gray-800 mb-2">Nenhum certificado ainda</h3>
                   <p className="text-gray-600 mb-4">Realize uma compra para receber seu certificado!</p>
                   <button className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-6 py-2 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all">
                     Comprar Agora
