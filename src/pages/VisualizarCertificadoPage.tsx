@@ -211,13 +211,13 @@ export default function VisualizarCertificadoPage() {
       return;
     }
     
-    // If no PDF and it's a synthetic cert, generate it first
+    // If it's a synthetic cert, show message
     if (certificate.id.startsWith('synth-')) {
-      setPdfError('Certificado ainda em processamento. Aguarde a materialização.');
+      setPdfError('Certificado em processamento. O PDF oficial estará disponível após a confirmação do pagamento.');
       return;
     }
     
-    // Generate PDF via backend
+    // Generate PDF via backend for official certificates
     await handleGeneratePdf();
   };
 
@@ -253,66 +253,29 @@ export default function VisualizarCertificadoPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-gray-800">Certificado</h1>
           <div className="flex gap-2 print:hidden">
-            {!code.startsWith('PENDENTE-') && !certificate.pdfUrl && (
-              <button
-                onClick={handleGeneratePdf}
-                disabled={generatingPdf}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-700 rounded-lg hover:bg-green-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {generatingPdf ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-green-700 border-t-transparent rounded-full animate-spin" />
-                    Gerando...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Gerar PDF Oficial
-                  </>
-                )}
-              </button>
-            )}
-            {certificate.pdfUrl ? (
-              <button
-                onClick={handleDownload}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                Baixar PDF
-              </button>
-            ) : (
-              <button
-                onClick={handleDownload}
-                disabled={generatingPdf || certificate?.isSynthetic}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {generatingPdf ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
-                    Gerando PDF...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    Gerar e Baixar PDF
-                  </>
-                )}
-              </button>
-            )}
+            <button
+              onClick={handleDownload}
+              disabled={generatingPdf}
+              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {generatingPdf ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Gerando PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  {certificate.pdfUrl ? 'Baixar PDF' : 'Gerar PDF Oficial'}
+                </>
+              )}
+            </button>
           </div>
         </div>
 
         {pdfError && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800 text-sm">{pdfError}</p>
-          </div>
-        )}
-
-        {certificate?.isSynthetic && (
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800 text-sm">
-              ⏳ <strong>Certificado em processamento:</strong> Os dados completos serão atualizados em breve. Você já pode visualizar e salvar em PDF.
-            </p>
           </div>
         )}
 
