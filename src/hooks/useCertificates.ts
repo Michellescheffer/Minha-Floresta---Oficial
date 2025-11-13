@@ -163,6 +163,7 @@ export function useCertificates() {
         co2Offset: Math.round((payload.area_sqm || 0) * 22),
         validUntil,
         userId: undefined,
+        isSynthetic: false, // Certificate found in official DB
       };
 
       return certificate;

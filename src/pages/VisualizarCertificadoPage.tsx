@@ -37,8 +37,6 @@ export default function VisualizarCertificadoPage() {
         const found = await verifyCertificate(numero);
         console.log('Verify result:', found);
         if (found) {
-          // Official certificate found in DB - NOT synthetic
-          found.isSynthetic = false;
           setCertificate(found);
           // Try to enrich with user-dashboard data
           if (found.buyerEmail) {
