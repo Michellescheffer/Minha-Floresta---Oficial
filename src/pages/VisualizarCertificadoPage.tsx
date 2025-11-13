@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Download, Calendar, MapPin, CheckCircle, Leaf, Share2 } from 'lucide-react';
+import { Download, Calendar, MapPin, CheckCircle, Leaf, Share2, Award } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
 import { useCertificates, type Certificate } from '../hooks/useCertificates';
 import QRCode from 'qrcode';
