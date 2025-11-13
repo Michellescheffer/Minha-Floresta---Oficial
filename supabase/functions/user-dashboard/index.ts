@@ -188,6 +188,33 @@ serve(async (req: Request) => {
     // 2c) Fallback final: se ainda não houver certificates, sintetizar a partir dos próprios intents
     try {
       if (!certificates || certificates.length === 0) {
+        // Fetch project names for synthetic certificates
+        const allProjectIds = new Set<string>();
+        for (const r of purchasesLike as any[]) {
+          const meta = (r.metadata || {}) as any;
+          let items: Array<{ project_id: string; quantity: number }> = [];
+          if (meta.items_json) {
+            try { items = JSON.parse(String(meta.items_json)); } catch { items = []; }
+          } else if (meta.project_ids && meta.item_count) {
+            const ids = String(meta.project_ids).split(',').filter(Boolean);
+            items = ids.map((pid: string) => ({ project_id: pid, quantity: 1 }));
+          }
+          items.forEach(it => allProjectIds.add(it.project_id));
+        }
+        
+        const projectNamesMap = new Map<string, string>();
+        if (allProjectIds.size > 0) {
+          try {
+            const { data: projectRows } = await supabase
+              .from('projects')
+              .select('id, name')
+              .in('id', Array.from(allProjectIds));
+            if (projectRows) {
+              projectRows.forEach((p: any) => projectNamesMap.set(p.id, p.name));
+            }
+          } catch {}
+        }
+        
         const synth: any[] = [];
         for (const r of purchasesLike as any[]) {
           const meta = (r.metadata || {}) as any;
@@ -207,7 +234,7 @@ serve(async (req: Request) => {
               pdf_url: null,
               issued_at: new Date().toISOString(),
               status: 'issued',
-              project_name: 'Projeto',
+              project_name: 'Projeto de Reflorestamento',
               purchase_id: null,
             });
             continue;
@@ -220,7 +247,7 @@ serve(async (req: Request) => {
               pdf_url: null,
               issued_at: new Date().toISOString(),
               status: 'issued',
-              project_name: 'Projeto',
+              project_name: projectNamesMap.get(it.project_id) || 'Projeto de Reflorestamento',
               purchase_id: null,
             });
           });

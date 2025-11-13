@@ -306,8 +306,10 @@ export default function VisualizarCertificadoPage() {
               {/* Informações do Titular */}
               <div className="mb-6">
                 <p className="text-gray-600 text-sm mb-2">Certificamos que</p>
-                <h3 className="text-2xl font-bold text-gray-800 mb-1">{certificate.buyerName || certificate.buyerEmail || 'Titular do Certificado'}</h3>
-                {certificate.buyerEmail && certificate.buyerName && (
+                <h3 className="text-2xl font-bold text-gray-800 mb-1">
+                  {certificate.buyerName || user?.name || certificate.buyerEmail?.split('@')[0] || 'Titular do Certificado'}
+                </h3>
+                {certificate.buyerEmail && (
                   <p className="text-sm text-gray-500">{certificate.buyerEmail}</p>
                 )}
               </div>
@@ -345,15 +347,15 @@ export default function VisualizarCertificadoPage() {
                   </div>
                   <p className="text-gray-800 font-semibold">{certificate.status === 'active' ? 'Ativo' : certificate.status || 'Emitido'}</p>
                 </div>
-                {certificate.validUntil && (
-                  <div>
-                    <div className="flex items-center gap-2 text-gray-600 mb-1">
-                      <Calendar className="w-4 h-4" />
-                      <span className="text-xs uppercase">Válido até</span>
-                    </div>
-                    <p className="text-gray-800 font-semibold">{formatDate(certificate.validUntil)}</p>
+                <div>
+                  <div className="flex items-center gap-2 text-gray-600 mb-1">
+                    <Calendar className="w-4 h-4" />
+                    <span className="text-xs uppercase">Válido até</span>
                   </div>
-                )}
+                  <p className="text-gray-800 font-semibold">
+                    {certificate.validUntil ? formatDate(certificate.validUntil) : 'Indeterminado'}
+                  </p>
+                </div>
               </div>
             </div>
             <div className="w-36 shrink-0 flex flex-col items-center gap-2">
