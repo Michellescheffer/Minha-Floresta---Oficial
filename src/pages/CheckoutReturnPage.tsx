@@ -35,7 +35,25 @@ export default function CheckoutReturnPage() {
         if (cancelled) return;
         setStatus('ok');
         toast.success('Pagamento confirmado!');
-        // Redireciona ao dashboard
+        
+        // Try to get the certificate number and redirect to visualizar-certificado
+        try {
+          if (data.email) {
+            const dashUrl = `https://${projectId}.supabase.co/functions/v1/user-dashboard?email=${encodeURIComponent(data.email)}`;
+            const dashRes = await fetch(dashUrl, { headers: { 'Authorization': `Bearer ${publicAnonKey}` } });
+            if (dashRes.ok) {
+              const dashData = await dashRes.json();
+              const latestCert = dashData.certificates?.[0];
+              if (latestCert?.certificate_number) {
+                // Redirect to certificate visualization
+                window.location.hash = `visualizar-certificado?numero=${encodeURIComponent(latestCert.certificate_number)}`;
+                return;
+              }
+            }
+          }
+        } catch {}
+        
+        // Fallback: redirect to dashboard
         window.location.hash = 'dashboard';
       } catch (e) {
         if (cancelled) return;
