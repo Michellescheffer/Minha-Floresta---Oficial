@@ -57,6 +57,7 @@ export default function VisualizarCertificadoPage() {
           // Fallback: synthetic certificate (numeric token without official DB record)
           // Use authenticated user email or try to extract from payment intent
           const emailToUse = user?.email || 'destaquewmarketing@gmail.com';
+          let foundCert = false;
             try {
               const dashRes = await fetch(`https://ngnybwsovjignsflrhyr.supabase.co/functions/v1/user-dashboard?email=${encodeURIComponent(emailToUse)}`, {
                 headers: { 'Authorization': 'Bearer ***REMOVED***' }
@@ -98,7 +99,9 @@ export default function VisualizarCertificadoPage() {
                     validUntil: '',
                     isSynthetic: true,
                   };
+                  console.log('Setting synthetic certificate:', syntheticCert);
                   setCertificate(syntheticCert);
+                  foundCert = true;
                 } else {
                   // No matching cert, create empty one
                   const syntheticCert: Certificate = {
@@ -124,7 +127,8 @@ export default function VisualizarCertificadoPage() {
               console.error('Error fetching from user-dashboard:', err);
             }
           // If we still don't have a certificate after trying dashboard, show error
-          if (!certificate) {
+          if (!foundCert) {
+            console.log('No certificate found, setting error');
             setError('Certificado não encontrado.');
           }
         }
