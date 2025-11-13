@@ -23,8 +23,32 @@ export default function VisualizarCertificadoPage() {
     (async () => {
       try {
         const found = await verifyCertificate(numero);
-        if (found) setCertificate(found);
-        else setError('Certificado não encontrado.');
+        if (found) {
+          setCertificate(found);
+        } else {
+          // Fallback: synthetic certificate from PENDENTE- code
+          if (numero.startsWith('PENDENTE-')) {
+            // Extract area from synthetic data if possible
+            const syntheticCert: Certificate = {
+              id: 'synth-temp',
+              projectId: '',
+              projectName: 'Projeto',
+              buyerName: '',
+              buyerEmail: '',
+              area: 0,
+              price: 0,
+              issueDate: new Date().toISOString().split('T')[0],
+              status: 'active',
+              certificateNumber: numero,
+              qrCode: '',
+              co2Offset: 0,
+              validUntil: '',
+            };
+            setCertificate(syntheticCert);
+          } else {
+            setError('Certificado não encontrado.');
+          }
+        }
       } catch (_) {
         setError('Erro ao carregar certificado.');
       } finally {
@@ -85,6 +109,14 @@ export default function VisualizarCertificadoPage() {
             {certificate.pdfUrl ? 'Baixar PDF' : 'Salvar em PDF'}
           </button>
         </div>
+
+        {code.startsWith('PENDENTE-') && (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800 text-sm">
+              ⏳ <strong>Certificado em processamento:</strong> Os dados completos serão atualizados em breve. Você já pode visualizar e salvar em PDF.
+            </p>
+          </div>
+        )}
 
         <GlassCard className="p-6">
           <div className="flex items-start justify-between gap-6">

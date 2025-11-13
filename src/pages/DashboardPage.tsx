@@ -581,14 +581,8 @@ export function DashboardPage() {
                       return (
                         <>
                           <button
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                              isSynth
-                                ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                : 'bg-green-500/20 text-green-700 hover:bg-green-500/30'
-                            }`}
-                            disabled={isSynth}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg transition-colors bg-green-500/20 text-green-700 hover:bg-green-500/30"
                             onClick={() => {
-                              if (isSynth) return;
                               window.location.hash = `visualizar-certificado?numero=${certificate.certificate_number}`;
                             }}
                           >
