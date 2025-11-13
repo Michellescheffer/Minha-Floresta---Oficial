@@ -23,7 +23,9 @@ export function VerificarCertificadoPage() {
     setVerifying(true);
 
     try {
-      const foundCertificate = await verifyCertificate(certificateCode.trim());
+      const normalized = certificateCode.replace(/\s+/g, '').toUpperCase();
+      setCertificateCode(normalized);
+      const foundCertificate = await verifyCertificate(normalized);
       
       if (foundCertificate) {
         setCertificate(foundCertificate);
@@ -44,7 +46,7 @@ export function VerificarCertificadoPage() {
     if (!hash) return;
     const match = hash.match(/numero=([^&]+)/i);
     if (!match) return;
-    const code = decodeURIComponent(match[1]).toUpperCase();
+    const code = decodeURIComponent(match[1]).replace(/\s+/g, '').toUpperCase();
     (async () => {
       setVerifying(true);
       setError('');

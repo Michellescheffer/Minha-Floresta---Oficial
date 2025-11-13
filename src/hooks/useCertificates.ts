@@ -144,6 +144,7 @@ export function useCertificates() {
         .toISOString()
         .split('T')[0];
 
+      const verificationLink = `${window.location.origin}/#verificar-certificado?numero=${encodeURIComponent(payload.certificate_number)}`;
       const certificate: Certificate = {
         id: payload.id,
         projectId: undefined as any,
@@ -155,7 +156,7 @@ export function useCertificates() {
         issueDate,
         status: (payload.status as any) || 'active',
         certificateNumber: payload.certificate_number,
-        qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${payload.certificate_number}`,
+        qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(verificationLink)}`,
         digitalUrl: `${window.location.origin}/verificar-certificado?numero=${payload.certificate_number}`,
         pdfUrl: payload.pdf_url || undefined,
         co2Offset: Math.round((payload.area_sqm || 0) * 22),
