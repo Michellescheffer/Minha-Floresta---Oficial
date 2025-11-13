@@ -68,6 +68,9 @@ export function VerificarCertificadoPage() {
               const txId = matchingCert.id?.replace('synth-', '').split('-')[0] || 'N/A';
               setTransactionId(txId);
               
+              // Calculate price: area * R$22/m²
+              const calculatedPrice = (matchingCert.area_sqm || 0) * 22;
+              
               const syntheticCert: Certificate = {
                 id: 'synth-temp',
                 projectId: '',
@@ -75,7 +78,7 @@ export function VerificarCertificadoPage() {
                 buyerName: user?.name || '',
                 buyerEmail: emailToUse,
                 area: matchingCert.area_sqm || 0,
-                price: 0,
+                price: calculatedPrice,
                 issueDate: issueDate.split('T')[0],
                 status: 'active',
                 certificateNumber: normalized,
@@ -147,6 +150,9 @@ export function VerificarCertificadoPage() {
                 const txId = matchingCert.id?.replace('synth-', '').split('-')[0] || 'N/A';
                 setTransactionId(txId);
                 
+                // Calculate price: area * R$22/m²
+                const calculatedPrice = (matchingCert.area_sqm || 0) * 22;
+                
                 const syntheticCert: Certificate = {
                   id: 'synth-temp',
                   projectId: '',
@@ -154,7 +160,7 @@ export function VerificarCertificadoPage() {
                   buyerName: user?.name || '',
                   buyerEmail: emailToUse,
                   area: matchingCert.area_sqm || 0,
-                  price: 0,
+                  price: calculatedPrice,
                   issueDate: issueDate.split('T')[0],
                   status: 'active',
                   certificateNumber: code,
