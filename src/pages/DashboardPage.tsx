@@ -75,7 +75,11 @@ export function DashboardPage() {
 
   const pdfRetryRef = useRef<Record<string, number>>({});
   useEffect(() => {
-    const pending = certificates.filter((c: any) => !c.pdf_url && (c.status === 'issued' || !c.status));
+    // Filter out synthetic certificates (they don't have real IDs in the database)
+    const pending = certificates.filter((c: any) => {
+      const isSynth = String(c.id).startsWith('synth-') || String(c.certificate_number || '').startsWith('PENDENTE-');
+      return !isSynth && !c.pdf_url && (c.status === 'issued' || !c.status);
+    });
     const timeouts: number[] = [];
     pending.forEach((c: any) => {
       const attempts = pdfRetryRef.current[c.id] || 0;
