@@ -87,6 +87,14 @@ export function VerificarCertificadoPage() {
     window.print();
   };
 
+  const handleCopyVerificationLink = () => {
+    const code = certificate?.certificateNumber || certificateCode;
+    if (!code) return;
+    const link = `${window.location.origin}/#verificar-certificado?numero=${encodeURIComponent(code)}`;
+    navigator.clipboard.writeText(link);
+    alert('Link de verificação copiado!');
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
@@ -341,10 +349,15 @@ export function VerificarCertificadoPage() {
                   <div className="space-y-3">
                     <button
                       onClick={handleDownload}
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center justify-center space-x-2"
+                      disabled={!certificate?.pdfUrl}
+                      className={`w-full py-3 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 ${
+                        certificate?.pdfUrl
+                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
+                          : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      }`}
                     >
                       <Download className="w-5 h-5" />
-                      <span>Download PDF</span>
+                      <span>Baixar PDF</span>
                     </button>
                     
                     <button
@@ -353,6 +366,14 @@ export function VerificarCertificadoPage() {
                     >
                       <Copy className="w-5 h-5" />
                       <span>Copiar Código</span>
+                    </button>
+
+                    <button
+                      onClick={handleCopyVerificationLink}
+                      className="w-full border-2 border-emerald-500/30 text-emerald-600 py-3 rounded-lg hover:bg-emerald-500/10 transition-all duration-300 flex items-center justify-center space-x-2"
+                    >
+                      <Copy className="w-5 h-5" />
+                      <span>Copiar link de verificação</span>
                     </button>
                   </div>
                 </GlassCard>
