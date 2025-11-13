@@ -25,6 +25,7 @@ export interface Certificate {
   co2Offset: number;
   validUntil: string;
   userId?: string;
+  isSynthetic?: boolean;
 }
 
 export interface CertificateGenerationData {

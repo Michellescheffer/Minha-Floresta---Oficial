@@ -227,9 +227,11 @@ serve(async (req: Request) => {
           }
           if (items.length === 0) {
             // Sem itens, sintetiza 1 certificado com área estimada (quando possível)
+            // Remove pi_ prefix and keep only the alphanumeric part
+            const cleanId = r.stripe_payment_intent_id.replace(/^pi_/i, '');
             synth.push({
               id: `synth-${r.stripe_payment_intent_id}-0`,
-              certificate_number: `PENDENTE-${r.stripe_payment_intent_id}-0`,
+              certificate_number: `${cleanId}-0`,
               area_sqm: 0,
               pdf_url: null,
               issued_at: new Date().toISOString(),
@@ -240,9 +242,11 @@ serve(async (req: Request) => {
             continue;
           }
           items.forEach((it: any, idx: number) => {
+            // Remove pi_ prefix and keep only the alphanumeric part
+            const cleanId = r.stripe_payment_intent_id.replace(/^pi_/i, '');
             synth.push({
               id: `synth-${r.stripe_payment_intent_id}-${idx}`,
-              certificate_number: `PENDENTE-${r.stripe_payment_intent_id}-${idx}`,
+              certificate_number: `${cleanId}-${idx}`,
               area_sqm: Math.max(1, Number(it.quantity) || 1),
               pdf_url: null,
               issued_at: new Date().toISOString(),

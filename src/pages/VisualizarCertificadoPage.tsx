@@ -50,10 +50,9 @@ export default function VisualizarCertificadoPage() {
             } catch {}
           }
         } else {
-          // Fallback: synthetic certificate from PENDENTE- code
-          if (numero.startsWith('PENDENTE-')) {
-            // Use authenticated user email or try to extract from payment intent
-            const emailToUse = user?.email || 'destaquewmarketing@gmail.com';
+          // Fallback: synthetic certificate (numeric token without official DB record)
+          // Use authenticated user email or try to extract from payment intent
+          const emailToUse = user?.email || 'destaquewmarketing@gmail.com';
             try {
               const dashRes = await fetch(`https://ngnybwsovjignsflrhyr.supabase.co/functions/v1/user-dashboard?email=${encodeURIComponent(emailToUse)}`, {
                 headers: { 'Authorization': 'Bearer ***REMOVED***' }
@@ -85,6 +84,7 @@ export default function VisualizarCertificadoPage() {
                     qrCode: '',
                     co2Offset: Math.round((matchingCert.area_sqm || 0) * 22),
                     validUntil: '',
+                    isSynthetic: true,
                   };
                   setCertificate(syntheticCert);
                 } else {
@@ -103,14 +103,13 @@ export default function VisualizarCertificadoPage() {
                     qrCode: '',
                     co2Offset: 0,
                     validUntil: '',
+                    isSynthetic: true,
                   };
                   setCertificate(syntheticCert);
                 }
               }
             } catch {}
-          } else {
-            setError('Certificado não encontrado.');
-          }
+          setError('Certificado não encontrado.');
         }
       } catch (_) {
         setError('Erro ao carregar certificado.');
@@ -244,7 +243,7 @@ export default function VisualizarCertificadoPage() {
             ) : (
               <button
                 onClick={handleDownload}
-                disabled={generatingPdf || code.startsWith('PENDENTE-')}
+                disabled={generatingPdf || certificate?.isSynthetic}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {generatingPdf ? (
@@ -269,7 +268,7 @@ export default function VisualizarCertificadoPage() {
           </div>
         )}
 
-        {code.startsWith('PENDENTE-') && (
+        {certificate?.isSynthetic && (
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-yellow-800 text-sm">
               ⏳ <strong>Certificado em processamento:</strong> Os dados completos serão atualizados em breve. Você já pode visualizar e salvar em PDF.
