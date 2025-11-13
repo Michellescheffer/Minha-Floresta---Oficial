@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Calculator, ShoppingBag, CreditCard, Shield, CheckCircle } from 'lucide-react';
 import { GlassCard } from './GlassCard';
 import { useApp } from '../contexts/AppContext';
@@ -10,19 +11,39 @@ export function Hero() {
   const titleReveal = useScrollReveal(0.2);
   const ctaReveal = useScrollReveal(0.3);
   const trustReveal = useScrollReveal(0.4);
+  
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const images = [
+    '/images/amazon-aerial-new.jpg',
+    'https://images.unsplash.com/photo-1653149875526-e2533c6af095?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhbWF6b24lMjByYWluZm9yZXN0JTIwYWVyaWFsJTIwdmlld3xlbnwxfHx8fDE3NTYxNjc0MzR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
+  ];
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setCurrentImageIndex(1);
+    }, 5000); // 5 seconds
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <section className="relative min-h-screen h-screen flex items-center justify-center overflow-hidden">
-      {/* Enhanced Background with Parallax Effect */}
+      {/* Enhanced Background with Parallax Effect and Fade Transition */}
       <div className="absolute inset-0 z-0">
-        <div 
-          className="w-full h-[120vh] bg-cover bg-center bg-no-repeat scale-105"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1653149875526-e2533c6af095?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhbWF6b24lMjByYWluZm9yZXN0JTIwYWVyaWFsJTIwdmlld3hlbnwxfHx8fDE3NTYxNjc0MzR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral')`,
-            ...getParallaxStyle(0.15),
-            backgroundPosition: 'center center'
-          }}
-        />
+        {images.map((image, index) => (
+          <div
+            key={index}
+            className={`absolute inset-0 w-full h-[120vh] bg-cover bg-center bg-no-repeat scale-105 transition-opacity duration-2000 ${
+              index === currentImageIndex ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{
+              backgroundImage: `url('${image}')`,
+              ...getParallaxStyle(0.15),
+              backgroundPosition: 'center center',
+              transitionDuration: '2000ms'
+            }}
+          />
+        ))}
         {/* Enhanced overlay for better text contrast */}
         <div className="absolute inset-0 bg-gradient-to-br from-green-900/60 via-emerald-800/50 to-green-700/60"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
