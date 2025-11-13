@@ -24,7 +24,7 @@ import {
 import { GlassCard } from '../components/GlassCard';
  
 import { useAuth } from '../contexts/AuthContext';
-import { projectId } from '../utils/supabase/info';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { useUserPanelData } from '../hooks/useUserPanelData';
 import { toast } from 'sonner';
 
@@ -53,7 +53,27 @@ export function DashboardPage() {
   });
 
   if (!user) {
-    return (
+    async function handleGeneratePdf(certificateId: string) {
+    try {
+      toast.info('Gerando PDF do certificado...');
+      const url = `https://${projectId}.supabase.co/functions/v1/certificate-generate`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${publicAnonKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ certificate_id: certificateId }),
+      });
+      if (!res.ok) throw new Error('Falha ao gerar PDF');
+      toast.success('PDF gerado com sucesso!');
+      await reload();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao gerar PDF');
+    }
+  }
+
+  return (
       <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
         <div className="absolute inset-0 bg-gradient-to-br from-red-50/80 via-orange-50/80 to-yellow-50/80"></div>
         <div className="relative z-10 max-w-2xl mx-auto px-6 text-center">
@@ -544,11 +564,11 @@ export function DashboardPage() {
                         link.download = `certificado-${certificate.certificate_number}.pdf`;
                         link.click();
                       } else {
-                        window.location.hash = `verificar-certificado?numero=${certificate.certificate_number}`;
+                        handleGeneratePdf(certificate.id);
                       }
                     }}>
                       <Download className="w-4 h-4" />
-                      Download PDF
+                      {certificate.pdf_url ? 'Download PDF' : 'Gerar PDF'}
                     </button>
                   </div>
                 </GlassCard>
