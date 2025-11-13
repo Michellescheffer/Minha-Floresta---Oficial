@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import Stripe from 'https://esm.sh/stripe@14.5.0';
+import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -149,11 +150,21 @@ serve(async (req: Request) => {
               if (itemsErr) {
                 console.error('reconcile insert purchase_items error', itemsErr);
               } else {
-                // Insert basic certificates (no PDF) so they appear immediately; webhook may enrich later
+                // Insert certificates WITH PDF generated immediately
                 const certificateType = meta.certificate_type || 'digital';
                 for (const it of rows) {
                   const certNumber = `MF-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-                  const { error: certErr } = await supabase
+                  
+                  // Get project name
+                  const { data: project } = await supabase
+                    .from('projects')
+                    .select('name')
+                    .eq('id', it.project_id)
+                    .maybeSingle();
+                  const projectName = project?.name || 'Projeto de Reflorestamento';
+                  
+                  // Insert certificate
+                  const { data: cert, error: certErr } = await supabase
                     .from('certificates')
                     .insert({
                       purchase_id: createdPurchaseId!,
@@ -163,9 +174,47 @@ serve(async (req: Request) => {
                       certificate_type: certificateType,
                       issued_at: new Date().toISOString(),
                       status: 'issued',
-                    });
+                    })
+                    .select('id')
+                    .single();
+                  
                   if (certErr) {
                     console.error('reconcile insert certificate error', certErr);
+                    continue;
+                  }
+                  
+                  // Generate PDF immediately
+                  try {
+                    const pdfBytes = await generateCertificatePDF({
+                      certificateNumber: certNumber,
+                      projectName,
+                      area: it.quantity,
+                      holderName: meta.email || email || 'Titular',
+                    });
+                    
+                    // Upload to Storage
+                    const bucket = Deno.env.get('CERTIFICATES_BUCKET') || 'certificates';
+                    const path = `${certNumber}.pdf`;
+                    const { error: uploadErr } = await supabase
+                      .storage
+                      .from(bucket)
+                      .upload(path, new Blob([pdfBytes.buffer], { type: 'application/pdf' }), { 
+                        upsert: true, 
+                        contentType: 'application/pdf' 
+                      });
+                    
+                    if (!uploadErr) {
+                      const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
+                      const pdfUrl = pub.publicUrl;
+                      
+                      // Update certificate with PDF URL
+                      await supabase
+                        .from('certificates')
+                        .update({ pdf_url: pdfUrl })
+                        .eq('id', cert.id);
+                    }
+                  } catch (pdfErr) {
+                    console.error('Error generating PDF for certificate:', pdfErr);
                   }
                 }
               }
@@ -274,3 +323,35 @@ serve(async (req: Request) => {
     });
   }
 });
+
+// Helper function to generate PDF certificate
+async function generateCertificatePDF({ certificateNumber, projectName, area, holderName }: { certificateNumber: string; projectName: string; area: number; holderName?: string; }): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595.28, 841.89]); // A4
+  const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontReg = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+  const title = 'Certificado de Preservação';
+  const subtitle = 'Minha Floresta';
+  const issued = new Date().toISOString().slice(0, 10);
+
+  // Background
+  page.drawRectangle({ x: 0, y: 0, width: page.getWidth(), height: page.getHeight(), color: rgb(0.96, 0.98, 0.96) });
+
+  // Title
+  page.drawText(title, { x: 60, y: 760, size: 28, font, color: rgb(0.1, 0.4, 0.2) });
+  page.drawText(subtitle, { x: 60, y: 735, size: 16, font: fontReg, color: rgb(0.2, 0.5, 0.25) });
+
+  // Body
+  const body = `Certificamos que ${holderName || '—'} contribuiu para a preservação do projeto ${projectName},\ncorrespondente à área de ${area} m², emitido em ${issued}.`;
+  page.drawText(body, { x: 60, y: 690, size: 12, font: fontReg, color: rgb(0.1, 0.1, 0.1), lineHeight: 16 });
+
+  // Number
+  page.drawText(`Código do Certificado: ${certificateNumber}`, { x: 60, y: 640, size: 12, font: fontReg, color: rgb(0.15, 0.15, 0.15) });
+
+  // Footer
+  page.drawText('Verifique a autenticidade em: minha-floresta.vercel.app/#verificar-certificado', { x: 60, y: 60, size: 10, font: fontReg, color: rgb(0.2, 0.2, 0.2) });
+
+  const pdfBytes = await pdfDoc.save();
+  return new Uint8Array(pdfBytes);
+}
