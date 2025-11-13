@@ -30,7 +30,9 @@ export default function VisualizarCertificadoPage() {
     }
     (async () => {
       try {
+        console.log('Attempting to verify certificate:', numero);
         const found = await verifyCertificate(numero);
+        console.log('Verify result:', found);
         if (found) {
           setCertificate(found);
           // Try to enrich with user-dashboard data
@@ -118,8 +120,13 @@ export default function VisualizarCertificadoPage() {
                   setCertificate(syntheticCert);
                 }
               }
-            } catch {}
-          setError('Certificado não encontrado.');
+            } catch (err) {
+              console.error('Error fetching from user-dashboard:', err);
+            }
+          // If we still don't have a certificate after trying dashboard, show error
+          if (!certificate) {
+            setError('Certificado não encontrado.');
+          }
         }
       } catch (_) {
         setError('Erro ao carregar certificado.');
