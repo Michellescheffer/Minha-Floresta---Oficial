@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Download, QrCode, Calendar, MapPin, Award } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
 import { useCertificates, type Certificate } from '../hooks/useCertificates';
+import { useAuth } from '../contexts/AuthContext';
 import logoImage from 'figma:asset/f9a96b4548f250beba1ee29ba9d3267b1c5a7b61.png';
 
 export default function VisualizarCertificadoPage() {
@@ -13,6 +14,7 @@ export default function VisualizarCertificadoPage() {
   const [pdfError, setPdfError] = useState<string>('');
   const [enrichedData, setEnrichedData] = useState<any>(null);
   const { verifyCertificate } = useCertificates();
+  const { user } = useAuth();
 
   useEffect(() => {
     const hash = typeof window !== 'undefined' ? window.location.hash : '';
@@ -50,55 +52,57 @@ export default function VisualizarCertificadoPage() {
         } else {
           // Fallback: synthetic certificate from PENDENTE- code
           if (numero.startsWith('PENDENTE-')) {
-            // Try to get data from user-dashboard by extracting PI from code
-            const piMatch = numero.match(/PENDENTE-([^-]+)/);
-            if (piMatch) {
-              try {
-                const dashRes = await fetch(`https://ngnybwsovjignsflrhyr.supabase.co/functions/v1/user-dashboard?email=destaquewmarketing@gmail.com`, {
-                  headers: { 'Authorization': 'Bearer ***REMOVED***' }
-                });
-                if (dashRes.ok) {
-                  const dashData = await dashRes.json();
-                  setEnrichedData(dashData);
-                  const matchingCert = dashData.certificates?.find((c: any) => c.certificate_number === numero);
-                  if (matchingCert) {
-                    const syntheticCert: Certificate = {
-                      id: 'synth-temp',
-                      projectId: '',
-                      projectName: matchingCert.project_name || 'Projeto',
-                      buyerName: '',
-                      buyerEmail: dashData.purchases?.[0]?.email || '',
-                      area: matchingCert.area_sqm || 0,
-                      price: 0,
-                      issueDate: new Date().toISOString().split('T')[0],
-                      status: 'active',
-                      certificateNumber: numero,
-                      qrCode: '',
-                      co2Offset: Math.round((matchingCert.area_sqm || 0) * 22),
-                      validUntil: '',
-                    };
-                    setCertificate(syntheticCert);
-                  } else {
-                    const syntheticCert: Certificate = {
-                      id: 'synth-temp',
-                      projectId: '',
-                      projectName: 'Projeto',
-                      buyerName: '',
-                      buyerEmail: '',
-                      area: 0,
-                      price: 0,
-                      issueDate: new Date().toISOString().split('T')[0],
-                      status: 'active',
-                      certificateNumber: numero,
-                      qrCode: '',
-                      co2Offset: 0,
-                      validUntil: '',
-                    };
-                    setCertificate(syntheticCert);
-                  }
+            // Use authenticated user email or try to extract from payment intent
+            const emailToUse = user?.email || 'destaquewmarketing@gmail.com';
+            try {
+              const dashRes = await fetch(`https://ngnybwsovjignsflrhyr.supabase.co/functions/v1/user-dashboard?email=${encodeURIComponent(emailToUse)}`, {
+                headers: { 'Authorization': 'Bearer ***REMOVED***' }
+              });
+              if (dashRes.ok) {
+                const dashData = await dashRes.json();
+                console.log('Dashboard data for synthetic cert:', dashData);
+                console.log('Looking for cert:', numero);
+                setEnrichedData(dashData);
+                const matchingCert = dashData.certificates?.find((c: any) => c.certificate_number === numero);
+                console.log('Matching cert found:', matchingCert);
+                if (matchingCert) {
+                  const syntheticCert: Certificate = {
+                    id: 'synth-temp',
+                    projectId: '',
+                    projectName: matchingCert.project_name || 'Projeto',
+                    buyerName: user?.name || '',
+                    buyerEmail: emailToUse,
+                    area: matchingCert.area_sqm || 0,
+                    price: 0,
+                    issueDate: matchingCert.issued_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+                    status: 'active',
+                    certificateNumber: numero,
+                    qrCode: '',
+                    co2Offset: Math.round((matchingCert.area_sqm || 0) * 22),
+                    validUntil: '',
+                  };
+                  setCertificate(syntheticCert);
+                } else {
+                  // No matching cert, create empty one
+                  const syntheticCert: Certificate = {
+                    id: 'synth-temp',
+                    projectId: '',
+                    projectName: 'Projeto',
+                    buyerName: user?.name || '',
+                    buyerEmail: emailToUse,
+                    area: 0,
+                    price: 0,
+                    issueDate: new Date().toISOString().split('T')[0],
+                    status: 'active',
+                    certificateNumber: numero,
+                    qrCode: '',
+                    co2Offset: 0,
+                    validUntil: '',
+                  };
+                  setCertificate(syntheticCert);
                 }
-              } catch {}
-            }
+              }
+            } catch {}
           } else {
             setError('Certificado não encontrado.');
           }
