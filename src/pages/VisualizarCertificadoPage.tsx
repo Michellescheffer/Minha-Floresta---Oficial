@@ -255,8 +255,12 @@ export default function VisualizarCertificadoPage() {
           <div className="flex gap-2 print:hidden">
             <button
               onClick={handleDownload}
-              disabled={generatingPdf}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={generatingPdf || certificate?.isSynthetic}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                certificate?.isSynthetic 
+                  ? 'bg-gray-300 text-gray-600 cursor-not-allowed' 
+                  : 'bg-green-500 text-white hover:bg-green-600'
+              }`}
             >
               {generatingPdf ? (
                 <>
@@ -273,7 +277,15 @@ export default function VisualizarCertificadoPage() {
           </div>
         </div>
 
-        {pdfError && (
+        {certificate?.isSynthetic && (
+          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800 text-sm">
+              ⏳ <strong>Certificado em processamento.</strong> O PDF oficial estará disponível após a confirmação do pagamento.
+            </p>
+          </div>
+        )}
+        
+        {pdfError && !certificate?.isSynthetic && (
           <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800 text-sm">{pdfError}</p>
           </div>
