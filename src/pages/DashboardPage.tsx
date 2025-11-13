@@ -52,8 +52,7 @@ export function DashboardPage() {
     }
   });
 
-  if (!user) {
-    async function handleGeneratePdf(certificateId: string) {
+  async function handleGeneratePdf(certificateId: string) {
     try {
       toast.info('Gerando PDF do certificado...');
       const url = `https://${projectId}.supabase.co/functions/v1/certificate-generate`;
@@ -70,9 +69,31 @@ export function DashboardPage() {
       await reload();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erro ao gerar PDF');
+      throw e;
     }
   }
 
+  const pdfRetryRef = useRef<Record<string, number>>({});
+  useEffect(() => {
+    const pending = certificates.filter((c: any) => !c.pdf_url && (c.status === 'issued' || !c.status));
+    const timeouts: number[] = [];
+    pending.forEach((c: any) => {
+      const attempts = pdfRetryRef.current[c.id] || 0;
+      if (attempts >= 3) return;
+      pdfRetryRef.current[c.id] = attempts + 1;
+      const delays = [0, 5000, 15000];
+      const delay = delays[attempts] ?? 30000;
+      const t = window.setTimeout(() => {
+        handleGeneratePdf(c.id).catch(() => {});
+      }, delay);
+      timeouts.push(t);
+    });
+    return () => {
+      timeouts.forEach((t) => clearTimeout(t));
+    };
+  }, [certificates]);
+
+  if (!user) {
   return (
       <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
         <div className="absolute inset-0 bg-gradient-to-br from-red-50/80 via-orange-50/80 to-yellow-50/80"></div>
