@@ -205,9 +205,10 @@ export function VerificarCertificadoPage() {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!certificate) return;
     const code = certificate.certificateNumber || certificateCode;
+    
     // Se existir URL do PDF no backend, baixar diretamente
     if (certificate.pdfUrl) {
       const link = document.createElement('a');
@@ -216,8 +217,48 @@ export function VerificarCertificadoPage() {
       link.click();
       return;
     }
-    // Fallback: abrir diálogo de impressão para salvar em PDF
-    window.print();
+    
+    // Se for certificado sintético, não pode gerar PDF ainda
+    if (certificate.id === 'synth-temp') {
+      alert('Certificado em processamento. O PDF oficial estará disponível em breve.');
+      return;
+    }
+    
+    // Gerar PDF oficial via backend
+    try {
+      setVerifying(true);
+      const response = await fetch('https://ngnybwsovjignsflrhyr.supabase.co/functions/v1/certificate-generate', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ***REMOVED***',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ certificate_id: certificate.id }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Falha ao gerar PDF');
+      }
+      
+      const data = await response.json();
+      if (data.pdf_url) {
+        // Baixar o PDF gerado
+        const link = document.createElement('a');
+        link.href = data.pdf_url;
+        link.download = `certificado-${code}.pdf`;
+        link.click();
+        
+        // Atualizar o certificado com a URL do PDF
+        setCertificate({ ...certificate, pdfUrl: data.pdf_url });
+      } else {
+        throw new Error('PDF não foi gerado');
+      }
+    } catch (error) {
+      alert('Erro ao gerar PDF. Por favor, tente novamente mais tarde.');
+      console.error('Error generating PDF:', error);
+    } finally {
+      setVerifying(false);
+    }
   };
 
   const handleCopyVerificationLink = () => {
@@ -488,10 +529,24 @@ export function VerificarCertificadoPage() {
                   <div className="space-y-3">
                     <button
                       onClick={handleDownload}
-                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center justify-center space-x-2"
+                      disabled={verifying || certificate?.id === 'synth-temp'}
+                      className={`w-full py-3 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 ${
+                        verifying || certificate?.id === 'synth-temp'
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
+                      }`}
                     >
-                      <Download className="w-5 h-5" />
-                      <span>{certificate?.pdfUrl ? 'Baixar PDF' : 'Salvar em PDF'}</span>
+                      {verifying ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Gerando PDF...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-5 h-5" />
+                          <span>{certificate?.pdfUrl ? 'Baixar PDF Oficial' : 'Gerar PDF Oficial'}</span>
+                        </>
+                      )}
                     </button>
                     
                     <button
