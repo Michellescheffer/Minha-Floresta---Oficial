@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Download, QrCode, Calendar, MapPin, Award } from 'lucide-react';
+import { Download, QrCode, Calendar, MapPin, Award, Leaf } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
 import { useCertificates, type Certificate } from '../hooks/useCertificates';
 
@@ -187,62 +187,82 @@ export default function VisualizarCertificadoPage() {
         )}
 
         <GlassCard className="p-8 bg-white/90 border-2 border-green-200">
-          {/* Header do Certificado */}
-          <div className="text-center mb-8 border-b-2 border-green-200 pb-6">
-            <h2 className="text-3xl font-bold text-green-700 mb-2">Certificado de Compensação de Carbono</h2>
-            <p className="text-gray-600">Minha Floresta Conservações</p>
+          {/* Header do Certificado com Logo */}
+          <div className="flex items-center justify-between mb-8 border-b-2 border-green-200 pb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
+                <Leaf className="w-10 h-10 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-green-700">Minha Floresta</h2>
+                <p className="text-sm text-gray-600">Conservações</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Certificado de</p>
+              <p className="text-lg font-bold text-green-700">Compensação de Carbono</p>
+            </div>
           </div>
+
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1">
+              {/* Token Único de Verificação */}
+              <div className="mb-6 p-4 bg-green-50 border-2 border-green-300 rounded-lg">
+                <p className="text-xs text-green-700 font-semibold uppercase tracking-wide mb-1">Token de Verificação Único</p>
+                <p className="text-xl font-mono font-bold text-green-900 break-all">{certificate.certificateNumber || code}</p>
+              </div>
+
+              {/* Informações do Titular */}
               <div className="mb-6">
-                <p className="text-gray-600 text-sm mb-1">Certificamos que</p>
-                <h3 className="text-2xl font-bold text-gray-800 mb-3">{certificate.buyerName || 'Titular do Certificado'}</h3>
-                <p className="text-gray-600">contribuiu para a preservação ambiental através do projeto:</p>
-                <h4 className="text-xl font-semibold text-green-700 mt-2">{certificate.projectName || 'Projeto'}</h4>
-              </div>
-              <p className="text-gray-600 text-xs mb-6">Código de Verificação: <span className="font-mono font-semibold">{certificate.certificateNumber || code}</span></p>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div>
-                  <p className="text-gray-600 text-sm">Área</p>
-                  <p className="text-gray-800 font-medium">{certificate.area} m²</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">CO₂ Compensado</p>
-                  <p className="text-gray-800 font-medium">{Math.round((certificate.area || 0) * 22)} kg</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">Emitido em</p>
-                  <p className="text-gray-800 font-medium">{formatDate(certificate.issueDate)}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600 text-sm">Válido até</p>
-                  <p className="text-gray-800 font-medium">{formatDate(certificate.validUntil)}</p>
-                </div>
+                <p className="text-gray-600 text-sm mb-2">Certificamos que</p>
+                <h3 className="text-2xl font-bold text-gray-800 mb-1">{certificate.buyerName || certificate.buyerEmail || 'Titular do Certificado'}</h3>
+                {certificate.buyerEmail && certificate.buyerName && (
+                  <p className="text-sm text-gray-500">{certificate.buyerEmail}</p>
+                )}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 bg-white/40 rounded-xl border border-white/50">
-                  <div className="flex items-center gap-2 text-gray-700 mb-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>Projeto</span>
+              {/* Área Adquirida */}
+              <div className="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
+                <p className="text-sm text-gray-600 mb-1">Área de Preservação Adquirida</p>
+                <p className="text-3xl font-bold text-blue-700">{certificate.area} m²</p>
+                <p className="text-sm text-gray-600 mt-1">equivalente a {Math.round((certificate.area || 0) * 22)} kg de CO₂ compensado</p>
+              </div>
+
+              {/* Projeto(s) */}
+              <div className="mb-6">
+                <p className="text-gray-600 text-sm mb-2">através do(s) projeto(s):</p>
+                <div className="flex flex-wrap gap-2">
+                  <div className="px-4 py-2 bg-green-100 border border-green-300 rounded-lg">
+                    <p className="text-lg font-semibold text-green-800">{certificate.projectName || 'Projeto de Reflorestamento'}</p>
                   </div>
-                  <p className="text-gray-800">{certificate.projectName || 'Projeto'}</p>
                 </div>
-                <div className="p-4 bg-white/40 rounded-xl border border-white/50">
-                  <div className="flex items-center gap-2 text-gray-700 mb-2">
+              </div>
+
+              {/* Datas e Status */}
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                <div>
+                  <div className="flex items-center gap-2 text-gray-600 mb-1">
                     <Calendar className="w-4 h-4" />
-                    <span>Emissão</span>
+                    <span className="text-xs uppercase">Data de Emissão</span>
                   </div>
-                  <p className="text-gray-800">{formatDate(certificate.issueDate)}</p>
+                  <p className="text-gray-800 font-semibold">{formatDate(certificate.issueDate)}</p>
                 </div>
-                <div className="p-4 bg-white/40 rounded-xl border border-white/50">
-                  <div className="flex items-center gap-2 text-gray-700 mb-2">
+                <div>
+                  <div className="flex items-center gap-2 text-gray-600 mb-1">
                     <Award className="w-4 h-4" />
-                    <span>Status</span>
+                    <span className="text-xs uppercase">Status</span>
                   </div>
-                  <p className="text-gray-800">{certificate.status || 'issued'}</p>
+                  <p className="text-gray-800 font-semibold">{certificate.status === 'active' ? 'Ativo' : certificate.status || 'Emitido'}</p>
                 </div>
+                {certificate.validUntil && (
+                  <div>
+                    <div className="flex items-center gap-2 text-gray-600 mb-1">
+                      <Calendar className="w-4 h-4" />
+                      <span className="text-xs uppercase">Válido até</span>
+                    </div>
+                    <p className="text-gray-800 font-semibold">{formatDate(certificate.validUntil)}</p>
+                  </div>
+                )}
               </div>
             </div>
             <div className="w-36 shrink-0 flex flex-col items-center gap-2">
