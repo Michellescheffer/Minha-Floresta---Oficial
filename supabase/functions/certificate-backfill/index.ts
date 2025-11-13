@@ -95,6 +95,79 @@ serve(async (req: Request) => {
     if (purchaseId) {
       targets = [{ id: String(purchaseId) }];
     } else if (email) {
+      // 1) Ensure purchases exist by reading stripe_payment_intents for this email
+      const { data: intents } = await supabase
+        .from('stripe_payment_intents')
+        .select('stripe_payment_intent_id, amount, currency, status, metadata, email')
+        .eq('email', email)
+        .eq('status', 'succeeded')
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      const toProcess = (intents || []).filter((pi: any) => {
+        try {
+          const meta = (pi.metadata || {}) as any;
+          return meta.type === 'purchase' || meta.items_json || (meta.project_ids && meta.item_count);
+        } catch { return false; }
+      });
+
+      // Create purchases if missing
+      for (const pi of toProcess) {
+        const piId = pi.stripe_payment_intent_id as string;
+        const { data: existingPurchase } = await supabase
+          .from('purchases')
+          .select('id')
+          .eq('stripe_payment_intent_id', piId)
+          .maybeSingle();
+        if (!existingPurchase) {
+          const meta = (pi.metadata || {}) as any;
+          const { data: created, error: createErr } = await supabase
+            .from('purchases')
+            .insert({
+              user_id: meta.user_id || null,
+              total_amount: pi.amount ?? 0,
+              currency: pi.currency || 'brl',
+              payment_method: 'stripe',
+              payment_status: 'succeeded',
+              payment_date: new Date().toISOString(),
+              stripe_payment_intent_id: piId,
+              buyer_email: pi.email || email,
+            })
+            .select('id')
+            .single();
+
+          const purchase_id = created?.id as string | undefined;
+          if (purchase_id && !createErr) {
+            // Build items from metadata
+            let items: Array<{ project_id: string; quantity: number; price?: number }> = [];
+            if (meta.items_json) {
+              try { items = JSON.parse(String(meta.items_json)); } catch { items = []; }
+            } else if (meta.project_ids && meta.item_count) {
+              const ids = String(meta.project_ids).split(',').filter(Boolean);
+              items = ids.map((pid: string) => ({ project_id: pid, quantity: 1 }));
+            }
+            if (items.length > 0) {
+              const rows = items.map((it) => ({ purchase_id, project_id: it.project_id, quantity: Math.max(1, Number(it.quantity) || 1), unit_price: it.price ?? null }));
+              await supabase.from('purchase_items').insert(rows);
+              // Insert certificates now (basic)
+              for (const it of rows) {
+                const certNumber = `MF-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+                await supabase.from('certificates').insert({
+                  purchase_id,
+                  project_id: it.project_id,
+                  area_sqm: it.quantity,
+                  certificate_number: certNumber,
+                  certificate_type: 'digital',
+                  issued_at: new Date().toISOString(),
+                  status: 'issued',
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // 2) Now gather purchases by email
       const { data: purchasesByEmail } = await supabase
         .from('purchases')
         .select('id')

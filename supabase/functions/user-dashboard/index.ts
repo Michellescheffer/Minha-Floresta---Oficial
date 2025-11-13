@@ -34,7 +34,11 @@ serve(async (req: Request) => {
     const rows = intentsErr || !Array.isArray(intents) ? [] : intents;
 
     const purchasesLike = rows.filter((r: any) => {
-      try { return (r.metadata && (r.metadata as any).type) === 'purchase' && r.status === 'succeeded'; } catch { return false; }
+      try {
+        const meta = (r.metadata || {}) as any;
+        const looksLikePurchase = meta?.type === 'purchase' || meta?.items_json || (meta?.project_ids && meta?.item_count);
+        return looksLikePurchase && r.status === 'succeeded';
+      } catch { return false; }
     });
     const donationsLike = rows.filter((r: any) => {
       try { return (r.metadata && (r.metadata as any).type) === 'donation' && r.status === 'succeeded'; } catch { return false; }
@@ -181,7 +185,51 @@ serve(async (req: Request) => {
       });
     } catch {}
 
-    // 2c) Doações: além dos intents, buscar tabela donations quando existir
+    // 2c) Fallback final: se ainda não houver certificates, sintetizar a partir dos próprios intents
+    try {
+      if (!certificates || certificates.length === 0) {
+        const synth: any[] = [];
+        for (const r of purchasesLike as any[]) {
+          const meta = (r.metadata || {}) as any;
+          let items: Array<{ project_id: string; quantity: number }> = [];
+          if (meta.items_json) {
+            try { items = JSON.parse(String(meta.items_json)); } catch { items = []; }
+          } else if (meta.project_ids && meta.item_count) {
+            const ids = String(meta.project_ids).split(',').filter(Boolean);
+            items = ids.map((pid: string) => ({ project_id: pid, quantity: 1 }));
+          }
+          if (items.length === 0) {
+            // Sem itens, sintetiza 1 certificado com área estimada (quando possível)
+            synth.push({
+              id: `synth-${r.stripe_payment_intent_id}-0`,
+              certificate_number: `PENDENTE-${r.stripe_payment_intent_id}-0`,
+              area_sqm: 0,
+              pdf_url: null,
+              issued_at: new Date().toISOString(),
+              status: 'issued',
+              project_name: 'Projeto',
+              purchase_id: null,
+            });
+            continue;
+          }
+          items.forEach((it: any, idx: number) => {
+            synth.push({
+              id: `synth-${r.stripe_payment_intent_id}-${idx}`,
+              certificate_number: `PENDENTE-${r.stripe_payment_intent_id}-${idx}`,
+              area_sqm: Math.max(1, Number(it.quantity) || 1),
+              pdf_url: null,
+              issued_at: new Date().toISOString(),
+              status: 'issued',
+              project_name: 'Projeto',
+              purchase_id: null,
+            });
+          });
+        }
+        certificates = synth;
+      }
+    } catch {}
+
+    // 2d) Doações: além dos intents, buscar tabela donations quando existir
     try {
       const { data: donationRows } = await supabase
         .from('donations')

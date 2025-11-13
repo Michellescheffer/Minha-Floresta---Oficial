@@ -540,16 +540,20 @@ export function DashboardPage() {
                       <h3 className="text-gray-800 font-semibold">{certificate.project_name || 'Projeto'}</h3>
                       <p className="text-gray-600 text-sm">Código: {certificate.certificate_number}</p>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-sm ${
-                      certificate.status === 'issued' 
-                        ? 'bg-green-100 text-green-700'
-                        : certificate.status === 'revoked'
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}>
-                      {certificate.status === 'issued' ? 'Emitido' : 
-                       certificate.status === 'revoked' ? 'Revogado' : 'Outro'}
-                    </span>
+                    {String(certificate.id).startsWith('synth-') || String(certificate.certificate_number || '').startsWith('PENDENTE-') ? (
+                      <span className="px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-700">Processando</span>
+                    ) : (
+                      <span className={`px-3 py-1 rounded-full text-sm ${
+                        certificate.status === 'issued' 
+                          ? 'bg-green-100 text-green-700'
+                          : certificate.status === 'revoked'
+                          ? 'bg-red-100 text-red-700'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {certificate.status === 'issued' ? 'Emitido' : 
+                         certificate.status === 'revoked' ? 'Revogado' : 'Outro'}
+                      </span>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -572,22 +576,39 @@ export function DashboardPage() {
                   </div>
 
                   <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-700 rounded-lg hover:bg-green-500/30 transition-colors" onClick={() => {
-                      window.location.hash = `verificar-certificado?numero=${certificate.certificate_number}`;
-                    }}>
+                    <button
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                        (String(certificate.id).startsWith('synth-') || String(certificate.certificate_number || '').startsWith('PENDENTE-'))
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-green-500/20 text-green-700 hover:bg-green-500/30'
+                      }`}
+                      disabled={String(certificate.id).startsWith('synth-') || String(certificate.certificate_number || '').startsWith('PENDENTE-')}
+                      onClick={() => {
+                        if (String(certificate.id).startsWith('synth-')) return;
+                        window.location.hash = `verificar-certificado?numero=${certificate.certificate_number}`;
+                      }}
+                    >
                       <Eye className="w-4 h-4" />
                       Visualizar
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-all transform hover:scale-[1.02] active:scale-[0.98]" onClick={() => {
-                      if (certificate.pdf_url) {
-                        const link = document.createElement('a');
-                        link.href = certificate.pdf_url as string;
-                        link.download = `certificado-${certificate.certificate_number}.pdf`;
-                        link.click();
-                      } else {
-                        handleGeneratePdf(certificate.id);
-                      }
-                    }}>
+                    <button
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all transform ${
+                        (String(certificate.id).startsWith('synth-') || String(certificate.certificate_number || '').startsWith('PENDENTE-'))
+                          ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-500/20 text-blue-700 hover:bg-blue-500/30 hover:scale-[1.02] active:scale-[0.98]'
+                      }`}
+                      disabled={String(certificate.id).startsWith('synth-') || String(certificate.certificate_number || '').startsWith('PENDENTE-')}
+                      onClick={() => {
+                        if (certificate.pdf_url) {
+                          const link = document.createElement('a');
+                          link.href = certificate.pdf_url as string;
+                          link.download = `certificado-${certificate.certificate_number}.pdf`;
+                          link.click();
+                        } else if (!(String(certificate.id).startsWith('synth-'))) {
+                          handleGeneratePdf(certificate.id);
+                        }
+                      }}
+                    >
                       <Download className="w-4 h-4" />
                       {certificate.pdf_url ? 'Download PDF' : 'Gerar PDF'}
                     </button>

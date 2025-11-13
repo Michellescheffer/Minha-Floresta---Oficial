@@ -100,7 +100,7 @@ serve(async (req: Request) => {
     // If purchase flow and no purchase exists yet, create purchase and items, then insert basic certificates
     try {
       const meta = pi.metadata || {} as any;
-      if (meta.type === 'purchase') {
+      if (meta.type === 'purchase' || meta.items_json || (meta.project_ids && meta.item_count)) {
         // Check if a purchase already exists for this PI
         const { data: existingPurchase } = await supabase
           .from('purchases')
