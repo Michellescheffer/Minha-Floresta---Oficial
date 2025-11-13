@@ -15,10 +15,11 @@ serve(async (req: Request) => {
 
   try {
     const url = new URL(req.url);
-    const code = url.searchParams.get('certificate_number') || url.searchParams.get('numero');
-    if (!code) {
+    const raw = url.searchParams.get('certificate_number') || url.searchParams.get('numero');
+    if (!raw) {
       return new Response(JSON.stringify({ error: 'Missing certificate_number' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+    const code = raw.replace(/\s+/g, '').toUpperCase();
 
     const supabaseUrl = Deno.env.get('MF_SUPABASE_URL') || Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceRole = Deno.env.get('MF_SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
@@ -27,7 +28,7 @@ serve(async (req: Request) => {
     const { data: cert, error } = await supabase
       .from('certificates')
       .select('id, certificate_number, area_sqm, issued_at, status, pdf_url, project_id, purchase_id, projects(name), purchases(buyer_email)')
-      .eq('certificate_number', code)
+      .ilike('certificate_number', code)
       .maybeSingle();
 
     if (error || !cert) {
@@ -48,6 +49,8 @@ serve(async (req: Request) => {
       issued_at: issueDate,
       status: cert.status || 'active',
       pdf_url: cert.pdf_url || null,
+      project_id: cert.project_id || null,
+      purchase_id: cert.purchase_id || null,
       project_name: (cert.projects as any)?.name || 'Projeto',
       buyer_email: (cert.purchases as any)?.buyer_email || null,
       valid_until: validUntil,

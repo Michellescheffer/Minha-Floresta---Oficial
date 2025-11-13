@@ -224,6 +224,29 @@ serve(async (req: Request) => {
               }
             }
           }
+
+          // Auto-generate PDFs for any certificates of this purchase without pdf_url
+          try {
+            const { data: purchaseCerts } = await supabase
+              .from('certificates')
+              .select('id, pdf_url')
+              .eq('purchase_id', createdPurchaseId);
+
+            const endpoint = `${supabaseUrl}/functions/v1/certificate-generate`;
+            const headers = {
+              'Authorization': `Bearer ${supabaseServiceRole}`,
+              'Content-Type': 'application/json',
+            } as Record<string, string>;
+
+            const tasks = (purchaseCerts || [])
+              .filter((c: any) => !c.pdf_url)
+              .map((c: any) => fetch(endpoint, { method: 'POST', headers, body: JSON.stringify({ certificate_id: c.id }) }));
+            if (tasks.length > 0) {
+              await Promise.allSettled(tasks);
+            }
+          } catch (pdfErr) {
+            console.error('auto pdf generation error', pdfErr);
+          }
         }
       }
     } catch (e) {
