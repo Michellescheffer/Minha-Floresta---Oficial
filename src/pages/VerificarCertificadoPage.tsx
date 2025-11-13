@@ -5,12 +5,15 @@ import { useCertificates, type Certificate } from '../hooks/useCertificates';
 import { useAuth } from '../contexts/AuthContext';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Badge } from '../components/ui/badge';
+import QRCodeLib from 'qrcode';
 
 export function VerificarCertificadoPage() {
   const [certificateCode, setCertificateCode] = useState('');
   const [error, setError] = useState('');
   const [certificate, setCertificate] = useState<Certificate | null>(null);
   const [verifying, setVerifying] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [transactionId, setTransactionId] = useState<string>('');
   const { verifyCertificate } = useCertificates();
   const { user } = useAuth();
 
@@ -55,6 +58,16 @@ export function VerificarCertificadoPage() {
               return certNum === searchNum;
             });
             if (matchingCert) {
+              // Calculate validity (30 years from issue date)
+              const issueDate = matchingCert.issued_at || new Date().toISOString();
+              const validUntil = new Date(new Date(issueDate).getTime() + 30 * 365 * 24 * 60 * 60 * 1000)
+                .toISOString()
+                .split('T')[0];
+              
+              // Extract transaction ID from certificate ID
+              const txId = matchingCert.id?.replace('synth-', '').split('-')[0] || 'N/A';
+              setTransactionId(txId);
+              
               const syntheticCert: Certificate = {
                 id: 'synth-temp',
                 projectId: '',
@@ -63,12 +76,13 @@ export function VerificarCertificadoPage() {
                 buyerEmail: emailToUse,
                 area: matchingCert.area_sqm || 0,
                 price: 0,
-                issueDate: matchingCert.issued_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+                issueDate: issueDate.split('T')[0],
                 status: 'active',
                 certificateNumber: normalized,
                 qrCode: '',
                 co2Offset: Math.round((matchingCert.area_sqm || 0) * 22),
-                validUntil: '',
+                validUntil: validUntil,
+                pdfUrl: matchingCert.pdf_url || undefined,
               };
               setCertificate(syntheticCert);
               setError('');
@@ -123,6 +137,16 @@ export function VerificarCertificadoPage() {
                 return certNum === searchNum;
               });
               if (matchingCert) {
+                // Calculate validity (30 years from issue date)
+                const issueDate = matchingCert.issued_at || new Date().toISOString();
+                const validUntil = new Date(new Date(issueDate).getTime() + 30 * 365 * 24 * 60 * 60 * 1000)
+                  .toISOString()
+                  .split('T')[0];
+                
+                // Extract transaction ID from certificate ID
+                const txId = matchingCert.id?.replace('synth-', '').split('-')[0] || 'N/A';
+                setTransactionId(txId);
+                
                 const syntheticCert: Certificate = {
                   id: 'synth-temp',
                   projectId: '',
@@ -131,12 +155,13 @@ export function VerificarCertificadoPage() {
                   buyerEmail: emailToUse,
                   area: matchingCert.area_sqm || 0,
                   price: 0,
-                  issueDate: matchingCert.issued_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+                  issueDate: issueDate.split('T')[0],
                   status: 'active',
                   certificateNumber: code,
                   qrCode: '',
                   co2Offset: Math.round((matchingCert.area_sqm || 0) * 22),
-                  validUntil: '',
+                  validUntil: validUntil,
+                  pdfUrl: matchingCert.pdf_url || undefined,
                 };
                 setCertificate(syntheticCert);
                 return;
@@ -152,6 +177,25 @@ export function VerificarCertificadoPage() {
       }
     })();
   }, []);
+
+  // Generate QR Code when certificate is loaded
+  useEffect(() => {
+    if (certificate?.certificateNumber) {
+      const verifyUrl = `https://minha-floresta.vercel.app/#verificar-certificado?numero=${encodeURIComponent(certificate.certificateNumber)}`;
+      QRCodeLib.toDataURL(verifyUrl, {
+        width: 200,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      }).then(url => {
+        setQrCodeUrl(url);
+      }).catch(err => {
+        console.error('Error generating QR code:', err);
+      });
+    }
+  }, [certificate]);
 
   const handleCopyCode = () => {
     if (certificate) {
@@ -337,8 +381,8 @@ export function VerificarCertificadoPage() {
                       
                       <div>
                         <label className="text-gray-600 text-sm">ID da Transação</label>
-                        <div className="text-gray-800 font-mono bg-gray-50/50 p-3 rounded-lg">
-                          {'N/A'}
+                        <div className="text-gray-800 font-mono bg-gray-50/50 p-3 rounded-lg text-xs break-all">
+                          {transactionId || 'N/A'}
                         </div>
                       </div>
                       
@@ -422,11 +466,17 @@ export function VerificarCertificadoPage() {
                 <GlassCard className="p-6 text-center">
                   <h4 className="text-gray-800 mb-4">QR Code de Verificação</h4>
                   <div className="w-48 h-48 mx-auto mb-4 bg-white p-4 rounded-lg">
-                    <img
-                      src={certificate.qrCode || 'https://via.placeholder.com/200x200?text=QR+Code'}
-                      alt="QR Code do certificado"
-                      className="w-full h-full object-contain"
-                    />
+                    {qrCodeUrl ? (
+                      <img
+                        src={qrCodeUrl}
+                        alt="QR Code do certificado"
+                        className="w-full h-full object-contain"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 rounded flex items-center justify-center">
+                        <QrCode className="w-16 h-16 text-gray-400" />
+                      </div>
+                    )}
                   </div>
                   <p className="text-gray-600 text-sm">
                     Escaneie para verificar rapidamente
@@ -438,15 +488,10 @@ export function VerificarCertificadoPage() {
                   <div className="space-y-3">
                     <button
                       onClick={handleDownload}
-                      disabled={!certificate?.pdfUrl}
-                      className={`w-full py-3 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 ${
-                        certificate?.pdfUrl
-                          ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
-                          : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                      }`}
+                      className="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300 flex items-center justify-center space-x-2"
                     >
                       <Download className="w-5 h-5" />
-                      <span>Baixar PDF</span>
+                      <span>{certificate?.pdfUrl ? 'Baixar PDF' : 'Salvar em PDF'}</span>
                     </button>
                     
                     <button
