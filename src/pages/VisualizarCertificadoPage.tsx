@@ -159,9 +159,11 @@ export default function VisualizarCertificadoPage() {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!certificate) return;
     const filename = `certificado-${certificate.certificateNumber || code}.pdf`;
+    
+    // If PDF already exists, download it
     if (certificate.pdfUrl) {
       const link = document.createElement('a');
       link.href = certificate.pdfUrl;
@@ -169,7 +171,15 @@ export default function VisualizarCertificadoPage() {
       link.click();
       return;
     }
-    window.print();
+    
+    // If no PDF and it's a synthetic cert, generate it first
+    if (certificate.id.startsWith('synth-')) {
+      setPdfError('Certificado ainda em processamento. Aguarde a materialização.');
+      return;
+    }
+    
+    // Generate PDF via backend
+    await handleGeneratePdf();
   };
 
   const formatDate = (dateString?: string) => {
@@ -223,13 +233,33 @@ export default function VisualizarCertificadoPage() {
                 )}
               </button>
             )}
-            <button
-              onClick={handleDownload}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors"
-            >
-              <Download className="w-4 h-4" />
-              {certificate.pdfUrl ? 'Baixar PDF' : 'Salvar em PDF'}
-            </button>
+            {certificate.pdfUrl ? (
+              <button
+                onClick={handleDownload}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Baixar PDF
+              </button>
+            ) : (
+              <button
+                onClick={handleDownload}
+                disabled={generatingPdf || code.startsWith('PENDENTE-')}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generatingPdf ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-blue-700 border-t-transparent rounded-full animate-spin" />
+                    Gerando PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Gerar e Baixar PDF
+                  </>
+                )}
+              </button>
+            )}
           </div>
         </div>
 
