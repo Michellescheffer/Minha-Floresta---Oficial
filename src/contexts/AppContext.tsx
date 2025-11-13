@@ -59,6 +59,7 @@ export type PageType =
   | 'sobre-projeto' 
   | 'certificado' 
   | 'verificar-certificado'
+  | 'visualizar-certificado'
   | 'informacoes-institucionais'
   | 'loja' 
   | 'doacoes' 
@@ -133,6 +134,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       'sobre-projeto': 'sobre-projeto',
       'certificado': 'certificado',
       'verificar-certificado': 'verificar-certificado',
+      'visualizar-certificado': 'visualizar-certificado',
       'informacoes-institucionais': 'informacoes-institucionais',
       'loja': 'loja',
       'doacoes': 'doacoes',

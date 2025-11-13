@@ -585,7 +585,7 @@ export function DashboardPage() {
                       disabled={String(certificate.id).startsWith('synth-') || String(certificate.certificate_number || '').startsWith('PENDENTE-')}
                       onClick={() => {
                         if (String(certificate.id).startsWith('synth-')) return;
-                        window.location.hash = `verificar-certificado?numero=${certificate.certificate_number}`;
+                        window.location.hash = `visualizar-certificado?numero=${certificate.certificate_number}`;
                       }}
                     >
                       <Eye className="w-4 h-4" />

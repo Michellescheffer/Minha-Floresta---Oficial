@@ -12,6 +12,7 @@ import { ComoFuncionaPage } from '../pages/ComoFuncionaPage';
 import { DoacoesPage } from '../pages/DoacoesPage';
 import { SobreProjetoPage } from '../pages/SobreProjetoPage';
 import { VerificarCertificadoPage } from '../pages/VerificarCertificadoPage';
+import VisualizarCertificadoPage from '../pages/VisualizarCertificadoPage';
 import { ProjetosSociaisPage } from '../pages/ProjetosSociaisPage';
 import { ContatoPage } from '../pages/ContatoPage';
 import { BlueCarbonPage } from '../pages/BlueCarbonPage';
@@ -230,6 +231,8 @@ export function PageRouter() {
       return <CertificadoPage />;
     case 'verificar-certificado':
       return <VerificarCertificadoPage />;
+    case 'visualizar-certificado':
+      return <VisualizarCertificadoPage />;
     case 'informacoes-institucionais':
       return <InformacoesInstitucionaisPage />;
     case 'loja':
