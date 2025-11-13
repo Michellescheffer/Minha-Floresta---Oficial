@@ -37,6 +37,8 @@ export default function VisualizarCertificadoPage() {
         const found = await verifyCertificate(numero);
         console.log('Verify result:', found);
         if (found) {
+          // Official certificate found in DB - NOT synthetic
+          found.isSynthetic = false;
           setCertificate(found);
           // Try to enrich with user-dashboard data
           if (found.buyerEmail) {
@@ -86,8 +88,11 @@ export default function VisualizarCertificadoPage() {
                 });
                 console.log('Matching cert found:', matchingCert);
                 if (matchingCert) {
+                  // Check if this is truly synthetic (starts with pi_ or has PENDENTE prefix)
+                  const isTrulySynthetic = numero.toLowerCase().startsWith('pi_') || 
+                                          numero.toLowerCase().includes('pendente');
                   const syntheticCert: Certificate = {
-                    id: 'synth-temp',
+                    id: isTrulySynthetic ? 'synth-temp' : (matchingCert.id || 'cert-temp'),
                     projectId: '',
                     projectName: matchingCert.project_name || 'Projeto',
                     buyerName: user?.name || '',
@@ -100,7 +105,7 @@ export default function VisualizarCertificadoPage() {
                     qrCode: '',
                     co2Offset: Math.round((matchingCert.area_sqm || 0) * 22),
                     validUntil: '',
-                    isSynthetic: true,
+                    isSynthetic: isTrulySynthetic,
                   };
                   console.log('Setting synthetic certificate:', syntheticCert);
                   setCertificate(syntheticCert);
@@ -244,16 +249,24 @@ export default function VisualizarCertificadoPage() {
         scale: 2,
         backgroundColor: '#f0fdf4',
         logging: false,
+        useCORS: true,
+        allowTaint: true,
+        removeContainer: true,
       });
       
-      canvas.toBlob((blob) => {
-        if (!blob) return;
+      canvas.toBlob((blob: Blob | null) => {
+        if (!blob) {
+          alert('Erro ao gerar imagem. Tente novamente.');
+          return;
+        }
         
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         link.download = `certificado-${certificate?.certificateNumber || code}.png`;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
         URL.revokeObjectURL(url);
       }, 'image/png');
     } catch (err) {
@@ -321,13 +334,19 @@ export default function VisualizarCertificadoPage() {
             <button
               onClick={handleShareImage}
               disabled={sharingImage}
-              className="p-2 rounded-lg bg-gray-100/50 text-gray-500 hover:bg-gray-200/50 hover:text-gray-700 transition-colors disabled:opacity-50"
-              title="Baixar como imagem"
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Baixar como imagem para compartilhar"
             >
               {sharingImage ? (
-                <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+                <>
+                  <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm">Gerando...</span>
+                </>
               ) : (
-                <Share2 className="w-5 h-5" />
+                <>
+                  <Share2 className="w-4 h-4" />
+                  <span className="text-sm">Compartilhar</span>
+                </>
               )}
             </button>
           </div>
