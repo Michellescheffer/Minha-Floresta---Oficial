@@ -63,7 +63,12 @@ export default function VisualizarCertificadoPage() {
                 console.log('Dashboard data for synthetic cert:', dashData);
                 console.log('Looking for cert:', numero);
                 setEnrichedData(dashData);
-                const matchingCert = dashData.certificates?.find((c: any) => c.certificate_number === numero);
+                // Normalize both sides for comparison
+                const matchingCert = dashData.certificates?.find((c: any) => {
+                  const certNum = String(c.certificate_number || '').trim().toUpperCase();
+                  const searchNum = numero.trim().toUpperCase();
+                  return certNum === searchNum;
+                });
                 console.log('Matching cert found:', matchingCert);
                 if (matchingCert) {
                   const syntheticCert: Certificate = {
