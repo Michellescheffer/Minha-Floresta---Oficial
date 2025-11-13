@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
-import { Download, Calendar, MapPin, Award } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { Download, Calendar, MapPin, CheckCircle, Leaf, Share2 } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
 import { useCertificates, type Certificate } from '../hooks/useCertificates';
-import { useAuth } from '../contexts/AuthContext';
 import QRCode from 'qrcode';
+import html2canvas from 'html2canvas';
 import logoImage from 'figma:asset/f9a96b4548f250beba1ee29ba9d3267b1c5a7b61.png';
 
 export default function VisualizarCertificadoPage() {
@@ -11,8 +12,10 @@ export default function VisualizarCertificadoPage() {
   const [code, setCode] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
-  const [generatingPdf, setGeneratingPdf] = useState<boolean>(false);
-  const [pdfError, setPdfError] = useState<string>('');
+  const [generatingPdf, setGeneratingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState('');
+  const [sharingImage, setSharingImage] = useState(false);
+  const certificateRef = useRef<HTMLDivElement>(null);
   const [enrichedData, setEnrichedData] = useState<any>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const { verifyCertificate } = useCertificates();
@@ -159,8 +162,8 @@ export default function VisualizarCertificadoPage() {
     }
   }, [certificate]);
 
-  const handleGeneratePdf = async () => {
-    if (!certificate || !certificate.id || certificate.id.startsWith('synth-')) return;
+  const handleGeneratePdf = async (): Promise<string | null> => {
+    if (!certificate || !certificate.id || certificate.id.startsWith('synth-')) return null;
     setGeneratingPdf(true);
     setPdfError('');
     
@@ -186,13 +189,16 @@ export default function VisualizarCertificadoPage() {
       if (data.pdf_url) {
         // Update certificate with new PDF URL
         setCertificate({ ...certificate, pdfUrl: data.pdf_url });
+        return data.pdf_url;
       }
+      return null;
     } catch (err: any) {
       if (err.name === 'AbortError') {
         setPdfError('Tempo esgotado. Tente novamente.');
       } else {
         setPdfError('Erro ao gerar PDF. Tente novamente.');
       }
+      return null;
     } finally {
       setGeneratingPdf(false);
     }
@@ -218,7 +224,44 @@ export default function VisualizarCertificadoPage() {
     }
     
     // Generate PDF via backend for official certificates
-    await handleGeneratePdf();
+    const pdfUrl = await handleGeneratePdf();
+    
+    // After generation, download it if successful
+    if (pdfUrl) {
+      const link = document.createElement('a');
+      link.href = pdfUrl;
+      link.download = filename;
+      link.click();
+    }
+  };
+  
+  const handleShareImage = async () => {
+    if (!certificateRef.current) return;
+    setSharingImage(true);
+    
+    try {
+      const canvas = await html2canvas(certificateRef.current, {
+        scale: 2,
+        backgroundColor: '#f0fdf4',
+        logging: false,
+      });
+      
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `certificado-${certificate?.certificateNumber || code}.png`;
+        link.click();
+        URL.revokeObjectURL(url);
+      }, 'image/png');
+    } catch (err) {
+      console.error('Error generating image:', err);
+      alert('Erro ao gerar imagem. Tente novamente.');
+    } finally {
+      setSharingImage(false);
+    }
   };
 
   const formatDate = (dateString?: string) => {
@@ -274,6 +317,19 @@ export default function VisualizarCertificadoPage() {
                 </>
               )}
             </button>
+            
+            <button
+              onClick={handleShareImage}
+              disabled={sharingImage}
+              className="p-2 rounded-lg bg-gray-100/50 text-gray-500 hover:bg-gray-200/50 hover:text-gray-700 transition-colors disabled:opacity-50"
+              title="Baixar como imagem"
+            >
+              {sharingImage ? (
+                <div className="w-5 h-5 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Share2 className="w-5 h-5" />
+              )}
+            </button>
           </div>
         </div>
 
@@ -291,7 +347,7 @@ export default function VisualizarCertificadoPage() {
           </div>
         )}
 
-        <GlassCard className="p-8 bg-white/90 border-2 border-green-200">
+        <GlassCard className="p-8 bg-white/90 border-2 border-green-200" ref={certificateRef}>
           {/* Header do Certificado com Logo */}
           <div className="flex items-center justify-between mb-8 border-b-2 border-green-200 pb-6">
             <div className="flex items-center gap-3">
