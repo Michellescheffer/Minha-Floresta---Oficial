@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search, Download, CheckCircle, Calendar, MapPin, Award, Copy, QrCode, AlertTriangle, Database } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
 import { useCertificates, type Certificate } from '../hooks/useCertificates';
@@ -37,6 +37,32 @@ export function VerificarCertificadoPage() {
       setVerifying(false);
     }
   };
+
+  // Auto-verificar via hash: #verificar-certificado?numero=XXXX
+  useEffect(() => {
+    const hash = typeof window !== 'undefined' ? window.location.hash : '';
+    if (!hash) return;
+    const match = hash.match(/numero=([^&]+)/i);
+    if (!match) return;
+    const code = decodeURIComponent(match[1]).toUpperCase();
+    (async () => {
+      setVerifying(true);
+      setError('');
+      setCertificateCode(code);
+      try {
+        const found = await verifyCertificate(code);
+        if (found) {
+          setCertificate(found);
+        } else {
+          setError('Certificado não encontrado. Verifique o código e tente novamente.');
+        }
+      } catch (_) {
+        setError('Erro ao verificar certificado. Tente novamente.');
+      } finally {
+        setVerifying(false);
+      }
+    })();
+  }, []);
 
   const handleCopyCode = () => {
     if (certificate) {
