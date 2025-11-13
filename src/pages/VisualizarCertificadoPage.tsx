@@ -8,6 +8,8 @@ export default function VisualizarCertificadoPage() {
   const [code, setCode] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
+  const [generatingPdf, setGeneratingPdf] = useState<boolean>(false);
+  const [pdfError, setPdfError] = useState<string>('');
   const { verifyCertificate } = useCertificates();
 
   useEffect(() => {
@@ -57,6 +59,45 @@ export default function VisualizarCertificadoPage() {
     })();
   }, []);
 
+  const handleGeneratePdf = async () => {
+    if (!certificate || !certificate.id || certificate.id.startsWith('synth-')) return;
+    setGeneratingPdf(true);
+    setPdfError('');
+    
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+      
+      const response = await fetch('https://ngnybwsovjignsflrhyr.supabase.co/functions/v1/certificate-generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ***REMOVED***'
+        },
+        body: JSON.stringify({ certificate_id: certificate.id }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) throw new Error('Falha ao gerar PDF');
+      
+      const data = await response.json();
+      if (data.pdf_url) {
+        // Update certificate with new PDF URL
+        setCertificate({ ...certificate, pdfUrl: data.pdf_url });
+      }
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        setPdfError('Tempo esgotado. Tente novamente.');
+      } else {
+        setPdfError('Erro ao gerar PDF. Tente novamente.');
+      }
+    } finally {
+      setGeneratingPdf(false);
+    }
+  };
+
   const handleDownload = () => {
     if (!certificate) return;
     const filename = `certificado-${certificate.certificateNumber || code}.pdf`;
@@ -101,14 +142,41 @@ export default function VisualizarCertificadoPage() {
       <div className="relative z-10 max-w-4xl mx-auto px-6 space-y-6">
         <div className="flex items-center justify-between">
           <h1 className="text-gray-800">Certificado</h1>
-          <button
-            onClick={handleDownload}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors print:hidden"
-          >
-            <Download className="w-4 h-4" />
-            {certificate.pdfUrl ? 'Baixar PDF' : 'Salvar em PDF'}
-          </button>
+          <div className="flex gap-2 print:hidden">
+            {!code.startsWith('PENDENTE-') && !certificate.pdfUrl && (
+              <button
+                onClick={handleGeneratePdf}
+                disabled={generatingPdf}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-700 rounded-lg hover:bg-green-500/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {generatingPdf ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-green-700 border-t-transparent rounded-full animate-spin" />
+                    Gerando...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Gerar PDF Oficial
+                  </>
+                )}
+              </button>
+            )}
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-500/20 text-blue-700 rounded-lg hover:bg-blue-500/30 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              {certificate.pdfUrl ? 'Baixar PDF' : 'Salvar em PDF'}
+            </button>
+          </div>
         </div>
+
+        {pdfError && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800 text-sm">{pdfError}</p>
+          </div>
+        )}
 
         {code.startsWith('PENDENTE-') && (
           <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -118,11 +186,21 @@ export default function VisualizarCertificadoPage() {
           </div>
         )}
 
-        <GlassCard className="p-6">
+        <GlassCard className="p-8 bg-white/90 border-2 border-green-200">
+          {/* Header do Certificado */}
+          <div className="text-center mb-8 border-b-2 border-green-200 pb-6">
+            <h2 className="text-3xl font-bold text-green-700 mb-2">Certificado de Compensação de Carbono</h2>
+            <p className="text-gray-600">Minha Floresta Conservações</p>
+          </div>
           <div className="flex items-start justify-between gap-6">
             <div className="flex-1">
-              <h2 className="text-gray-800 font-semibold mb-1">{certificate.projectName || 'Projeto'}</h2>
-              <p className="text-gray-600 text-sm mb-4">Código: {certificate.certificateNumber || code}</p>
+              <div className="mb-6">
+                <p className="text-gray-600 text-sm mb-1">Certificamos que</p>
+                <h3 className="text-2xl font-bold text-gray-800 mb-3">{certificate.buyerName || 'Titular do Certificado'}</h3>
+                <p className="text-gray-600">contribuiu para a preservação ambiental através do projeto:</p>
+                <h4 className="text-xl font-semibold text-green-700 mt-2">{certificate.projectName || 'Projeto'}</h4>
+              </div>
+              <p className="text-gray-600 text-xs mb-6">Código de Verificação: <span className="font-mono font-semibold">{certificate.certificateNumber || code}</span></p>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                 <div>
