@@ -64,10 +64,18 @@ export default function VisualizarCertificadoPage() {
                 console.log('Dashboard data for synthetic cert:', dashData);
                 console.log('Looking for cert:', numero);
                 setEnrichedData(dashData);
-                // Normalize both sides for comparison
+                // Normalize both sides for comparison (handle old PENDENTE-pi_ and new formats)
                 const matchingCert = dashData.certificates?.find((c: any) => {
-                  const certNum = String(c.certificate_number || '').trim().toUpperCase();
-                  const searchNum = numero.trim().toUpperCase();
+                  const certNum = String(c.certificate_number || '')
+                    .trim()
+                    .toUpperCase()
+                    .replace(/^PENDENTE-PI_/i, '')
+                    .replace(/^PI_/i, '');
+                  const searchNum = numero
+                    .trim()
+                    .toUpperCase()
+                    .replace(/^PENDENTE-PI_/i, '')
+                    .replace(/^PI_/i, '');
                   return certNum === searchNum;
                 });
                 console.log('Matching cert found:', matchingCert);
