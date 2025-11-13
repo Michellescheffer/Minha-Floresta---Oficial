@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Download, QrCode, Calendar, MapPin, Award } from 'lucide-react';
+import { Download, Calendar, MapPin, Award } from 'lucide-react';
 import { GlassCard } from '../components/GlassCard';
 import { useCertificates, type Certificate } from '../hooks/useCertificates';
 import { useAuth } from '../contexts/AuthContext';
+import QRCode from 'qrcode';
 import logoImage from 'figma:asset/f9a96b4548f250beba1ee29ba9d3267b1c5a7b61.png';
 
 export default function VisualizarCertificadoPage() {
@@ -13,6 +14,7 @@ export default function VisualizarCertificadoPage() {
   const [generatingPdf, setGeneratingPdf] = useState<boolean>(false);
   const [pdfError, setPdfError] = useState<string>('');
   const [enrichedData, setEnrichedData] = useState<any>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
   const { verifyCertificate } = useCertificates();
   const { user } = useAuth();
 
@@ -118,6 +120,25 @@ export default function VisualizarCertificadoPage() {
       }
     })();
   }, []);
+
+  // Generate QR Code when certificate is loaded
+  useEffect(() => {
+    if (certificate?.certificateNumber) {
+      const verifyUrl = `https://minha-floresta.vercel.app/#verificar-certificado?numero=${encodeURIComponent(certificate.certificateNumber)}`;
+      QRCode.toDataURL(verifyUrl, {
+        width: 200,
+        margin: 1,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      }).then(url => {
+        setQrCodeUrl(url);
+      }).catch(err => {
+        console.error('Error generating QR code:', err);
+      });
+    }
+  }, [certificate]);
 
   const handleGeneratePdf = async () => {
     if (!certificate || !certificate.id || certificate.id.startsWith('synth-')) return;
@@ -358,8 +379,12 @@ export default function VisualizarCertificadoPage() {
               </div>
             </div>
             <div className="w-36 shrink-0 flex flex-col items-center gap-2">
-              <div className="w-36 h-36 bg-white rounded-xl border border-gray-200 flex items-center justify-center">
-                <QrCode className="w-20 h-20 text-gray-500" />
+              <div className="w-36 h-36 bg-white rounded-xl border border-gray-200 flex items-center justify-center p-2">
+                {qrCodeUrl ? (
+                  <img src={qrCodeUrl} alt="QR Code" className="w-full h-full object-contain" />
+                ) : (
+                  <div className="w-20 h-20 bg-gray-100 rounded" />
+                )}
               </div>
               <span className="text-xs text-gray-500 text-center">Escaneie para verificar</span>
             </div>
