@@ -450,12 +450,118 @@ function StatCard({ title, value, icon: Icon, color, trend }: any) {
 
 // Projects Tab Component
 function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
+  const [showModal, setShowModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    location: '',
+    type: 'reforestation',
+    price_per_sqm: 0,
+    available_area: 0,
+    total_area: 0,
+    status: 'active',
+    image_url: ''
+  });
+  const [uploading, setUploading] = useState(false);
+
+  const handleEdit = (project: Project) => {
+    setEditingProject(project);
+    setFormData({
+      name: project.name,
+      description: project.description,
+      location: project.location,
+      type: project.type,
+      price_per_sqm: project.price_per_sqm,
+      available_area: project.available_area,
+      total_area: project.total_area,
+      status: project.status,
+      image_url: project.image_url
+    });
+    setShowModal(true);
+  };
+
+  const handleAdd = () => {
+    setEditingProject(null);
+    setFormData({
+      name: '',
+      description: '',
+      location: '',
+      type: 'reforestation',
+      price_per_sqm: 0,
+      available_area: 0,
+      total_area: 0,
+      status: 'active',
+      image_url: ''
+    });
+    setShowModal(true);
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `project-${Date.now()}.${fileExt}`;
+      const filePath = `projects/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, image_url: publicUrl });
+      toast.success('Imagem enviada com sucesso!');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Erro ao enviar imagem');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      if (editingProject) {
+        const { error } = await supabase
+          .from('projects')
+          .update(formData)
+          .eq('id', editingProject.id);
+
+        if (error) throw error;
+        toast.success('Projeto atualizado!');
+      } else {
+        const { error } = await supabase
+          .from('projects')
+          .insert([formData]);
+
+        if (error) throw error;
+        toast.success('Projeto criado!');
+      }
+
+      setShowModal(false);
+      window.location.reload(); // Reload to update list
+    } catch (error) {
+      console.error('Error saving project:', error);
+      toast.error('Erro ao salvar projeto');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">Projetos</h2>
         <button
-          onClick={onAdd}
+          onClick={handleAdd}
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all"
         >
           <Plus className="w-4 h-4" />
@@ -463,50 +569,201 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {projects.map((project: Project) => (
-          <div
-            key={project.id}
-            className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl shadow-black/5 hover:shadow-2xl transition-all"
-          >
-            <div className="flex gap-4">
-              {project.image_url && (
-                <img
-                  src={project.image_url}
-                  alt={project.name}
-                  className="w-24 h-24 rounded-xl object-cover"
-                />
-              )}
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-900 mb-1">{project.name}</h3>
-                <p className="text-sm text-gray-600 mb-2">{project.location}</p>
-                <div className="flex items-center gap-4 text-sm">
-                  <span className="text-green-600 font-semibold">
-                    R$ {project.price_per_sqm}/m²
-                  </span>
-                  <span className="text-gray-600">
-                    {project.available_area}m² disponíveis
-                  </span>
+      {projects.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">
+          Nenhum projeto cadastrado ainda.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {projects.map((project: Project) => (
+            <div
+              key={project.id}
+              className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl shadow-black/5 hover:shadow-2xl transition-all"
+            >
+              <div className="flex gap-4">
+                {project.image_url && (
+                  <img
+                    src={project.image_url}
+                    alt={project.name}
+                    className="w-24 h-24 rounded-xl object-cover"
+                  />
+                )}
+                <div className="flex-1">
+                  <h3 className="font-bold text-gray-900 mb-1">{project.name}</h3>
+                  <p className="text-sm text-gray-600 mb-2">{project.location}</p>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span className="text-green-600 font-semibold">
+                      R$ {project.price_per_sqm}/m²
+                    </span>
+                    <span className="text-gray-600">
+                      {project.available_area}m² disponíveis
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => handleEdit(project)}
+                    className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                  >
+                    <Edit3 className="w-4 h-4 text-blue-600" />
+                  </button>
+                  <button
+                    onClick={() => onDelete(project.id)}
+                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xl font-bold text-gray-900">
+                  {editingProject ? 'Editar Projeto' : 'Novo Projeto'}
+                </h3>
                 <button
-                  onClick={() => onEdit(project)}
-                  className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                  onClick={() => setShowModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
-                  <Edit3 className="w-4 h-4 text-blue-600" />
-                </button>
-                <button
-                  onClick={() => onDelete(project.id)}
-                  className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-4 h-4 text-red-600" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nome</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
+                <textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Localização</label>
+                  <input
+                    type="text"
+                    value={formData.location}
+                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
+                  <select
+                    value={formData.type}
+                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="reforestation">Reflorestamento</option>
+                    <option value="restoration">Restauração</option>
+                    <option value="conservation">Conservação</option>
+                    <option value="blue-carbon">Blue Carbon</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Preço/m²</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.price_per_sqm}
+                    onChange={(e) => setFormData({ ...formData, price_per_sqm: parseFloat(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Área Disponível</label>
+                  <input
+                    type="number"
+                    value={formData.available_area}
+                    onChange={(e) => setFormData({ ...formData, available_area: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Área Total</label>
+                  <input
+                    type="number"
+                    value={formData.total_area}
+                    onChange={(e) => setFormData({ ...formData, total_area: parseInt(e.target.value) })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Imagem</label>
+                <div className="flex items-center gap-4">
+                  {formData.image_url && (
+                    <img src={formData.image_url} alt="Preview" className="w-20 h-20 rounded-xl object-cover" />
+                  )}
+                  <label className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl cursor-pointer transition-colors">
+                    <Upload className="w-4 h-4" />
+                    {uploading ? 'Enviando...' : 'Escolher Imagem'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all"
+                >
+                  <Save className="w-4 h-4" />
+                  {editingProject ? 'Atualizar' : 'Criar'}
+                </button>
+              </div>
+            </form>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -598,6 +855,152 @@ function AnalyticsTab({ salesData }: { salesData: SaleData[] }) {
 
 // Images Tab Component
 function ImagesTab({ siteImages, certImages, onReload }: any) {
+  const [uploading, setUploading] = useState(false);
+
+  const handleUploadSiteImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `site-${Date.now()}.${fileExt}`;
+      const filePath = `site/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      // Insert into site_images table
+      const { error: dbError } = await supabase
+        .from('site_images')
+        .insert([{
+          key: `hero-${Date.now()}`,
+          url: publicUrl,
+          alt_text: 'Hero Image',
+          display_order: siteImages.length + 1,
+          is_active: true
+        }]);
+
+      if (dbError) throw dbError;
+
+      toast.success('Imagem do site adicionada!');
+      onReload();
+    } catch (error) {
+      console.error('Error uploading site image:', error);
+      toast.error('Erro ao enviar imagem');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUploadCertImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (certImages.length >= 8) {
+      toast.error('Máximo de 8 imagens de certificado permitido');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `cert-${Date.now()}.${fileExt}`;
+      const filePath = `certificates/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      // Insert into certificate_images table
+      const { error: dbError } = await supabase
+        .from('certificate_images')
+        .insert([{
+          url: publicUrl,
+          alt_text: 'Certificate Image',
+          display_order: certImages.length + 1,
+          is_active: true
+        }]);
+
+      if (dbError) throw dbError;
+
+      toast.success('Imagem de certificado adicionada!');
+      onReload();
+    } catch (error) {
+      console.error('Error uploading cert image:', error);
+      toast.error('Erro ao enviar imagem');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDeleteSiteImage = async (id: string, url: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta imagem?')) return;
+
+    try {
+      // Extract file path from URL
+      const urlParts = url.split('/');
+      const filePath = urlParts.slice(-2).join('/');
+
+      // Delete from storage
+      await supabase.storage.from('images').remove([filePath]);
+
+      // Delete from database
+      const { error } = await supabase
+        .from('site_images')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Imagem excluída!');
+      onReload();
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast.error('Erro ao excluir imagem');
+    }
+  };
+
+  const handleDeleteCertImage = async (id: string, url: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta imagem?')) return;
+
+    try {
+      // Extract file path from URL
+      const urlParts = url.split('/');
+      const filePath = urlParts.slice(-2).join('/');
+
+      // Delete from storage
+      await supabase.storage.from('images').remove([filePath]);
+
+      // Delete from database
+      const { error } = await supabase
+        .from('certificate_images')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success('Imagem excluída!');
+      onReload();
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      toast.error('Erro ao excluir imagem');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-gray-900">Gerenciar Imagens</h2>
@@ -605,34 +1008,83 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Site Images */}
         <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Imagens do Site</h3>
-          <div className="space-y-4">
-            {siteImages.map((img: any) => (
-              <div key={img.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl">
-                <img src={img.url} alt={img.alt_text || ''} className="w-16 h-16 rounded-lg object-cover" />
-                <div className="flex-1">
-                  <p className="font-medium text-sm">{img.key}</p>
-                  <p className="text-xs text-gray-600">{img.alt_text}</p>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Imagens do Site (Hero)</h3>
+            <label className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm rounded-xl cursor-pointer hover:shadow-lg transition-all">
+              <Upload className="w-4 h-4" />
+              {uploading ? 'Enviando...' : 'Adicionar'}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleUploadSiteImage}
+                className="hidden"
+                disabled={uploading}
+              />
+            </label>
+          </div>
+          <div className="space-y-3">
+            {siteImages.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-8">Nenhuma imagem cadastrada</p>
+            ) : (
+              siteImages.map((img: any) => (
+                <div key={img.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl group">
+                  <img src={img.url} alt={img.alt_text || ''} className="w-16 h-16 rounded-lg object-cover" />
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{img.key}</p>
+                    <p className="text-xs text-gray-600">{img.alt_text}</p>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteSiteImage(img.id, img.url)}
+                    className="p-2 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-600" />
+                  </button>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
         {/* Certificate Images */}
         <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Imagens dos Certificados</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Imagens dos Certificados ({certImages.length}/8)
+            </h3>
+            <label className={`flex items-center gap-2 px-3 py-2 text-white text-sm rounded-xl cursor-pointer transition-all ${
+              certImages.length >= 8 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:shadow-lg'
+            }`}>
+              <Upload className="w-4 h-4" />
+              {uploading ? 'Enviando...' : 'Adicionar'}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleUploadCertImage}
+                className="hidden"
+                disabled={uploading || certImages.length >= 8}
+              />
+            </label>
+          </div>
           <div className="grid grid-cols-2 gap-4">
-            {certImages.map((img: any) => (
-              <div key={img.id} className="relative group">
-                <img src={img.url} alt="" className="w-full h-32 rounded-xl object-cover" />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
-                  <button className="p-2 bg-white rounded-lg">
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </button>
+            {certImages.length === 0 ? (
+              <p className="col-span-2 text-sm text-gray-500 text-center py-8">Nenhuma imagem cadastrada</p>
+            ) : (
+              certImages.map((img: any) => (
+                <div key={img.id} className="relative group">
+                  <img src={img.url} alt="" className="w-full h-32 rounded-xl object-cover" />
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+                    <button
+                      onClick={() => handleDeleteCertImage(img.id, img.url)}
+                      className="p-2 bg-white rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-600" />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
