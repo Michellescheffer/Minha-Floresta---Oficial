@@ -93,13 +93,22 @@ export default function CMSPage() {
       setLoading(true);
 
       // Load real data from Supabase
-      const [projectsRes, certsRes, salesRes] = await Promise.all([
-        supabase.from('projects').select('*', { count: 'exact' }),
-        supabase.from('certificates').select('*', { count: 'exact' }),
-        supabase.from('sales').select('total_price').catch(() => ({ data: [], error: null }))
-      ]);
+      const projectsRes = await supabase.from('projects').select('*', { count: 'exact' });
+      const certsRes = await supabase.from('certificates').select('*', { count: 'exact' });
+      
+      // Try to load sales data, fallback to empty if fails
+      let salesRes = { data: [], error: null };
+      try {
+        salesRes = await supabase.from('sales').select('*');
+      } catch (e) {
+        console.warn('Sales table query failed:', e);
+      }
 
-      const totalRevenue = salesRes.data?.reduce((sum: number, p: any) => sum + (p.total_price || 0), 0) || 0;
+      // Calculate total revenue - try different column names
+      const totalRevenue = salesRes.data?.reduce((sum: number, p: any) => {
+        const price = p.total_price || p.price || p.amount || 0;
+        return sum + price;
+      }, 0) || 0;
 
       setStats({
         totalProjects: projectsRes.count || 0,
@@ -137,7 +146,7 @@ export default function CMSPage() {
       const { data, error } = await supabase
         .from('certificates')
         .select('*')
-        .order('issued_at', { ascending: false })
+        .order('issue_date', { ascending: false })
         .limit(50);
 
       if (error) {
@@ -177,7 +186,7 @@ export default function CMSPage() {
     try {
       const { data, error } = await supabase
         .from('sales')
-        .select('created_at, total_price, area_sqm');
+        .select('*');
 
       if (error) {
         console.error('Error loading sales data:', error);
@@ -194,7 +203,7 @@ export default function CMSPage() {
       const monthlyData: { [key: string]: { sales: number; revenue: number } } = {};
       
       data.forEach(sale => {
-        const date = new Date(sale.created_at);
+        const date = new Date(sale.created_at || sale.purchase_date || sale.date);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         
         if (!monthlyData[monthKey]) {
@@ -202,7 +211,9 @@ export default function CMSPage() {
         }
         
         monthlyData[monthKey].sales += 1;
-        monthlyData[monthKey].revenue += sale.total_price || 0;
+        // Try different column names for price
+        const price = sale.total_price || sale.price || sale.amount || 0;
+        monthlyData[monthKey].revenue += price;
       });
 
       const chartData = Object.entries(monthlyData)
