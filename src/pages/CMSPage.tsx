@@ -270,9 +270,9 @@ export function CMSPageNew() {
   };
 
   return (
-    <div className="min-h-screen pt-40 sm:pt-36 pb-16 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+    <div className="min-h-screen pt-56 sm:pt-52 pb-16 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
       {/* Header */}
-      <div className="sticky top-32 sm:top-28 z-40 backdrop-blur-xl bg-white/70 border-b border-white/20 shadow-lg shadow-black/5">
+      <div className="backdrop-blur-xl bg-white/70 border-b border-white/20 shadow-lg shadow-black/5 mb-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -295,7 +295,7 @@ export function CMSPageNew() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="sticky top-[145px] sm:top-[137px] z-30 backdrop-blur-xl bg-white/50 border-b border-white/20">
+      <div className="backdrop-blur-xl bg-white/50 border-b border-white/20 mb-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex gap-1 overflow-x-auto py-2">
             {[
