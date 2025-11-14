@@ -13,6 +13,7 @@ import { DoacoesPage } from '../pages/DoacoesPage';
 import { SobreProjetoPage } from '../pages/SobreProjetoPage';
 import { VerificarCertificadoPage } from '../pages/VerificarCertificadoPage';
 import VisualizarCertificadoPage from '../pages/VisualizarCertificadoPage';
+import { VisualizarCertificadoDoacaoPage } from '../pages/VisualizarCertificadoDoacaoPage';
 import { ProjetosSociaisPage } from '../pages/ProjetosSociaisPage';
 import { ContatoPage } from '../pages/ContatoPage';
 import { BlueCarbonPage } from '../pages/BlueCarbonPage';
@@ -234,6 +235,8 @@ export function PageRouter() {
       return <VerificarCertificadoPage />;
     case 'visualizar-certificado':
       return <VisualizarCertificadoPage />;
+    case 'verificar-doacao':
+      return <VisualizarCertificadoDoacaoPage />;
     case 'informacoes-institucionais':
       return <InformacoesInstitucionaisPage />;
     case 'loja':

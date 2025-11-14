@@ -60,6 +60,7 @@ export type PageType =
   | 'certificado' 
   | 'verificar-certificado'
   | 'visualizar-certificado'
+  | 'verificar-doacao'
   | 'informacoes-institucionais'
   | 'loja' 
   | 'doacoes' 

@@ -94,7 +94,7 @@ export function Navigation() {
             href="#home"
             onClick={(e) => { e.preventDefault(); handleNavClick('home'); }}
           >
-            <div className="w-20 h-20 sm:w-32 sm:h-32 flex items-center justify-center">
+            <div className="w-24 h-24 sm:w-38 sm:h-38 flex items-center justify-center">
               <img 
                 src={logoImage} 
                 alt="Minha Floresta" 
