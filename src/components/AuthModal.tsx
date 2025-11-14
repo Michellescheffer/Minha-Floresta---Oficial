@@ -169,10 +169,10 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-start justify-center pt-20 sm:pt-24 md:pt-32 px-4 bg-black/40 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/40 backdrop-blur-sm overflow-y-auto"
       onClick={handleBackdropClick}
     >
-      <div className="relative w-full max-w-md mx-auto mb-8">
+      <div className="relative w-full max-w-md mx-auto my-8">
         <div className={`bg-white/98 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl transform-gpu ${
           isClosing ? 'modal-exit' : 'animate-scale-up'
         }`}>
