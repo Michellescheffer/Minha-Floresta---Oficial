@@ -50,7 +50,7 @@ interface SaleData {
   revenue: number;
 }
 
-export function CMSPageNew() {
+export default function CMSPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
@@ -1105,4 +1105,3 @@ function SettingsTab() {
   );
 }
 
-export default CMSPageNew;
