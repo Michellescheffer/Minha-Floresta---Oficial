@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, Users, ShoppingCart, FileText, TreePine, Settings,
   Search, Plus, Edit3, Trash2, TrendingUp, DollarSign, Award,
