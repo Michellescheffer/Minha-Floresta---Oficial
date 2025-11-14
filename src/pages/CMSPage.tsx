@@ -1342,19 +1342,27 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
             {siteImages.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-8">Nenhuma imagem cadastrada</p>
             ) : (
-              siteImages.map((img: any) => (
-                <div key={img.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl group">
-                  <img src={img.url} alt={img.alt_text || ''} className="w-16 h-16 rounded-lg object-cover" />
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{img.key}</p>
-                    <p className="text-xs text-gray-600">{img.alt_text}</p>
+              siteImages.map((img: any, index: number) => (
+                <div key={img.id} className="bg-gray-50 rounded-xl p-4 group">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="font-medium text-sm">{img.key}</p>
+                      <p className="text-xs text-gray-600">Posição {index + 1}</p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteSiteImage(img.id, img.url)}
+                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-600" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => handleDeleteSiteImage(img.id, img.url)}
-                    className="p-2 hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                  >
-                    <Trash2 className="w-4 h-4 text-red-600" />
-                  </button>
+                  <img 
+                    src={img.url} 
+                    alt={img.alt_text || ''} 
+                    className="w-full h-48 rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" 
+                    onClick={() => window.open(img.url, '_blank')}
+                  />
+                  <p className="text-xs text-gray-500 mt-2">{img.alt_text || 'Hero Image'}</p>
                 </div>
               ))
             )}
@@ -1383,21 +1391,27 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
               />
             </label>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {certImages.length === 0 ? (
               <p className="col-span-2 text-sm text-gray-500 text-center py-8">Nenhuma imagem cadastrada</p>
             ) : (
-              certImages.map((img: any) => (
-                <div key={img.id} className="relative group">
-                  <img src={img.url} alt="" className="w-full h-32 rounded-xl object-cover" />
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl flex items-center justify-center">
+              certImages.map((img: any, index: number) => (
+                <div key={img.id} className="relative group bg-gray-50 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs text-gray-600">Imagem {index + 1}</p>
                     <button
                       onClick={() => handleDeleteCertImage(img.id, img.url)}
-                      className="p-2 bg-white rounded-lg hover:bg-red-50 transition-colors"
+                      className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4 text-red-600" />
                     </button>
                   </div>
+                  <img 
+                    src={img.url} 
+                    alt={`Certificate ${index + 1}`} 
+                    className="w-full h-40 rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" 
+                    onClick={() => window.open(img.url, '_blank')}
+                  />
                 </div>
               ))
             )}
