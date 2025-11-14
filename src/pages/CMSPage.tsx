@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { CustomersTab } from '../components/CustomersTab';
 import { DonationsTab } from '../components/DonationsTab';
+import { SettingsTab } from '../components/SettingsTab';
 
 const COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
@@ -401,13 +402,13 @@ export default function CMSPage() {
   };
 
   return (
-    <div className="min-h-screen pt-56 sm:pt-52 pb-16 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+    <div className="min-h-screen pt-56 sm:pt-52 pb-16 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50">
       {/* Header */}
       <div className="backdrop-blur-xl bg-white/70 border-b border-white/20 shadow-lg shadow-black/5 mb-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-green-700 to-emerald-600 bg-clip-text text-transparent">
                 CMS - Painel Administrativo
               </h1>
               <p className="text-sm text-gray-600 mt-1">
@@ -444,7 +445,7 @@ export default function CMSPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg shadow-blue-500/30'
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/30'
                     : 'text-gray-600 hover:bg-white/50'
                 }`}
               >
@@ -1462,19 +1463,6 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
             )}
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
-
-// Settings Tab Component
-function SettingsTab() {
-  return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-900">Configurações</h2>
-      
-      <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
-        <p className="text-gray-600">Configurações do sistema em desenvolvimento...</p>
       </div>
     </div>
   );
