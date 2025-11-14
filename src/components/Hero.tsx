@@ -84,7 +84,7 @@ export function Hero() {
           />
         ))}
         {/* Enhanced overlay for better text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-br from-green-900/60 via-emerald-800/50 to-green-700/60"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-green-900/60 via-emerald-800/0 to-green-700/60"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
       </div>
 
