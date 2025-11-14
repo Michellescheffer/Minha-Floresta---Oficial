@@ -399,7 +399,7 @@ export default function VisualizarCertificadoPage() {
                 <img 
                   src={logoImage} 
                   alt="Minha Floresta" 
-                  className="w-full h-full object-contain brightness-0"
+                  className="w-full h-full object-contain"
                 />
               </div>
             </div>
