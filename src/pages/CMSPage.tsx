@@ -93,17 +93,17 @@ export default function CMSPage() {
       setLoading(true);
 
       // Load real data from Supabase
-      const [projectsRes, certsRes, purchasesRes] = await Promise.all([
+      const [projectsRes, certsRes, salesRes] = await Promise.all([
         supabase.from('projects').select('*', { count: 'exact' }),
         supabase.from('certificates').select('*', { count: 'exact' }),
-        supabase.from('purchases').select('total_price')
+        supabase.from('sales').select('total_price').catch(() => ({ data: [], error: null }))
       ]);
 
-      const totalRevenue = purchasesRes.data?.reduce((sum, p) => sum + (p.total_price || 0), 0) || 0;
+      const totalRevenue = salesRes.data?.reduce((sum: number, p: any) => sum + (p.total_price || 0), 0) || 0;
 
       setStats({
         totalProjects: projectsRes.count || 0,
-        totalSales: purchasesRes.data?.length || 0,
+        totalSales: salesRes.data?.length || 0,
         totalRevenue,
         totalCertificates: certsRes.count || 0,
         activeUsers: 0, // TODO: implement user tracking
@@ -136,31 +136,65 @@ export default function CMSPage() {
     try {
       const { data, error } = await supabase
         .from('certificates')
-        .select('*, projects(name)')
+        .select('*')
         .order('issued_at', { ascending: false })
         .limit(50);
 
-      if (error) throw error;
-      setCertificates(data || []);
+      if (error) {
+        console.error('Error loading certificates:', error);
+        setCertificates([]);
+        return;
+      }
+
+      // Load project names separately if needed
+      if (data && data.length > 0) {
+        const projectIds = [...new Set(data.map(c => c.project_id).filter(Boolean))];
+        if (projectIds.length > 0) {
+          const { data: projects } = await supabase
+            .from('projects')
+            .select('id, name')
+            .in('id', projectIds);
+          
+          const projectMap = new Map(projects?.map(p => [p.id, p.name]) || []);
+          const enrichedData = data.map(cert => ({
+            ...cert,
+            projects: cert.project_id ? { name: projectMap.get(cert.project_id) || 'Projeto' } : undefined
+          }));
+          setCertificates(enrichedData);
+        } else {
+          setCertificates(data);
+        }
+      } else {
+        setCertificates([]);
+      }
     } catch (error) {
       console.error('Error loading certificates:', error);
-      toast.error('Erro ao carregar certificados');
+      setCertificates([]);
     }
   };
 
   const loadSalesData = async () => {
     try {
       const { data, error } = await supabase
-        .from('purchases')
+        .from('sales')
         .select('created_at, total_price, area_sqm');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading sales data:', error);
+        setSalesData([]);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setSalesData([]);
+        return;
+      }
 
       // Group by month
       const monthlyData: { [key: string]: { sales: number; revenue: number } } = {};
       
-      data?.forEach(purchase => {
-        const date = new Date(purchase.created_at);
+      data.forEach(sale => {
+        const date = new Date(sale.created_at);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         
         if (!monthlyData[monthKey]) {
@@ -168,7 +202,7 @@ export default function CMSPage() {
         }
         
         monthlyData[monthKey].sales += 1;
-        monthlyData[monthKey].revenue += purchase.total_price || 0;
+        monthlyData[monthKey].revenue += sale.total_price || 0;
       });
 
       const chartData = Object.entries(monthlyData)
@@ -183,6 +217,7 @@ export default function CMSPage() {
       setSalesData(chartData);
     } catch (error) {
       console.error('Error loading sales data:', error);
+      setSalesData([]);
     }
   };
 
