@@ -18,6 +18,7 @@ import { ContatoPage } from '../pages/ContatoPage';
 import { BlueCarbonPage } from '../pages/BlueCarbonPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import { CMSPage } from '../pages/CMSPage';
+import AdminImageManagerPage from '../pages/AdminImageManagerPage';
 import { CleanupTestPage } from '../pages/CleanupTestPage';
 import CheckoutSuccessPage from '../pages/CheckoutSuccessPage';
 import CheckoutCancelPage from '../pages/CheckoutCancelPage';
@@ -263,6 +264,18 @@ export function PageRouter() {
           <div className="relative z-10 max-w-2xl mx-auto px-6 text-center">
             <h1 className="text-gray-800 mb-4">Acesso Negado</h1>
             <p className="text-gray-600">Você precisa ser administrador para acessar o CMS.</p>
+          </div>
+        </div>
+      );
+    case 'admin-images':
+      return user && user.role === 'admin' ? (
+        <AdminImageManagerPage />
+      ) : (
+        <div className="min-h-screen pt-56 sm:pt-52 pb-16 sm:pb-20">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-50/80 via-orange-50/80 to-yellow-50/80"></div>
+          <div className="relative z-10 max-w-2xl mx-auto px-6 text-center">
+            <h1 className="text-gray-800 mb-4">Acesso Negado</h1>
+            <p className="text-gray-600">Você precisa ser administrador para acessar o gerenciador de imagens.</p>
           </div>
         </div>
       );

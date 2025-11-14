@@ -24,7 +24,7 @@ export function useAuth() {
             email: u.email || '',
             name: (u.user_metadata?.name as string) || (u.email?.split('@')[0] || 'Usuário'),
             created_at: new Date().toISOString(),
-            role: 'user',
+            role: (u.user_metadata?.role as string) || 'user',
             preferences: { newsletter: false, notifications: false }
           } as User;
           setLocalStorageItem('minha_floresta_user', base);
@@ -66,7 +66,7 @@ export function useAuth() {
         email: u.email || email,
         name: (u.user_metadata?.name as string) || (u.email?.split('@')[0] || 'Usuário'),
         created_at: new Date().toISOString(),
-        role: 'user',
+        role: (u.user_metadata?.role as string) || 'user',
         preferences: { newsletter: false, notifications: false }
       } as User;
       setLocalStorageItem('minha_floresta_user', base);
