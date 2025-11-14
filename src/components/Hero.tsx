@@ -23,6 +23,7 @@ export function Hero() {
   useEffect(() => {
     const loadHeroImages = async () => {
       try {
+        console.log('🔍 Carregando imagens do banner...');
         const { data, error } = await supabase
           .from('site_images')
           .select('url')
@@ -30,13 +31,22 @@ export function Hero() {
           .eq('is_active', true)
           .order('display_order', { ascending: true });
         
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Erro ao carregar imagens:', error);
+          throw error;
+        }
+        
+        console.log('📊 Imagens encontradas:', data);
         
         if (data && data.length > 0) {
-          setImages(data.map(img => img.url));
+          const urls = data.map(img => img.url);
+          console.log('✅ URLs das imagens:', urls);
+          setImages(urls);
+        } else {
+          console.warn('⚠️ Nenhuma imagem encontrada no banco, usando imagens padrão');
         }
       } catch (err) {
-        console.error('Error loading hero images:', err);
+        console.error('❌ Erro ao carregar hero images:', err);
         // Keep default images on error
       }
     };
