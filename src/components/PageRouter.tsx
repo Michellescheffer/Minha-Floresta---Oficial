@@ -17,7 +17,7 @@ import { ProjetosSociaisPage } from '../pages/ProjetosSociaisPage';
 import { ContatoPage } from '../pages/ContatoPage';
 import { BlueCarbonPage } from '../pages/BlueCarbonPage';
 import { DashboardPage } from '../pages/DashboardPage';
-import { CMSPage } from '../pages/CMSPage';
+import CMSPage from '../pages/CMSPage';
 import AdminImageManagerPage from '../pages/AdminImageManagerPage';
 import { CleanupTestPage } from '../pages/CleanupTestPage';
 import CheckoutSuccessPage from '../pages/CheckoutSuccessPage';
