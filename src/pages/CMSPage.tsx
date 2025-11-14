@@ -43,7 +43,7 @@ interface Certificate {
   id: string;
   certificate_number: string;
   area_sqm: number;
-  issued_at: string;
+  issue_date: string;
   status: string;
   project_id: string;
   projects?: { name: string };
@@ -610,11 +610,11 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
     long_description: '',
     location: '',
     type: 'conservation',
-    price_per_m2: 0,
-    available_m2: 0,
-    total_m2: 0,
+    price_per_sqm: 0,
+    available_area: 0,
+    total_area: 0,
     status: 'active',
-    image: ''
+    image_url: ''
   });
   const [uploading, setUploading] = useState(false);
 
@@ -626,11 +626,11 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
       long_description: (project as any).long_description || '',
       location: project.location,
       type: project.type,
-      price_per_m2: project.price_per_m2,
-      available_m2: project.available_m2,
-      total_m2: project.total_m2,
+      price_per_sqm: project.price_per_sqm,
+      available_area: project.available_area,
+      total_area: project.total_area,
       status: project.status,
-      image: project.image
+      image_url: project.image_url
     });
     setShowModal(true);
   };
@@ -829,10 +829,10 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
                   <p className="text-sm text-gray-600 mb-2">{project.location}</p>
                   <div className="flex items-center gap-4 text-sm">
                     <span className="text-green-600 font-semibold">
-                      R$ {project.price_per_m2}/m²
+                      R$ {project.price_per_sqm}/m²
                     </span>
                     <span className="text-gray-600">
-                      {project.available_m2}m² disponíveis
+                      {project.available_area}m² disponíveis
                     </span>
                   </div>
                 </div>
@@ -942,8 +942,8 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
                   <input
                     type="number"
                     step="0.01"
-                    value={formData.price_per_m2}
-                    onChange={(e) => setFormData({ ...formData, price_per_m2: parseFloat(e.target.value) })}
+                    value={formData.price_per_sqm}
+                    onChange={(e) => setFormData({ ...formData, price_per_sqm: parseFloat(e.target.value) })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
@@ -953,8 +953,8 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Área Disponível (m²)</label>
                   <input
                     type="number"
-                    value={formData.available_m2}
-                    onChange={(e) => setFormData({ ...formData, available_m2: parseInt(e.target.value) })}
+                    value={formData.available_area}
+                    onChange={(e) => setFormData({ ...formData, available_area: parseInt(e.target.value) })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
@@ -964,8 +964,8 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Área Total (m²)</label>
                   <input
                     type="number"
-                    value={formData.total_m2}
-                    onChange={(e) => setFormData({ ...formData, total_m2: parseInt(e.target.value) })}
+                    value={formData.total_area}
+                    onChange={(e) => setFormData({ ...formData, total_area: parseInt(e.target.value) })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
@@ -1043,7 +1043,7 @@ function CertificatesTab({ certificates }: { certificates: Certificate[] }) {
                   <td className="px-6 py-4 text-sm text-gray-900">{cert.projects?.name || 'N/A'}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{cert.area_sqm}m²</td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(cert.issued_at).toLocaleDateString('pt-BR')}
+                    {new Date(cert.issue_date).toLocaleDateString('pt-BR')}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${

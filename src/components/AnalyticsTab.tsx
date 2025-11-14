@@ -71,6 +71,10 @@ export function AnalyticsTab() {
         salesQuery = salesQuery.eq('payment_status', filters.status);
       }
 
+      if (filters.projectId !== 'all') {
+        salesQuery = salesQuery.eq('project_id', filters.projectId);
+      }
+
       const [salesRes, certsRes, projectsRes] = await Promise.all([
         salesQuery,
         supabase.from('certificates').select('*'),
