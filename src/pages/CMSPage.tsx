@@ -104,10 +104,9 @@ export default function CMSPage() {
         console.warn('Sales table query failed:', e);
       }
 
-      // Calculate total revenue - try different column names
+      // Calculate total revenue using correct column name
       const totalRevenue = salesRes.data?.reduce((sum: number, p: any) => {
-        const price = p.total_price || p.price || p.amount || 0;
-        return sum + price;
+        return sum + (p.total_value || 0);
       }, 0) || 0;
 
       setStats({
@@ -203,7 +202,7 @@ export default function CMSPage() {
       const monthlyData: { [key: string]: { sales: number; revenue: number } } = {};
       
       data.forEach(sale => {
-        const date = new Date(sale.created_at || sale.purchase_date || sale.date);
+        const date = new Date(sale.sale_date || sale.created_at);
         const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         
         if (!monthlyData[monthKey]) {
@@ -211,9 +210,7 @@ export default function CMSPage() {
         }
         
         monthlyData[monthKey].sales += 1;
-        // Try different column names for price
-        const price = sale.total_price || sale.price || sale.amount || 0;
-        monthlyData[monthKey].revenue += price;
+        monthlyData[monthKey].revenue += (sale.total_value || 0);
       });
 
       const chartData = Object.entries(monthlyData)
@@ -502,12 +499,12 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
     name: '',
     description: '',
     location: '',
-    type: 'reforestation',
-    price_per_sqm: 0,
-    available_area: 0,
-    total_area: 0,
+    type: 'conservation',
+    price_per_m2: 0,
+    available_m2: 0,
+    total_m2: 0,
     status: 'active',
-    image_url: ''
+    image: ''
   });
   const [uploading, setUploading] = useState(false);
 
@@ -518,11 +515,11 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
       description: project.description,
       location: project.location,
       type: project.type,
-      price_per_sqm: project.price_per_sqm,
-      available_area: project.available_area,
-      total_area: project.total_area,
+      price_per_m2: project.price_per_m2,
+      available_m2: project.available_m2,
+      total_m2: project.total_m2,
       status: project.status,
-      image_url: project.image_url
+      image: project.image
     });
     setShowModal(true);
   };
@@ -533,12 +530,12 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
       name: '',
       description: '',
       location: '',
-      type: 'reforestation',
-      price_per_sqm: 0,
-      available_area: 0,
-      total_area: 0,
+      type: 'conservation',
+      price_per_m2: 0,
+      available_m2: 0,
+      total_m2: 0,
       status: 'active',
-      image_url: ''
+      image: ''
     });
     setShowModal(true);
   };
@@ -563,7 +560,7 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
         .from('images')
         .getPublicUrl(filePath);
 
-      setFormData({ ...formData, image_url: publicUrl });
+      setFormData({ ...formData, image: publicUrl });
       toast.success('Imagem enviada com sucesso!');
     } catch (error) {
       console.error('Error uploading image:', error);
@@ -627,9 +624,9 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
               className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl shadow-black/5 hover:shadow-2xl transition-all"
             >
               <div className="flex gap-4">
-                {project.image_url && (
+                {project.image && (
                   <img
-                    src={project.image_url}
+                    src={project.image}
                     alt={project.name}
                     className="w-24 h-24 rounded-xl object-cover"
                   />
@@ -639,10 +636,10 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
                   <p className="text-sm text-gray-600 mb-2">{project.location}</p>
                   <div className="flex items-center gap-4 text-sm">
                     <span className="text-green-600 font-semibold">
-                      R$ {project.price_per_sqm}/m²
+                      R$ {project.price_per_m2}/m²
                     </span>
                     <span className="text-gray-600">
-                      {project.available_area}m² disponíveis
+                      {project.available_m2}m² disponíveis
                     </span>
                   </div>
                 </div>
@@ -726,10 +723,9 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
                     onChange={(e) => setFormData({ ...formData, type: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
+                    <option value="conservation">Conservação</option>
                     <option value="reforestation">Reflorestamento</option>
                     <option value="restoration">Restauração</option>
-                    <option value="conservation">Conservação</option>
-                    <option value="blue-carbon">Blue Carbon</option>
                   </select>
                 </div>
               </div>
@@ -740,30 +736,30 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
                   <input
                     type="number"
                     step="0.01"
-                    value={formData.price_per_sqm}
-                    onChange={(e) => setFormData({ ...formData, price_per_sqm: parseFloat(e.target.value) })}
+                    value={formData.price_per_m2}
+                    onChange={(e) => setFormData({ ...formData, price_per_m2: parseFloat(e.target.value) })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Área Disponível</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Área Disponível (m²)</label>
                   <input
                     type="number"
-                    value={formData.available_area}
-                    onChange={(e) => setFormData({ ...formData, available_area: parseInt(e.target.value) })}
+                    value={formData.available_m2}
+                    onChange={(e) => setFormData({ ...formData, available_m2: parseInt(e.target.value) })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Área Total</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Área Total (m²)</label>
                   <input
                     type="number"
-                    value={formData.total_area}
-                    onChange={(e) => setFormData({ ...formData, total_area: parseInt(e.target.value) })}
+                    value={formData.total_m2}
+                    onChange={(e) => setFormData({ ...formData, total_m2: parseInt(e.target.value) })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     required
                   />
@@ -773,8 +769,10 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Imagem</label>
                 <div className="flex items-center gap-4">
-                  {formData.image_url && (
-                    <img src={formData.image_url} alt="Preview" className="w-20 h-20 rounded-xl object-cover" />
+                  {formData.image && (
+                    <div className="relative">
+                      <img src={formData.image} alt="Preview" className="w-32 h-32 rounded-xl object-cover" />
+                    </div>
                   )}
                   <label className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl cursor-pointer transition-colors">
                     <Upload className="w-4 h-4" />
