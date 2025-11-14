@@ -12,6 +12,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { CustomersTab } from '../components/CustomersTab';
 import { DonationsTab } from '../components/DonationsTab';
 import { SettingsTab } from '../components/SettingsTab';
+import { AnalyticsTab } from '../components/AnalyticsTab';
 
 const COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
@@ -504,7 +505,7 @@ export default function CMSPage() {
 
             {/* Analytics Tab */}
             {activeTab === 'analytics' && (
-              <AnalyticsTab salesData={salesData} />
+              <AnalyticsTab />
             )}
 
             {/* Images Tab */}
@@ -1057,45 +1058,6 @@ function CertificatesTab({ certificates }: { certificates: Certificate[] }) {
               ))}
             </tbody>
           </table>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Analytics Tab Component
-function AnalyticsTab({ salesData }: { salesData: SaleData[] }) {
-  return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-900">Análise de Vendas</h2>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Sales Chart */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Vendas por Mês</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={salesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="month" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip />
-              <Bar dataKey="sales" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Revenue Chart */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Receita por Mês</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={salesData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="month" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip />
-              <Line type="monotone" dataKey="revenue" stroke="#8b5cf6" strokeWidth={3} />
-            </LineChart>
-          </ResponsiveContainer>
         </div>
       </div>
     </div>
