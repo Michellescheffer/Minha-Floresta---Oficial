@@ -986,6 +986,12 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate max 3 images
+    if (siteImages.length >= 3) {
+      toast.error('Máximo de 3 imagens do Hero permitido');
+      return;
+    }
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Por favor, selecione uma imagem válida');
@@ -1234,19 +1240,26 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
         {/* Site Images */}
         <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Imagens do Site (Hero)</h3>
-            <label className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm rounded-xl cursor-pointer hover:shadow-lg transition-all">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Imagens do Hero Banner ({siteImages.length}/3)
+            </h3>
+            <label className={`flex items-center gap-2 px-3 py-2 text-white text-sm rounded-xl cursor-pointer transition-all ${
+              siteImages.length >= 3 ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:shadow-lg'
+            }`}>
               <Upload className="w-4 h-4" />
-              {uploading ? 'Enviando...' : 'Adicionar'}
+              {uploading ? 'Enviando...' : siteImages.length >= 3 ? 'Máximo atingido' : 'Adicionar'}
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleUploadSiteImage}
                 className="hidden"
-                disabled={uploading}
+                disabled={uploading || siteImages.length >= 3}
               />
             </label>
           </div>
+          <p className="text-xs text-gray-600 mb-4">
+            Adicione até 3 imagens que serão exibidas em rotação automática a cada 5 segundos
+          </p>
           <div className="space-y-3">
             {siteImages.length === 0 ? (
               <p className="text-sm text-gray-500 text-center py-8">Nenhuma imagem cadastrada</p>

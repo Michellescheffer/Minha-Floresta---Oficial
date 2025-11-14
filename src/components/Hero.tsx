@@ -26,7 +26,7 @@ export function Hero() {
         const { data, error } = await supabase
           .from('site_images')
           .select('url')
-          .in('key', ['hero_primary', 'hero_secondary'])
+          .in('key', ['hero_primary', 'hero_secondary', 'hero_tertiary'])
           .eq('is_active', true)
           .order('display_order', { ascending: true });
         
@@ -44,15 +44,16 @@ export function Hero() {
     loadHeroImages();
   }, []);
   
+  // Auto-rotate images every 5 seconds
   useEffect(() => {
     if (images.length < 2) return;
     
-    const timer = setTimeout(() => {
-      setCurrentImageIndex(1);
+    const timer = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
     }, 5000); // 5 seconds
     
-    return () => clearTimeout(timer);
-  }, [images]);
+    return () => clearInterval(timer);
+  }, [images.length]);
 
   return (
     <section className="relative min-h-screen h-screen flex items-center justify-center overflow-hidden">
