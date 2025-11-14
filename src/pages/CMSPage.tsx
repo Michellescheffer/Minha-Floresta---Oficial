@@ -544,15 +544,35 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione uma imagem válida');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('Imagem muito grande! Máximo 5MB');
+      return;
+    }
+
     try {
       setUploading(true);
+
+      // Compress image if needed
+      let fileToUpload = file;
+      if (file.size > 1024 * 1024) { // If > 1MB, compress
+        fileToUpload = await compressImage(file);
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `project-${Date.now()}.${fileExt}`;
       const filePath = `projects/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('images')
-        .upload(filePath, file);
+        .upload(filePath, fileToUpload);
 
       if (uploadError) throw uploadError;
 
@@ -562,12 +582,73 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
 
       setFormData({ ...formData, image: publicUrl });
       toast.success('Imagem enviada com sucesso!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image:', error);
-      toast.error('Erro ao enviar imagem');
+      if (error.message?.includes('exceeded')) {
+        toast.error('Imagem muito grande! Tente uma menor.');
+      } else {
+        toast.error('Erro ao enviar imagem');
+      }
     } finally {
       setUploading(false);
     }
+  };
+
+  // Helper function to compress images
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Max dimensions
+          const maxWidth = 1920;
+          const maxHeight = 1080;
+          
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height) {
+            if (width > maxWidth) {
+              height *= maxWidth / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width *= maxHeight / height;
+              height = maxHeight;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                reject(new Error('Compression failed'));
+              }
+            },
+            'image/jpeg',
+            0.85
+          );
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -905,15 +986,35 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione uma imagem válida');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('Imagem muito grande! Máximo 5MB');
+      return;
+    }
+
     try {
       setUploading(true);
+
+      // Compress if needed
+      let fileToUpload = file;
+      if (file.size > 1024 * 1024) {
+        fileToUpload = await compressImage(file);
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `site-${Date.now()}.${fileExt}`;
       const filePath = `site/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('images')
-        .upload(filePath, file);
+        .upload(filePath, fileToUpload);
 
       if (uploadError) throw uploadError;
 
@@ -936,12 +1037,72 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
 
       toast.success('Imagem do site adicionada!');
       onReload();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading site image:', error);
-      toast.error('Erro ao enviar imagem');
+      if (error.message?.includes('exceeded')) {
+        toast.error('Imagem muito grande! Tente uma menor.');
+      } else {
+        toast.error('Erro ao enviar imagem');
+      }
     } finally {
       setUploading(false);
     }
+  };
+
+  // Helper function to compress images
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          const maxWidth = 1920;
+          const maxHeight = 1080;
+          
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > height) {
+            if (width > maxWidth) {
+              height *= maxWidth / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width *= maxHeight / height;
+              height = maxHeight;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], file.name, {
+                  type: 'image/jpeg',
+                  lastModified: Date.now(),
+                });
+                resolve(compressedFile);
+              } else {
+                reject(new Error('Compression failed'));
+              }
+            },
+            'image/jpeg',
+            0.85
+          );
+        };
+        img.onerror = reject;
+      };
+      reader.onerror = reject;
+    });
   };
 
   const handleUploadCertImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -953,15 +1114,35 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
       return;
     }
 
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Por favor, selecione uma imagem válida');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('Imagem muito grande! Máximo 5MB');
+      return;
+    }
+
     try {
       setUploading(true);
+
+      // Compress if needed
+      let fileToUpload = file;
+      if (file.size > 1024 * 1024) {
+        fileToUpload = await compressImage(file);
+      }
+
       const fileExt = file.name.split('.').pop();
       const fileName = `cert-${Date.now()}.${fileExt}`;
       const filePath = `certificates/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('images')
-        .upload(filePath, file);
+        .upload(filePath, fileToUpload);
 
       if (uploadError) throw uploadError;
 
