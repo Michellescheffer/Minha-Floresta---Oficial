@@ -187,6 +187,54 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [socialProjects, setSocialProjects] = useState<SocialProject[]>([]);
   const [selectedDonationProject, setSelectedDonationProject] = useState<SocialProject | null>(null);
 
+  // Load donation projects from Supabase
+  useEffect(() => {
+    const loadDonationProjects = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('donation_projects')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('Error loading donation projects:', error);
+          return;
+        }
+
+        if (data && data.length > 0) {
+          const mapped: SocialProject[] = data.map((project) => ({
+            id: project.id,
+            title: project.title,
+            description: project.description,
+            category: project.category || 'community',
+            location: project.location || '',
+            startDate: project.start_date || new Date().toISOString(),
+            status: project.status || 'active',
+            budget: project.goal_amount || 0,
+            spent: project.current_amount || 0,
+            beneficiaries: project.beneficiaries_count || 0,
+            partners: project.partners ? JSON.parse(project.partners) : [],
+            objectives: project.objectives ? JSON.parse(project.objectives) : [],
+            results: project.results ? JSON.parse(project.results) : [],
+            images: project.image_url ? [project.image_url] : [],
+            coordinator: project.coordinator || '',
+            contactEmail: project.contact_email || '',
+            reports: [],
+            donationsReceived: project.current_amount || 0,
+            donationGoal: project.goal_amount || 0,
+            allowDonations: true
+          }));
+          setSocialProjects(mapped);
+        }
+      } catch (err) {
+        console.error('Error loading donation projects:', err);
+      }
+    };
+
+    loadDonationProjects();
+  }, []);
+
   useEffect(() => {
     // sincronizar ao mudar o hash manualmente ou via histórico
     const onHashChange = () => {
