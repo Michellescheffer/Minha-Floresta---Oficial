@@ -3,11 +3,13 @@ import {
   BarChart3, Users, ShoppingCart, FileText, TreePine, Settings,
   Search, Plus, Edit3, Trash2, TrendingUp, DollarSign, Award,
   Activity, Save, Upload, X, RefreshCw, Image as ImageIcon,
-  Eye, Download, Calendar, MapPin, Check, AlertCircle
+  Eye, Download, Calendar, MapPin, Check, AlertCircle, Filter,
+  Mail, Phone, CreditCard, FileSpreadsheet, User
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { CustomersTab } from '../components/CustomersTab';
 
 const COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
@@ -77,6 +79,10 @@ export default function CMSPage() {
   const [siteImages, setSiteImages] = useState<any[]>([]);
   const [certImages, setCertImages] = useState<any[]>([]);
 
+  // Customers
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+
   useEffect(() => {
     loadDashboardData();
   }, []);
@@ -84,6 +90,7 @@ export default function CMSPage() {
   useEffect(() => {
     if (activeTab === 'projects') loadProjects();
     if (activeTab === 'certificates') loadCertificates();
+    if (activeTab === 'customers') loadCustomers();
     if (activeTab === 'analytics') loadSalesData();
     if (activeTab === 'images') loadImages();
   }, [activeTab]);
@@ -243,6 +250,67 @@ export default function CMSPage() {
     }
   };
 
+  const loadCustomers = async () => {
+    try {
+      // Get all sales with customer info
+      const { data: sales, error: salesError } = await supabase
+        .from('sales')
+        .select('*')
+        .order('sale_date', { ascending: false });
+
+      if (salesError) throw salesError;
+
+      // Get all certificates
+      const { data: certificates, error: certsError } = await supabase
+        .from('certificates')
+        .select('*, projects(name)')
+        .order('issue_date', { ascending: false });
+
+      if (certsError) throw certsError;
+
+      // Group by customer
+      const customerMap = new Map();
+      
+      sales?.forEach(sale => {
+        const key = sale.customer_email;
+        if (!customerMap.has(key)) {
+          customerMap.set(key, {
+            id: sale.customer_id,
+            name: sale.customer_name,
+            email: sale.customer_email,
+            phone: sale.customer_phone,
+            cpf: sale.customer_cpf,
+            address: sale.customer_address,
+            sales: [],
+            certificates: [],
+            totalSpent: 0,
+            totalM2: 0,
+            totalCO2: 0
+          });
+        }
+        
+        const customer = customerMap.get(key);
+        customer.sales.push(sale);
+        customer.totalSpent += sale.total_value;
+        customer.totalM2 += sale.total_m2;
+      });
+
+      // Add certificates to customers
+      certificates?.forEach(cert => {
+        const customer = customerMap.get(cert.customer_email);
+        if (customer) {
+          customer.certificates.push(cert);
+          customer.totalCO2 += cert.co2_offset_kg;
+        }
+      });
+
+      setCustomers(Array.from(customerMap.values()));
+    } catch (error) {
+      console.error('Error loading customers:', error);
+      toast.error('Erro ao carregar clientes');
+    }
+  };
+
   const saveProject = async (project: Partial<Project>) => {
     try {
       if (editingProject) {
@@ -345,6 +413,7 @@ export default function CMSPage() {
               { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
               { id: 'projects', label: 'Projetos', icon: TreePine },
               { id: 'certificates', label: 'Certificados', icon: Award },
+              { id: 'customers', label: 'Clientes', icon: Users },
               { id: 'analytics', label: 'Analytics', icon: TrendingUp },
               { id: 'images', label: 'Imagens', icon: ImageIcon },
               { id: 'settings', label: 'Configurações', icon: Settings }
@@ -392,6 +461,15 @@ export default function CMSPage() {
             {/* Certificates Tab */}
             {activeTab === 'certificates' && (
               <CertificatesTab certificates={certificates} />
+            )}
+
+            {/* Customers Tab */}
+            {activeTab === 'customers' && (
+              <CustomersTab 
+                customers={customers}
+                selectedCustomer={selectedCustomer}
+                onSelectCustomer={setSelectedCustomer}
+              />
             )}
 
             {/* Analytics Tab */}
