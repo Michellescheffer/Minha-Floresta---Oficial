@@ -9,7 +9,7 @@ import { LojaPage } from '../pages/LojaPage';
 import { CalculadoraPegadaPage } from '../pages/CalculadoraPegadaPage';
 import { CarrinhoPage } from '../pages/CarrinhoPage';
 import { ComoFuncionaPage } from '../pages/ComoFuncionaPage';
-import { DoacoesPage } from '../pages/DoacoesPage';
+import { DoacoesPageNova } from '../pages/DoacoesPageNova';
 import { SobreProjetoPage } from '../pages/SobreProjetoPage';
 import { VerificarCertificadoPage } from '../pages/VerificarCertificadoPage';
 import VisualizarCertificadoPage from '../pages/VisualizarCertificadoPage';
@@ -243,7 +243,7 @@ export function PageRouter() {
       return <LojaPage />;
 
     case 'doacoes':
-      return <DoacoesPage />;
+      return <DoacoesPageNova />;
     case 'projetos-sociais':
       return <ProjetosSociaisPage />;
     case 'incentivo-fiscal':
