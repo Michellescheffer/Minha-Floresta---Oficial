@@ -1114,14 +1114,18 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
         .from('images')
         .getPublicUrl(filePath);
 
+      // Determine the correct key based on current count
+      const heroKeys = ['hero_primary', 'hero_secondary', 'hero_tertiary'];
+      const nextKey = heroKeys[siteImages.length] || `hero_${siteImages.length + 1}`;
+
       // Insert into site_images table
       const { error: dbError } = await supabase
         .from('site_images')
         .insert([{
-          key: `hero-${Date.now()}`,
+          key: nextKey,
           url: publicUrl,
-          alt_text: 'Hero Image',
-          display_order: siteImages.length + 1,
+          alt_text: 'Hero Banner Image',
+          display_order: siteImages.length,
           is_active: true
         }]);
 
