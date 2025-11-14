@@ -10,6 +10,7 @@ import { supabase } from '../services/supabaseClient';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { CustomersTab } from '../components/CustomersTab';
+import { DonationsTab } from '../components/DonationsTab';
 
 const COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
@@ -83,12 +84,16 @@ export default function CMSPage() {
   const [customers, setCustomers] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
 
+  // Donations
+  const [donations, setDonations] = useState<any[]>([]);
+
   useEffect(() => {
     loadDashboardData();
   }, []);
 
   useEffect(() => {
     if (activeTab === 'projects') loadProjects();
+    if (activeTab === 'donations') loadDonations();
     if (activeTab === 'certificates') loadCertificates();
     if (activeTab === 'customers') loadCustomers();
     if (activeTab === 'analytics') loadSalesData();
@@ -311,6 +316,21 @@ export default function CMSPage() {
     }
   };
 
+  const loadDonations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('donation_projects')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setDonations(data || []);
+    } catch (error) {
+      console.error('Error loading donations:', error);
+      toast.error('Erro ao carregar projetos de doação');
+    }
+  };
+
   const saveProject = async (project: Partial<Project>) => {
     try {
       if (editingProject) {
@@ -412,6 +432,7 @@ export default function CMSPage() {
             {[
               { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
               { id: 'projects', label: 'Projetos', icon: TreePine },
+              { id: 'donations', label: 'Doações', icon: Activity },
               { id: 'certificates', label: 'Certificados', icon: Award },
               { id: 'customers', label: 'Clientes', icon: Users },
               { id: 'analytics', label: 'Analytics', icon: TrendingUp },
@@ -455,6 +476,14 @@ export default function CMSPage() {
                 onEdit={setEditingProject}
                 onDelete={deleteProject}
                 onAdd={() => setShowProjectModal(true)}
+              />
+            )}
+
+            {/* Donations Tab */}
+            {activeTab === 'donations' && (
+              <DonationsTab 
+                donations={donations}
+                onReload={loadDonations}
               />
             )}
 
