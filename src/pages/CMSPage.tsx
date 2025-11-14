@@ -270,9 +270,9 @@ export function CMSPageNew() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 pt-32">
       {/* Header */}
-      <div className="sticky top-0 z-40 backdrop-blur-xl bg-white/70 border-b border-white/20 shadow-lg shadow-black/5">
+      <div className="fixed top-24 left-0 right-0 z-40 backdrop-blur-xl bg-white/70 border-b border-white/20 shadow-lg shadow-black/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
@@ -295,7 +295,7 @@ export function CMSPageNew() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="sticky top-[73px] z-30 backdrop-blur-xl bg-white/50 border-b border-white/20">
+      <div className="fixed top-[169px] left-0 right-0 z-30 backdrop-blur-xl bg-white/50 border-b border-white/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex gap-1 overflow-x-auto py-2">
             {[
@@ -324,7 +324,7 @@ export function CMSPageNew() {
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-24">
         {loading && activeTab === 'dashboard' ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
