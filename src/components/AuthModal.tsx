@@ -11,7 +11,7 @@ interface AuthModalProps {
   initialMode?: 'login' | 'register';
 }
 
-type AuthMode = 'login' | 'register';
+type AuthMode = 'login' | 'register' | 'recover';
 
 export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalProps) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -27,7 +27,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
     address: ''
   });
 
-  const { login, register, isLoading } = useAuth();
+  const { login, register, isLoading, resetPassword } = useAuth();
   const { setCurrentPage } = useApp();
 
   // Prevent body scroll when modal is open and handle escape key
@@ -79,6 +79,25 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (mode === 'recover') {
+      if (!formData.email) {
+        toast.error('Preencha o email');
+        return;
+      }
+      try {
+        const res = await resetPassword(formData.email);
+        if (!res.success) {
+          toast.error(res.error || 'Erro ao enviar email de recuperação');
+          return;
+        }
+        toast.success('Email de recuperação enviado! Verifique sua caixa de entrada.');
+        setMode('login');
+        return;
+      } catch (error) {
+        return;
+      }
+    }
 
     if (!formData.email || !formData.password) {
       toast.error('Preencha email e senha');
@@ -150,17 +169,17 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
 
   return (
     <div 
-      className="auth-modal"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-20 sm:pt-24 md:pt-32 px-4 bg-black/40 backdrop-blur-sm overflow-y-auto"
       onClick={handleBackdropClick}
     >
-      <div className="relative w-full max-w-md mx-auto my-8 sm:my-12">
+      <div className="relative w-full max-w-md mx-auto mb-8">
         <div className={`bg-white/98 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl transform-gpu ${
           isClosing ? 'modal-exit' : 'animate-scale-up'
         }`}>
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-white/20">
-            <h2 className="glass-heading-card text-gray-800">
-              {mode === 'login' ? 'Entrar na sua conta' : 'Criar nova conta'}
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+              {mode === 'login' ? 'Entrar na sua conta' : mode === 'register' ? 'Criar nova conta' : 'Recuperar senha'}
             </h2>
             <button
               onClick={handleClose}
@@ -258,7 +277,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
             </div>
           )}
 
-          {/* Password */}
+          {/* Password (Login and Register only) */}
+          {mode !== 'recover' && (
           <div>
             <label className="block text-gray-700 mb-2">
               <Lock className="w-4 h-4 inline mr-2" />
@@ -294,6 +314,29 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
               </p>
             )}
           </div>
+          )}
+
+          {/* Recovery message */}
+          {mode === 'recover' && (
+            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                Digite seu email e enviaremos um link para redefinir sua senha.
+              </p>
+            </div>
+          )}
+
+          {/* Forgot Password Link */}
+          {mode === 'login' && (
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => setMode('recover')}
+                className="text-sm text-green-600 hover:text-green-700 hover:underline"
+              >
+                Esqueceu a senha?
+              </button>
+            </div>
+          )}
 
           {/* Submit Button */}
           <button
@@ -307,7 +350,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                 {mode === 'login' ? 'Entrando...' : 'Criando conta...'}
               </>
             ) : (
-              mode === 'login' ? 'Entrar' : 'Criar Conta'
+              mode === 'login' ? 'Entrar' : mode === 'register' ? 'Criar Conta' : 'Enviar Link de Recuperação'
             )}
           </button>
 
@@ -320,7 +363,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
           {/* Mode Switch */}
           <div className="text-center pt-4 border-t border-white/20">
             <p className="text-gray-600 text-sm">
-              {mode === 'login' ? 'Não tem uma conta?' : 'Já tem uma conta?'}
+              {mode === 'login' ? 'Não tem uma conta?' : mode === 'register' ? 'Já tem uma conta?' : 'Lembrou a senha?'}
               <button
                 type="button"
                 onClick={() => setMode(mode === 'login' ? 'register' : 'login')}

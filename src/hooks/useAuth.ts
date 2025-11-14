@@ -164,6 +164,31 @@ export function useAuth() {
     }
   };
 
+  const resetPassword = async (email: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (resetError) {
+        const msg = resetError.message || 'Erro ao enviar email de recuperação';
+        setError(msg);
+        return { success: false, error: msg };
+      }
+
+      return { success: true };
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao recuperar senha';
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const isAuthenticated = !!user;
 
   return {
@@ -174,6 +199,7 @@ export function useAuth() {
     login,
     register,
     logout,
-    updateProfile
+    updateProfile,
+    resetPassword
   };
 }
