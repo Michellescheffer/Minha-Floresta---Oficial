@@ -4,7 +4,7 @@ import { GlassCard } from './GlassCard';
 import { useApp } from '../contexts/AppContext';
 import { useParallax, useScrollReveal } from '../hooks/useParallax';
 import { HeroParticles } from './FloatingElements';
-import { supabase } from '../utils/supabase/client';
+import { supabase } from '../services/supabaseClient';
 
 export function Hero() {
   const { setCurrentPage } = useApp();

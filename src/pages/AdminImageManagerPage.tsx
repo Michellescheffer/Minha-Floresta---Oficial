@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Upload, Trash2, MoveUp, MoveDown, Image as ImageIcon } from 'lucide-react';
-import { supabase } from '../utils/supabase/client';
+import { supabase } from '../services/supabaseClient';
 import { GlassCard } from '../components/GlassCard';
 
 interface SiteImage {

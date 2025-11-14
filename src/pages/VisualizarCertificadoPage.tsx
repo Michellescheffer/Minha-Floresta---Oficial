@@ -5,7 +5,7 @@ import { GlassCard } from '../components/GlassCard';
 import { useCertificates, type Certificate } from '../hooks/useCertificates';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
-import { supabase } from '../utils/supabase/client';
+import { supabase } from '../services/supabaseClient';
 import logoImage from 'figma:asset/f9a96b4548f250beba1ee29ba9d3267b1c5a7b61.png';
 
 export default function VisualizarCertificadoPage() {
