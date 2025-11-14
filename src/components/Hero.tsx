@@ -4,6 +4,7 @@ import { GlassCard } from './GlassCard';
 import { useApp } from '../contexts/AppContext';
 import { useParallax, useScrollReveal } from '../hooks/useParallax';
 import { HeroParticles } from './FloatingElements';
+import { supabase } from '../utils/supabase/client';
 
 export function Hero() {
   const { setCurrentPage } = useApp();
@@ -13,18 +14,45 @@ export function Hero() {
   const trustReveal = useScrollReveal(0.4);
   
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const images = [
+  const [images, setImages] = useState<string[]>([
     '/images/amazon-aerial-new.jpg',
     'https://images.unsplash.com/photo-1653149875526-e2533c6af095?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhbWF6b24lMjByYWluZm9yZXN0JTIwYWVyaWFsJTIwdmlld3xlbnwxfHx8fDE3NTYxNjc0MzR8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral'
-  ];
+  ]);
+  
+  // Load images from database
+  useEffect(() => {
+    const loadHeroImages = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('site_images')
+          .select('url')
+          .in('key', ['hero_primary', 'hero_secondary'])
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          setImages(data.map(img => img.url));
+        }
+      } catch (err) {
+        console.error('Error loading hero images:', err);
+        // Keep default images on error
+      }
+    };
+    
+    loadHeroImages();
+  }, []);
   
   useEffect(() => {
+    if (images.length < 2) return;
+    
     const timer = setTimeout(() => {
       setCurrentImageIndex(1);
     }, 5000); // 5 seconds
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [images]);
 
   return (
     <section className="relative min-h-screen h-screen flex items-center justify-center overflow-hidden">

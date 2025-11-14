@@ -5,6 +5,7 @@ import { GlassCard } from '../components/GlassCard';
 import { useCertificates, type Certificate } from '../hooks/useCertificates';
 import QRCode from 'qrcode';
 import html2canvas from 'html2canvas';
+import { supabase } from '../utils/supabase/client';
 import logoImage from 'figma:asset/f9a96b4548f250beba1ee29ba9d3267b1c5a7b61.png';
 
 export default function VisualizarCertificadoPage() {
@@ -18,6 +19,7 @@ export default function VisualizarCertificadoPage() {
   const certificateRef = useRef<HTMLDivElement>(null);
   const [enrichedData, setEnrichedData] = useState<any>(null);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
+  const [certificateImageUrl, setCertificateImageUrl] = useState<string>('');
   const { verifyCertificate } = useCertificates();
   const { user } = useAuth();
 
@@ -145,6 +147,31 @@ export default function VisualizarCertificadoPage() {
       }
     })();
   }, []);
+
+  // Load random certificate image from gallery
+  useEffect(() => {
+    const loadRandomCertificateImage = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('certificate_images')
+          .select('url')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+        
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+          // Select random image
+          const randomIndex = Math.floor(Math.random() * data.length);
+          setCertificateImageUrl(data[randomIndex].url);
+        }
+      } catch (err) {
+        console.error('Error loading certificate image:', err);
+      }
+    };
+    
+    loadRandomCertificateImage();
+  }, [certificate]); // Reload when certificate changes
 
   // Generate QR Code when certificate is loaded
   useEffect(() => {
@@ -454,6 +481,17 @@ export default function VisualizarCertificadoPage() {
                 )}
               </div>
               <span className="text-xs text-gray-500 text-center">Escaneie para verificar</span>
+              
+              {/* Random Certificate Image */}
+              {certificateImageUrl && (
+                <div className="w-36 h-48 bg-white rounded-xl border border-gray-200 overflow-hidden mt-2">
+                  <img 
+                    src={certificateImageUrl} 
+                    alt="Imagem do projeto" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </GlassCard>
