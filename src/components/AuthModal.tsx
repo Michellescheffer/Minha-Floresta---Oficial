@@ -185,6 +185,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
               className="w-full px-4 py-3 bg-white/50 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all"
               placeholder="seu@email.com"
               required
+              autoComplete="email"
             />
           </div>
 
@@ -269,13 +270,16 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 className="w-full px-4 py-3 bg-white/50 border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all pr-12"
-                placeholder="••••••••"
+                placeholder="Digite sua senha"
                 required
+                minLength={6}
+                autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-white/20 rounded-md transition-colors"
+                aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
               >
                 {showPassword ? (
                   <EyeOff className="w-4 h-4 text-gray-600" />
@@ -284,9 +288,12 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
                 )}
               </button>
             </div>
+            {mode === 'register' && (
+              <p className="text-xs text-gray-500 mt-1">
+                Mínimo de 6 caracteres
+              </p>
+            )}
           </div>
-
-          {/* Demo credentials info removed for production */}
 
           {/* Submit Button */}
           <button
