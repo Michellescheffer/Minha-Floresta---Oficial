@@ -576,6 +576,7 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    long_description: '',
     location: '',
     type: 'conservation',
     price_per_m2: 0,
@@ -591,6 +592,7 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
     setFormData({
       name: project.name,
       description: project.description,
+      long_description: (project as any).long_description || '',
       location: project.location,
       type: project.type,
       price_per_m2: project.price_per_m2,
@@ -607,6 +609,7 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
     setFormData({
       name: '',
       description: '',
+      long_description: '',
       location: '',
       type: 'conservation',
       price_per_m2: 0,
@@ -853,14 +856,27 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Descrição Curta</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows={3}
+                  rows={2}
+                  placeholder="Descrição breve que aparece no card do projeto"
                   required
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Detalhes Completos</label>
+                <textarea
+                  value={formData.long_description || ''}
+                  onChange={(e) => setFormData({ ...formData, long_description: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={6}
+                  placeholder="Descrição detalhada do projeto com todas as informações relevantes..."
+                />
+                <p className="text-xs text-gray-500 mt-1">Este texto aparecerá na página de detalhes do projeto</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
