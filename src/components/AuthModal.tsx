@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Eye, EyeOff, Loader2, Mail, Lock, User, Phone, MapPin, FileText } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApp } from '../contexts/AppContext';
@@ -167,7 +168,9 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
 
   if (!isOpen) return null;
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div 
       className="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-6 backdrop-blur-xl bg-black/40 overflow-y-auto"
       onClick={handleBackdropClick}
@@ -376,6 +379,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
         </form>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
