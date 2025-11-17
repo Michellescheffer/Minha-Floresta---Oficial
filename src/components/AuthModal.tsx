@@ -169,9 +169,8 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center px-4 bg-black/50 backdrop-blur-md overflow-y-auto"
+      className="auth-modal"
       onClick={handleBackdropClick}
-      style={{ margin: 0, padding: '1rem' }}
     >
       <div className="relative w-full max-w-md mx-auto my-8">
         <div className={`bg-white/98 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl transform-gpu ${
