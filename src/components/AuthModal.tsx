@@ -169,7 +169,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] flex items-start justify-center pt-24 sm:pt-28 lg:pt-32 px-4 pb-6 backdrop-blur-xl bg-black/20 overflow-y-auto"
+      className="fixed inset-0 z-[9999] flex items-center justify-center px-4 py-6 backdrop-blur-xl bg-black/40 overflow-y-auto"
       onClick={handleBackdropClick}
     >
       <div className="relative w-full max-w-md mx-auto">
