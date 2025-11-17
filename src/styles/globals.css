@@ -708,7 +708,7 @@ html {
   display: flex !important;
   align-items: flex-start !important;
   justify-content: center !important;
-  padding: 5rem 1rem 1rem 1rem !important; /* alinhado logo abaixo do menu, com pequeno respiro */
+  padding: 5.5rem 1rem 1rem 1rem !important; /* posição refinada abaixo do menu */
   overflow-y: auto !important;
   animation: modalFadeIn 0.3s ease-out;
   margin: 0 !important;
