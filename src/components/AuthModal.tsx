@@ -172,7 +172,7 @@ export function AuthModal({ isOpen, onClose, initialMode = 'login' }: AuthModalP
       className="auth-modal"
       onClick={handleBackdropClick}
     >
-      <div className="relative w-full max-w-md mx-auto my-8">
+      <div className="relative w-full max-w-md mx-auto">
         <div className={`bg-white/98 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl transform-gpu ${
           isClosing ? 'modal-exit' : 'animate-scale-up'
         }`}>
