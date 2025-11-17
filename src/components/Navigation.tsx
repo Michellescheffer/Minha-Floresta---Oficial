@@ -61,7 +61,7 @@ export function Navigation() {
   
   const textColorClass = isDarkBackground 
     ? 'text-white drop-shadow-md' 
-    : 'text-gray-800';
+    : 'text-[#1a200e]';
     
   const activeTextColorClass = isDarkBackground 
     ? 'text-green-300 font-semibold' 
@@ -73,7 +73,7 @@ export function Navigation() {
     
   const iconColorClass = isDarkBackground 
     ? 'text-white/90 hover:text-green-200 drop-shadow-sm' 
-    : 'text-gray-600 hover:text-green-600';
+    : 'text-[#1a200e] hover:text-green-600';
 
   // Logo filter for color change (white to black based on scroll)
   const logoFilterClass = isDarkBackground 
@@ -82,7 +82,7 @@ export function Navigation() {
 
   return (
     <nav className="fixed top-6 sm:top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-6xl px-4 sm:px-6 safe-area-top">
-      <GlassCard className={`px-4 sm:px-6 py-3 sm:py-2 transition-all duration-300 ${
+      <GlassCard className={`px-4 sm:px-6 py-3 sm:py-2 transition-all duration-500 ease-out ${
         isDarkBackground 
           ? 'bg-white/10 border-white/20' 
           : 'bg-white/20 border-white/30 backdrop-blur-xl'
@@ -94,11 +94,11 @@ export function Navigation() {
             href="#home"
             onClick={(e) => { e.preventDefault(); handleNavClick('home'); }}
           >
-            <div className="w-32 h-32 sm:w-44 sm:h-44 flex items-center justify-center">
+            <div className="w-40 h-40 sm:w-52 sm:h-52 flex items-center justify-center">
               <img 
                 src={logoImage} 
                 alt="Minha Floresta" 
-                className={`w-full h-full object-contain transition-all duration-300 ${logoFilterClass}`}
+                className={`w-full h-full object-contain transition-all duration-500 ease-out ${logoFilterClass}`}
               />
             </div>
           </a>
