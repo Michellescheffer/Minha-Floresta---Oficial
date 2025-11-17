@@ -71,23 +71,23 @@ export function Navigation() {
     
   const activeTextColorClass = isDarkBackground 
     ? 'text-green-300 font-semibold' 
-    : 'text-green-600 font-semibold';
+    : 'text-[#1a200e] font-semibold';
     
   const hoverTextColorClass = isDarkBackground 
     ? 'hover:text-green-200' 
-    : 'hover:text-green-600';
+    : 'hover:text-[#1a200e]/80';
     
   const iconColorClass = isDarkBackground 
     ? 'text-white/90 hover:text-green-200 drop-shadow-sm' 
-    : 'text-[#1a200e] hover:text-green-600';
+    : 'text-[#1a200e] hover:text-[#1a200e]';
 
-  // Logo filter for color change (white on dark hero, green on light background)
+  // Logo filter for color change (branca no fundo escuro, verde #1a200e no fundo claro)
   const logoStyle = isDarkBackground
     ? { filter: 'brightness(0) invert(1) drop-shadow(0 0 8px rgba(0,0,0,0.4))' }
-    : { filter: 'invert(23%) sepia(28%) saturate(630%) hue-rotate(65deg) brightness(92%) contrast(90%)' };
+    : { filter: 'invert(18%) sepia(10%) saturate(2000%) hue-rotate(55deg) brightness(95%) contrast(96%)' };
 
   return (
-    <nav className="fixed top-6 sm:top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-6xl px-4 sm:px-6 safe-area-top">
+    <nav className="fixed top-6 sm:top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-7xl px-4 sm:px-8 safe-area-top">
       <GlassCard className={`px-4 sm:px-6 py-3 sm:py-2 transition-all duration-500 ease-out ${
         isDarkBackground 
           ? 'bg-white/10 border-white/20' 
