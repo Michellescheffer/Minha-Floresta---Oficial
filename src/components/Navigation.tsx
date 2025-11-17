@@ -14,18 +14,24 @@ export function Navigation() {
   const { currentPage, setCurrentPage, totalItems } = useApp();
   const { user, isAuthenticated, logout } = useAuth();
 
-  // Detect scroll position to adjust menu colors
+  // Detect scroll position to adjust menu colors (top = branco, meio = verde, final = branco novamente)
   useEffect(() => {
     let ticking = false;
-    
+
     const handleScroll = () => {
       if (!ticking) {
         requestAnimationFrame(() => {
           const scrollPosition = window.scrollY;
           const windowHeight = window.innerHeight;
-          
-          // Consider "scrolled" when we're past the first section (hero)
-          setIsScrolled(scrollPosition > windowHeight * 0.7);
+          const docHeight = document.documentElement.scrollHeight;
+          const maxScroll = Math.max(docHeight - windowHeight, 1);
+          const scrollRatio = scrollPosition / maxScroll;
+
+          const inHeroZone = scrollPosition <= windowHeight * 0.7;
+          const inFooterZone = scrollRatio >= 0.85;
+
+          // isScrolled = zona intermediária da home
+          setIsScrolled(!(inHeroZone || inFooterZone));
           ticking = false;
         });
         ticking = true;
@@ -33,7 +39,7 @@ export function Navigation() {
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll(); // Check initial position
+    handleScroll();
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -75,10 +81,10 @@ export function Navigation() {
     ? 'text-white/90 hover:text-green-200 drop-shadow-sm' 
     : 'text-[#1a200e] hover:text-green-600';
 
-  // Logo filter for color change (white to black based on scroll)
-  const logoFilterClass = isDarkBackground 
-    ? 'brightness-0 invert drop-shadow-md' // Makes logo white
-    : 'brightness-0 drop-shadow-sm'; // Makes logo black
+  // Logo filter for color change (white on dark hero, green on light background)
+  const logoStyle = isDarkBackground
+    ? { filter: 'brightness(0) invert(1) drop-shadow(0 0 8px rgba(0,0,0,0.4))' }
+    : { filter: 'invert(23%) sepia(28%) saturate(630%) hue-rotate(65deg) brightness(92%) contrast(90%)' };
 
   return (
     <nav className="fixed top-6 sm:top-4 left-1/2 transform -translate-x-1/2 z-50 w-full max-w-6xl px-4 sm:px-6 safe-area-top">
@@ -98,7 +104,8 @@ export function Navigation() {
               <img 
                 src={logoImage} 
                 alt="Minha Floresta" 
-                className={`w-full h-full object-contain transition-all duration-500 ease-out ${logoFilterClass}`}
+                className="w-full h-full object-contain transition-all duration-500 ease-out"
+                style={logoStyle}
               />
             </div>
           </a>
@@ -110,7 +117,7 @@ export function Navigation() {
                 key={item.page}
                 href={item.href}
                 onClick={(e) => { e.preventDefault(); handleNavClick(item.page); }}
-                className={`transition-all duration-300 font-medium text-sm xl:text-base px-2 py-1 rounded-lg hover:bg-white/10 ${
+                className={`transition-all duration-300 font-medium text-sm xl:text-base px-2 py-1 rounded-lg hover:bg-white/10 whitespace-nowrap ${
                   currentPage === item.page 
                     ? `${activeTextColorClass} bg-white/15`
                     : `${textColorClass} ${hoverTextColorClass}`
