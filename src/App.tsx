@@ -43,7 +43,7 @@ export default function App() {
             <div className="min-h-screen">
               <SessionHashHandler />
               <Navigation />
-              <main className="pt-40 sm:pt-44 lg:pt-48">
+              <main className="pt-48 sm:pt-52 lg:pt-60">
                 <ErrorBoundary>
                   <PageRouter />
                 </ErrorBoundary>
