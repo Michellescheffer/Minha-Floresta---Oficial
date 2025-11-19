@@ -106,6 +106,7 @@ const MOCK_PROJECTS: Project[] = [
 
 export function useProjects() {
   const { supabase, isConnected } = useSupabase();
+  const ENABLE_MOCKS = import.meta.env.VITE_ENABLE_PROJECTS_MOCKS === 'true';
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,7 +132,7 @@ export function useProjects() {
       if (supabaseError) {
         console.error('Error fetching projects:', supabaseError);
         setError(supabaseError.message);
-        setProjects(MOCK_PROJECTS); // Fallback para mock data
+        setProjects(ENABLE_MOCKS ? MOCK_PROJECTS : []);
         return;
       }
       
@@ -159,13 +160,12 @@ export function useProjects() {
         
         setProjects(transformedProjects);
       } else {
-        // Use mock data as fallback
-        setProjects(MOCK_PROJECTS);
+        setProjects(ENABLE_MOCKS ? MOCK_PROJECTS : []);
       }
     } catch (err) {
       console.error('Error loading projects:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar projetos');
-      setProjects(MOCK_PROJECTS);
+      setProjects(ENABLE_MOCKS ? MOCK_PROJECTS : []);
     } finally {
       setIsLoading(false);
     }

@@ -5,124 +5,100 @@ export function useSocialProjects() {
   const { socialProjects } = useApp();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const ENABLE_SOCIAL_MOCKS = import.meta.env?.VITE_ENABLE_SOCIAL_MOCKS === 'true';
 
   // Mock data de projetos sociais para demonstração
-  const mockSocialProjects: SocialProject[] = [
+  const adminExampleProjects: SocialProject[] = [
     {
-      id: 'social-1',
-      title: 'Educação Ambiental Comunitária',
-      description: 'Programa de educação ambiental para comunidades rurais, focando em práticas sustentáveis e conservação da biodiversidade local.',
+      id: 'admin-social-1',
+      title: 'Rede de Escolas Agroflorestais',
+      description: 'Implantação de unidades demonstrativas em escolas públicas rurais para regenerar solo e garantir merenda escolar saudável.',
       category: 'education',
-      location: 'Interior de São Paulo',
-      startDate: '2024-01-15',
+      location: 'Chapada dos Veadeiros - GO',
+      startDate: '2025-01-10',
       status: 'active',
-      budget: 85000,
-      spent: 42500,
-      beneficiaries: 350,
-      partners: ['Secretaria de Educação', 'Instituto Verde'],
+      budget: 98000,
+      spent: 21500,
+      beneficiaries: 420,
+      partners: ['Secretaria Municipal de Educação', 'Instituto Cerrado Vivo'],
       objectives: [
-        'Capacitar 300 pessoas em práticas sustentáveis',
-        'Implementar 5 hortas comunitárias',
-        'Formar 20 multiplicadores ambientais'
+        'Construir 6 canteiros agroflorestais',
+        'Capacitar 40 professores',
+        'Incorporar hortas no currículo local'
       ],
-      results: [
-        '180 pessoas já capacitadas',
-        '3 hortas comunitárias implementadas',
-        '12 multiplicadores formados'
-      ],
-      images: [
-        'https://images.unsplash.com/photo-1593113598332-cd288d649433?w=400',
-        'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=400'
-      ],
-      coordinator: 'Maria Silva',
-      contactEmail: 'maria@educacaoambiental.org',
-      reports: [
-        {
-          title: 'Relatório Trimestral Q1 2024',
-          date: '2024-03-01',
-          url: '#'
-        }
-      ],
-      donationsReceived: 12500,
-      donationGoal: 25000,
+      results: ['2 canteiros implantados', '12 professores certificados'],
+      images: ['https://images.unsplash.com/photo-1501004318641-b39e6451bec6?w=600&auto=format'],
+      coordinator: 'Renata Lobo',
+      contactEmail: 'renata@florestaviva.org',
+      reports: [],
+      donationsReceived: 21500,
+      donationGoal: 98000,
       allowDonations: true
     },
     {
-      id: 'social-2',
-      title: 'Reflorestamento Participativo',
-      description: 'Projeto que envolve comunidades locais no plantio e cuidado de mudas nativas, gerando renda e restaurando ecossistemas.',
+      id: 'admin-social-2',
+      title: 'Guardiões dos Manguezais',
+      description: 'Plano comunitário para restaurar manguezais degradados e garantir renda a pescadores artesanais.',
       category: 'community',
-      location: 'Mata Atlântica - RJ',
-      startDate: '2024-02-01',
+      location: 'Bahia de Todos-os-Santos - BA',
+      startDate: '2025-02-05',
+      status: 'active',
+      budget: 145000,
+      spent: 37500,
+      beneficiaries: 95,
+      partners: ['Associação de Pescadores locais', 'Universidade Federal da Bahia'],
+      objectives: ['Recuperar 35 hectares de mangue', 'Formar cooperativa de biojóias', 'Instalar viveiro de mudas nativas'],
+      results: ['Viveiro construído', 'Primeira cooperativa com 22 mulheres'],
+      images: ['https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format'],
+      coordinator: 'Carlos Porto',
+      contactEmail: 'carlos@manguezalvivo.org',
+      reports: [],
+      donationsReceived: 37500,
+      donationGoal: 145000,
+      allowDonations: true
+    },
+    {
+      id: 'admin-social-3',
+      title: 'Observatório da Água no Semiárido',
+      description: 'Instalação de cisternas inteligentes e monitoramento comunitário da qualidade da água em 12 municípios.',
+      category: 'research',
+      location: 'Cariri Paraibano - PB',
+      startDate: '2024-11-20',
       status: 'active',
       budget: 120000,
-      spent: 65000,
-      beneficiaries: 80,
-      partners: ['Prefeitura Local', 'ONG Mata Viva'],
-      objectives: [
-        'Plantar 10.000 mudas nativas',
-        'Gerar renda para 80 famílias',
-        'Restaurar 50 hectares de mata'
-      ],
-      results: [
-        '6.500 mudas plantadas',
-        '52 famílias beneficiadas',
-        '32 hectares em restauração'
-      ],
-      images: [
-        'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400',
-        'https://images.unsplash.com/photo-1574263867128-f70bb67c3be6?w=400'
-      ],
-      coordinator: 'João Santos',
-      contactEmail: 'joao@reflorestamento.org',
-      reports: [
-        {
-          title: 'Relatório de Progresso Março',
-          date: '2024-03-15',
-          url: '#'
-        }
-      ],
-      donationsReceived: 8700,
-      donationGoal: 30000,
+      spent: 64200,
+      beneficiaries: 1800,
+      partners: ['ASA Brasil', 'Universidade Federal de Campina Grande'],
+      objectives: ['Construir 120 cisternas', 'Treinar 60 agentes comunitários', 'Implementar plataforma de dados abertos'],
+      results: ['55 cisternas concluídas', 'Plataforma beta no ar'],
+      images: ['https://images.unsplash.com/photo-1529699211952-734e80c4d42b?w=600&auto=format'],
+      coordinator: 'Fabrícia Nóbrega',
+      contactEmail: 'fabricia@observatorioagua.org',
+      reports: [],
+      donationsReceived: 64200,
+      donationGoal: 120000,
       allowDonations: true
     },
     {
-      id: 'social-3',
-      title: 'Pesquisa de Biodiversidade Urbana',
-      description: 'Estudo científico da biodiversidade em ambientes urbanos para orientar políticas públicas de conservação.',
-      category: 'research',
-      location: 'São Paulo - SP',
-      startDate: '2024-01-01',
+      id: 'admin-social-4',
+      title: 'Turismo Regenerativo Caiçara',
+      description: 'Estruturação de roteiros de turismo de base comunitária para financiar a proteção da restinga e da cultura caiçara.',
+      category: 'community',
+      location: 'Litoral Norte de SP',
+      startDate: '2025-03-01',
       status: 'active',
-      budget: 150000,
-      spent: 89000,
-      beneficiaries: 2500000,
-      partners: ['USP', 'Prefeitura de São Paulo', 'ICMBio'],
-      objectives: [
-        'Mapear espécies nativas urbanas',
-        'Desenvolver índice de biodiversidade urbana',
-        'Criar diretrizes para gestão urbana sustentável'
-      ],
-      results: [
-        '450 espécies catalogadas',
-        'Metodologia de índice desenvolvida',
-        '3 artigos científicos publicados'
-      ],
-      images: [
-        'https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?w=400',
-        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400'
-      ],
-      coordinator: 'Dr. Ana Costa',
-      contactEmail: 'ana@pesquisaurbana.org',
-      reports: [
-        {
-          title: 'Relatório Científico Q1',
-          date: '2024-03-20',
-          url: '#'
-        }
-      ],
-      donationsReceived: 15600,
-      donationGoal: 40000,
+      budget: 88000,
+      spent: 15000,
+      beneficiaries: 60,
+      partners: ['Associação Caiçara da Jureia', 'SEBRAE-SP'],
+      objectives: ['Criar 4 roteiros certificados', 'Treinar 30 guias locais', 'Implantar centro de visitantes'],
+      results: ['Manual de roteiros concluído', '15 guias em treinamento'],
+      images: ['https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&auto=format'],
+      coordinator: 'Nayara Prado',
+      contactEmail: 'nayara@turismoregenerativo.org',
+      reports: [],
+      donationsReceived: 15000,
+      donationGoal: 88000,
       allowDonations: true
     }
   ];
@@ -136,7 +112,11 @@ export function useSocialProjects() {
   }, []);
 
   // Se não há projetos sociais no contexto, usar os dados mock
-  const projectsToUse = (socialProjects && socialProjects.length > 0) ? socialProjects : mockSocialProjects;
+  const projectsToUse = (socialProjects && socialProjects.length > 0)
+    ? socialProjects
+    : ENABLE_SOCIAL_MOCKS
+      ? mockSocialProjects
+      : [];
 
   return {
     socialProjects: projectsToUse,

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Plus, Edit3, Trash2, Save, X, Upload, Activity } from 'lucide-react';
+import { Plus, Edit3, Trash2, Save, X, Activity } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { toast } from 'sonner';
+import { ImageUploadWithResizer } from './ImageUploadWithResizer';
 
 interface Donation {
   id: string;
@@ -25,8 +26,8 @@ interface DonationsTabProps {
 export function DonationsTab({ donations, onReload }: DonationsTabProps) {
   const [showModal, setShowModal] = useState(false);
   const [editingDonation, setEditingDonation] = useState<Donation | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [formData, setFormData] = useState({
+  const [saving, setSaving] = useState(false);
+  const emptyForm = {
     title: '',
     description: '',
     long_description: '',
@@ -35,22 +36,14 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
     image_url: '',
     status: 'active' as 'active' | 'completed' | 'paused',
     start_date: new Date().toISOString().split('T')[0],
-    end_date: ''
-  });
+    end_date: '',
+    gallery_images: [] as string[]
+  };
+  const [formData, setFormData] = useState<typeof emptyForm>(emptyForm);
 
   const handleAdd = () => {
     setEditingDonation(null);
-    setFormData({
-      title: '',
-      description: '',
-      long_description: '',
-      goal_amount: 0,
-      current_amount: 0,
-      image_url: '',
-      status: 'active',
-      start_date: new Date().toISOString().split('T')[0],
-      end_date: ''
-    });
+    setFormData(emptyForm);
     setShowModal(true);
   };
 
@@ -65,36 +58,24 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
       image_url: donation.image_url || '',
       status: donation.status,
       start_date: donation.start_date,
-      end_date: donation.end_date || ''
+      end_date: donation.end_date || '',
+      gallery_images: donation.image_url ? [donation.image_url] : []
     });
     setShowModal(true);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Por favor, selecione uma imagem válida');
-      return;
-    }
-
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast.error('Imagem muito grande! Máximo 5MB');
-      return;
-    }
-
+  const uploadBase64Image = async (base64Image: string, index: number) => {
     try {
-      setUploading(true);
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `donation-${Date.now()}.${fileExt}`;
+      const response = await fetch(base64Image);
+      const blob = await response.blob();
+      const contentType = blob.type || 'image/jpeg';
+      const extension = contentType.split('/')[1] || 'jpg';
+      const fileName = `donation-${Date.now()}-${index}.${extension}`;
       const filePath = `donations/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('images')
-        .upload(filePath, file);
+        .upload(filePath, blob, { contentType });
 
       if (uploadError) throw uploadError;
 
@@ -102,24 +83,92 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
         .from('images')
         .getPublicUrl(filePath);
 
-      setFormData({ ...formData, image_url: publicUrl });
-      toast.success('Imagem enviada com sucesso!');
-    } catch (error: any) {
-      console.error('Error uploading image:', error);
-      toast.error('Erro ao enviar imagem');
-    } finally {
-      setUploading(false);
+      return publicUrl;
+    } catch (error) {
+      console.error('Erro ao enviar imagem:', error);
+      throw error;
     }
+  };
+
+  const processGalleryImages = async () => {
+    const uploadedImages: string[] = [];
+
+    for (const [index, image] of formData.gallery_images.entries()) {
+      if (!image) continue;
+      if (image.startsWith('http')) {
+        uploadedImages.push(image);
+        continue;
+      }
+
+      if (image.startsWith('data:')) {
+        const publicUrl = await uploadBase64Image(image, index);
+        uploadedImages.push(publicUrl);
+      }
+    }
+
+    return uploadedImages;
+  };
+
+  const validateForm = () => {
+    if (!formData.title.trim()) {
+      toast.error('Informe o título do projeto');
+      return false;
+    }
+    if (!formData.description.trim()) {
+      toast.error('Adicione uma descrição curta');
+      return false;
+    }
+    if (formData.goal_amount <= 0) {
+      toast.error('Meta deve ser maior que zero');
+      return false;
+    }
+    if (formData.current_amount < 0) {
+      toast.error('Valor arrecadado não pode ser negativo');
+      return false;
+    }
+    if (!formData.start_date) {
+      toast.error('Defina a data de início');
+      return false;
+    }
+    if (formData.gallery_images.length === 0) {
+      toast.error('Adicione pelo menos uma imagem do projeto');
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
+    setSaving(true);
 
     try {
+      const galleryImages = await processGalleryImages();
+
+      if (galleryImages.length === 0) {
+        toast.error('Não foi possível processar as imagens do projeto');
+        setSaving(false);
+        return;
+      }
+
+      const coverImage = galleryImages[0];
+      const payload = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        long_description: formData.long_description.trim(),
+        goal_amount: Number(formData.goal_amount),
+        current_amount: Number(formData.current_amount),
+        image_url: coverImage,
+        status: formData.status,
+        start_date: formData.start_date,
+        end_date: formData.end_date || null
+      };
+
       if (editingDonation) {
         const { error } = await supabase
           .from('donation_projects')
-          .update(formData)
+          .update(payload)
           .eq('id', editingDonation.id);
 
         if (error) throw error;
@@ -127,17 +176,21 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
       } else {
         const { error } = await supabase
           .from('donation_projects')
-          .insert([formData]);
+          .insert([payload]);
 
         if (error) throw error;
         toast.success('Projeto de doação criado!');
       }
 
       setShowModal(false);
+      setEditingDonation(null);
+      setFormData(emptyForm);
       onReload();
     } catch (error: any) {
       console.error('Error saving donation:', error);
       toast.error('Erro ao salvar projeto de doação');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -363,25 +416,16 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
                 </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Imagem</label>
-                <div className="flex items-center gap-4">
-                  {formData.image_url && (
-                    <img src={formData.image_url} alt="Preview" className="w-32 h-32 rounded-xl object-cover" />
-                  )}
-                  <label className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl cursor-pointer transition-colors">
-                    <Upload className="w-4 h-4" />
-                    {uploading ? 'Enviando...' : 'Escolher Imagem'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      disabled={uploading}
-                    />
-                  </label>
-                </div>
-              </div>
+              <ImageUploadWithResizer
+                images={formData.gallery_images}
+                onChange={(images) => setFormData((prev) => ({
+                  ...prev,
+                  gallery_images: images,
+                  image_url: images[0] || prev.image_url
+                }))}
+                maxImages={5}
+                maxFileSize={5}
+              />
 
               <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200">
                 <button
@@ -393,10 +437,11 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-lg transition-all"
+                  disabled={saving}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-60"
                 >
                   <Save className="w-4 h-4" />
-                  {editingDonation ? 'Atualizar' : 'Criar'}
+                  {saving ? 'Salvando...' : editingDonation ? 'Atualizar' : 'Criar'}
                 </button>
               </div>
             </form>

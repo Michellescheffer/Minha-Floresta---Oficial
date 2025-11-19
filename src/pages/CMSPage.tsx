@@ -13,6 +13,7 @@ import { CustomersTab } from '../components/CustomersTab';
 import { DonationsTab } from '../components/DonationsTab';
 import { SettingsTab } from '../components/SettingsTab';
 import { AnalyticsTab } from '../components/AnalyticsTab';
+import { ImageUploadWithResizer } from '../components/ImageUploadWithResizer';
 
 const COLORS = ['#06b6d4', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#3b82f6'];
 
@@ -35,7 +36,9 @@ interface Project {
   available_area: number;
   total_area: number;
   status: string;
-  image_url: string;
+  image?: string;
+  image_url?: string;
+  gallery_images?: string[];
   created_at: string;
 }
 
@@ -601,10 +604,10 @@ function StatCard({ title, value, icon: Icon, color, trend }: any) {
 }
 
 // Projects Tab Component
-function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
+function ProjectsTab({ projects, onDelete, onReload }: { projects: Project[]; onDelete: (id: string) => void; onReload: () => Promise<void>; }) {
   const [showModal, setShowModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [formData, setFormData] = useState({
+  const emptyForm = {
     name: '',
     description: '',
     long_description: '',
@@ -614,9 +617,11 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
     available_area: 0,
     total_area: 0,
     status: 'active',
-    image_url: ''
-  });
-  const [uploading, setUploading] = useState(false);
+    image: '',
+    gallery_images: [] as string[]
+  };
+  const [formData, setFormData] = useState<typeof emptyForm>(emptyForm);
+  const [saving, setSaving] = useState(false);
 
   const handleEdit = (project: Project) => {
     setEditingProject(project);
@@ -630,61 +635,30 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
       available_area: project.available_area,
       total_area: project.total_area,
       status: project.status,
-      image_url: project.image_url
+      image: project.image || project.image_url || '',
+      gallery_images: Array.isArray(project.gallery_images) ? project.gallery_images : []
     });
     setShowModal(true);
   };
 
   const handleAdd = () => {
     setEditingProject(null);
-    setFormData({
-      name: '',
-      description: '',
-      long_description: '',
-      location: '',
-      type: 'conservation',
-      price_per_m2: 0,
-      available_m2: 0,
-      total_m2: 0,
-      status: 'active',
-      image: ''
-    });
+    setFormData(emptyForm);
     setShowModal(true);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Por favor, selecione uma imagem válida');
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (file.size > maxSize) {
-      toast.error('Imagem muito grande! Máximo 5MB');
-      return;
-    }
-
+  const uploadBase64Image = async (base64Image: string, index: number) => {
     try {
-      setUploading(true);
-
-      // Compress image if needed
-      let fileToUpload = file;
-      if (file.size > 1024 * 1024) { // If > 1MB, compress
-        fileToUpload = await compressImage(file);
-      }
-
-      const fileExt = file.name.split('.').pop();
-      const fileName = `project-${Date.now()}.${fileExt}`;
+      const response = await fetch(base64Image);
+      const blob = await response.blob();
+      const contentType = blob.type || 'image/jpeg';
+      const extension = contentType.split('/')[1] || 'jpg';
+      const fileName = `project-${Date.now()}-${index}.${extension}`;
       const filePath = `projects/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
         .from('images')
-        .upload(filePath, fileToUpload);
+        .upload(filePath, blob, { contentType });
 
       if (uploadError) throw uploadError;
 
@@ -692,85 +666,106 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
         .from('images')
         .getPublicUrl(filePath);
 
-      setFormData({ ...formData, image: publicUrl });
-      toast.success('Imagem enviada com sucesso!');
-    } catch (error: any) {
-      console.error('Error uploading image:', error);
-      if (error.message?.includes('exceeded')) {
-        toast.error('Imagem muito grande! Tente uma menor.');
-      } else {
-        toast.error('Erro ao enviar imagem');
-      }
-    } finally {
-      setUploading(false);
+      return publicUrl;
+    } catch (error) {
+      console.error('Erro ao enviar imagem:', error);
+      throw error;
     }
   };
 
-  // Helper function to compress images
-  const compressImage = (file: File): Promise<File> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target?.result as string;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
-          // Max dimensions
-          const maxWidth = 1920;
-          const maxHeight = 1080;
-          
-          let width = img.width;
-          let height = img.height;
-          
-          if (width > height) {
-            if (width > maxWidth) {
-              height *= maxWidth / width;
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width *= maxHeight / height;
-              height = maxHeight;
-            }
-          }
-          
-          canvas.width = width;
-          canvas.height = height;
-          ctx?.drawImage(img, 0, 0, width, height);
-          
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                const compressedFile = new File([blob], file.name, {
-                  type: 'image/jpeg',
-                  lastModified: Date.now(),
-                });
-                resolve(compressedFile);
-              } else {
-                reject(new Error('Compression failed'));
-              }
-            },
-            'image/jpeg',
-            0.85
-          );
-        };
-        img.onerror = reject;
-      };
-      reader.onerror = reject;
-    });
+  const processGalleryImages = async () => {
+    const uploadedImages: string[] = [];
+
+    for (const [index, image] of formData.gallery_images.entries()) {
+      if (!image) continue;
+      if (image.startsWith('http')) {
+        uploadedImages.push(image);
+        continue;
+      }
+
+      if (image.startsWith('data:')) {
+        const publicUrl = await uploadBase64Image(image, index);
+        uploadedImages.push(publicUrl);
+      }
+    }
+
+    return uploadedImages;
+  };
+
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      toast.error('Informe o nome do projeto');
+      return false;
+    }
+    if (!formData.description.trim()) {
+      toast.error('Adicione uma descrição curta');
+      return false;
+    }
+    if (!formData.location.trim()) {
+      toast.error('Informe a localização');
+      return false;
+    }
+    if (formData.price_per_sqm <= 0) {
+      toast.error('Preço por m² deve ser maior que zero');
+      return false;
+    }
+    if (formData.available_area <= 0) {
+      toast.error('Área disponível deve ser maior que zero');
+      return false;
+    }
+    if (formData.total_area <= 0) {
+      toast.error('Área total deve ser maior que zero');
+      return false;
+    }
+    if (formData.total_area < formData.available_area) {
+      toast.error('Área total não pode ser menor que a disponível');
+      return false;
+    }
+    if (formData.gallery_images.length === 0) {
+      toast.error('Adicione pelo menos uma imagem do projeto');
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
+
+    setSaving(true);
 
     try {
+      const gallery_images = await processGalleryImages();
+
+      if (gallery_images.length === 0) {
+        toast.error('Não foi possível processar as imagens do projeto');
+        setSaving(false);
+        return;
+      }
+
+      const coverImage = gallery_images[0];
+      const payload = {
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      long_description: formData.long_description.trim(),
+      location: formData.location.trim(),
+      type: formData.type,
+      price_per_sqm: Number(formData.price_per_sqm),
+      price_per_m2: Number(formData.price_per_sqm),
+      available_area: Number(formData.available_area),
+      available_m2: Number(formData.available_area),
+      total_area: Number(formData.total_area || formData.available_area),
+      total_m2: Number(formData.total_area || formData.available_area),
+      status: formData.status,
+      image: coverImage,
+      main_image: coverImage,
+      gallery_images
+    };
+
       if (editingProject) {
         const { error } = await supabase
           .from('projects')
-          .update(formData)
+          .update(payload)
           .eq('id', editingProject.id);
 
         if (error) throw error;
@@ -778,17 +773,21 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
       } else {
         const { error } = await supabase
           .from('projects')
-          .insert([formData]);
+          .insert([payload]);
 
         if (error) throw error;
         toast.success('Projeto criado!');
       }
 
       setShowModal(false);
-      window.location.reload(); // Reload to update list
+      setEditingProject(null);
+      setFormData(emptyForm);
+      await onReload();
     } catch (error) {
       console.error('Error saving project:', error);
       toast.error('Erro ao salvar projeto');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -817,9 +816,9 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
               className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl shadow-black/5 hover:shadow-2xl transition-all"
             >
               <div className="flex gap-4">
-                {project.image && (
+                {(project.image || project.image_url) && (
                   <img
-                    src={project.image}
+                    src={project.image || project.image_url}
                     alt={project.name}
                     className="w-24 h-24 rounded-xl object-cover"
                   />
@@ -972,27 +971,16 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Imagem</label>
-                <div className="flex items-center gap-4">
-                  {formData.image && (
-                    <div className="relative">
-                      <img src={formData.image} alt="Preview" className="w-32 h-32 rounded-xl object-cover" />
-                    </div>
-                  )}
-                  <label className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-xl cursor-pointer transition-colors">
-                    <Upload className="w-4 h-4" />
-                    {uploading ? 'Enviando...' : 'Escolher Imagem'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      disabled={uploading}
-                    />
-                  </label>
-                </div>
-              </div>
+              <ImageUploadWithResizer
+                images={formData.gallery_images}
+                onChange={(images) => setFormData((prev) => ({
+                  ...prev,
+                  gallery_images: images,
+                  image: images[0] || prev.image
+                }))}
+                maxImages={5}
+                maxFileSize={5}
+              />
 
               <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200">
                 <button
@@ -1004,10 +992,11 @@ function ProjectsTab({ projects, onEdit, onDelete, onAdd }: any) {
                 </button>
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all"
+                  disabled={saving}
+                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-60"
                 >
                   <Save className="w-4 h-4" />
-                  {editingProject ? 'Atualizar' : 'Criar'}
+                  {saving ? 'Salvando...' : editingProject ? 'Atualizar' : 'Criar'}
                 </button>
               </div>
             </form>
