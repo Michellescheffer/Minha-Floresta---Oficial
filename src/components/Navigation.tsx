@@ -1,4 +1,4 @@
-import { Menu, X, ShoppingCart, QrCode, User, LogOut, Settings, Heart, Trash2 } from 'lucide-react';
+import { Menu, X, ShoppingCart, QrCode, User, LogOut, Settings } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { GlassCard } from './GlassCard';
 import { useApp, PageType } from '../contexts/AppContext';
@@ -186,30 +186,20 @@ export function Navigation() {
                         <Settings className="w-4 h-4" />
                         Dashboard
                       </a>
-                      <a
-                        href="#cms"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleNavClick('cms');
-                          setIsUserMenuOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-2"
-                      >
-                        <Settings className="w-4 h-4" />
-                        Admin (CMS)
-                      </a>
-                      <a
-                        href="#cleanup-test"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          handleNavClick('cleanup-test');
-                          setIsUserMenuOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-2 text-red-700 hover:bg-red-50 transition-colors flex items-center gap-2"
-                      >
-                        <Settings className="w-4 h-4" />
-                        🧹 Limpar DB
-                      </a>
+                      {user?.role === 'admin' && (
+                        <a
+                          href="#cms"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleNavClick('cms');
+                            setIsUserMenuOpen(false);
+                          }}
+                          className="w-full text-left px-4 py-2 text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-2"
+                        >
+                          <Settings className="w-4 h-4" />
+                          Admin (CMS)
+                        </a>
+                      )}
                       <button
                         onClick={() => {
                           logout();
@@ -285,30 +275,20 @@ export function Navigation() {
                     <Settings className="w-4 h-4" />
                     <span>Dashboard</span>
                   </a>
-                  <a
-                    href="#cms"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleNavClick('cms');
-                      setIsMenuOpen(false);
-                    }}
-                    className={`text-left flex items-center space-x-2 transition-all duration-300 text-blue-600`}
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Admin (CMS)</span>
-                  </a>
-                  <a
-                    href="#cleanup-test"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleNavClick('cleanup-test');
-                      setIsMenuOpen(false);
-                    }}
-                    className={`text-left flex items-center space-x-2 transition-all duration-300 text-red-600`}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span>🧹 Limpeza DB (TESTE)</span>
-                  </a>
+                  {user?.role === 'admin' && (
+                    <a
+                      href="#cms"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleNavClick('cms');
+                        setIsMenuOpen(false);
+                      }}
+                      className={`text-left flex items-center space-x-2 transition-all duration-300 text-blue-600`}
+                    >
+                      <Settings className="w-4 h-4" />
+                      <span>Admin (CMS)</span>
+                    </a>
+                  )}
                   <button
                     onClick={() => {
                       logout();

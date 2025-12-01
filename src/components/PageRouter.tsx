@@ -20,7 +20,6 @@ import { BlueCarbonPage } from '../pages/BlueCarbonPage';
 import { DashboardPage } from '../pages/DashboardPage';
 import CMSPage from '../pages/CMSPage';
 import AdminImageManagerPage from '../pages/AdminImageManagerPage';
-import { CleanupTestPage } from '../pages/CleanupTestPage';
 import CheckoutSuccessPage from '../pages/CheckoutSuccessPage';
 import CheckoutCancelPage from '../pages/CheckoutCancelPage';
 import CheckoutReturnPage from '../pages/CheckoutReturnPage';
@@ -282,8 +281,6 @@ export function PageRouter() {
           </div>
         </div>
       );
-    case 'cleanup-test':
-      return <CleanupTestPage />;
     case 'checkout-success':
       return <CheckoutSuccessPage />;
     case 'checkout-cancel':

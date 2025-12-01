@@ -149,7 +149,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       'blue-carbon': 'blue-carbon',
       'dashboard': 'dashboard',
       'cms': 'cms',
-      'cleanup-test': 'cleanup-test',
       'checkout-success': 'checkout-success',
       'checkout-cancel': 'checkout-cancel',
       'checkout-return': 'checkout-return',
