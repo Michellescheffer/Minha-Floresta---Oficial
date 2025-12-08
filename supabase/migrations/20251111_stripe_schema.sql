@@ -19,10 +19,15 @@ create table if not exists public.stripe_payment_intents (
 
 alter table public.stripe_payment_intents enable row level security;
 
-create policy if not exists "public_read_stripe_payment_intents"
-  on public.stripe_payment_intents
-  for select
-  using (true);
+DO $$
+BEGIN
+  CREATE POLICY "public_read_stripe_payment_intents"
+    ON public.stripe_payment_intents
+    FOR SELECT
+    USING (true);
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
 
 -- stripe_events for idempotency/logging
 create table if not exists public.stripe_events (
@@ -34,7 +39,12 @@ create table if not exists public.stripe_events (
 
 alter table public.stripe_events enable row level security;
 
-create policy if not exists "public_read_stripe_events"
-  on public.stripe_events
-  for select
-  using (true);
+DO $$
+BEGIN
+  CREATE POLICY "public_read_stripe_events"
+    ON public.stripe_events
+    FOR SELECT
+    USING (true);
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
