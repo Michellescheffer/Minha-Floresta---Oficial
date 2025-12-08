@@ -4,7 +4,8 @@ import {
   Search, Plus, Edit3, Trash2, TrendingUp, DollarSign, Award,
   Activity, Save, Upload, X, RefreshCw, Image as ImageIcon,
   Eye, Download, Calendar, MapPin, Check, AlertCircle, Filter,
-  Mail, Phone, CreditCard, FileSpreadsheet, User
+  Mail, Phone, CreditCard, FileSpreadsheet, User, Sparkles,
+  LayoutGrid, Info, BadgeCheck, Palette, ChevronRight
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { toast } from 'sonner';
@@ -58,6 +59,38 @@ interface SaleData {
   revenue: number;
 }
 
+const cmsTokens = {
+  glass: 'rounded-2xl bg-white/85 backdrop-blur-2xl border border-white/30 shadow-xl shadow-emerald-900/5',
+  subtleGlass: 'rounded-2xl bg-white/70 backdrop-blur-xl border border-white/20 shadow-lg shadow-emerald-900/5',
+  sectionSpacing: 'px-4 sm:px-6 lg:px-8',
+  heading: 'text-xs uppercase tracking-[0.2em] text-emerald-700/70 font-semibold',
+  label: 'text-sm text-gray-600 font-medium',
+  input: 'w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/60 focus:border-transparent transition-shadow bg-white',
+};
+
+const FORM_SECTIONS = [
+  {
+    id: 'basic',
+    title: 'Informações Básicas',
+    description: 'Título, descrição curta e narrativa completa do projeto.',
+  },
+  {
+    id: 'geo',
+    title: 'Localização & Categoria',
+    description: 'Defina onde o projeto acontece e o tipo de impacto.',
+  },
+  {
+    id: 'metrics',
+    title: 'Metas e Métricas',
+    description: 'Preço por metro quadrado e disponibilidade da área.',
+  },
+  {
+    id: 'media',
+    title: 'Biblioteca Visual',
+    description: 'Faça upload das imagens que representam o projeto.',
+  },
+];
+
 export default function CMSPage() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [loading, setLoading] = useState(true);
@@ -72,8 +105,6 @@ export default function CMSPage() {
 
   // Projects
   const [projects, setProjects] = useState<Project[]>([]);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [showProjectModal, setShowProjectModal] = useState(false);
 
   // Certificates
   const [certificates, setCertificates] = useState<Certificate[]>([]);
@@ -109,30 +140,28 @@ export default function CMSPage() {
     try {
       setLoading(true);
 
-      // Load real data from Supabase
-      const projectsRes = await supabase.from('projects').select('*', { count: 'exact' });
-      const certsRes = await supabase.from('certificates').select('*', { count: 'exact' });
-      
-      // Try to load sales data, fallback to empty if fails
-      let salesRes = { data: [], error: null };
+      const [projectsRes, certsRes] = await Promise.all([
+        supabase.from('projects').select('*', { count: 'exact' }),
+        supabase.from('certificates').select('*', { count: 'exact' })
+      ]);
+
+      let salesRows: any[] = [];
       try {
-        salesRes = await supabase.from('sales').select('*');
+        const { data } = await supabase.from('sales').select('*');
+        salesRows = data || [];
       } catch (e) {
         console.warn('Sales table query failed:', e);
       }
 
-      // Calculate total revenue using correct column name
-      const totalRevenue = salesRes.data?.reduce((sum: number, p: any) => {
-        return sum + (p.total_value || 0);
-      }, 0) || 0;
+      const totalRevenue = salesRows.reduce((sum: number, sale: any) => sum + (sale.total_value || 0), 0);
 
       setStats({
         totalProjects: projectsRes.count || 0,
-        totalSales: salesRes.data?.length || 0,
+        totalSales: salesRows.length,
         totalRevenue,
         totalCertificates: certsRes.count || 0,
-        activeUsers: 0, // TODO: implement user tracking
-        monthlyGrowth: 12.5 // TODO: calculate from historical data
+        activeUsers: 0,
+        monthlyGrowth: 12.5
       });
     } catch (error) {
       console.error('Error loading dashboard:', error);
@@ -336,34 +365,6 @@ export default function CMSPage() {
     }
   };
 
-  const saveProject = async (project: Partial<Project>) => {
-    try {
-      if (editingProject) {
-        const { error } = await supabase
-          .from('projects')
-          .update(project)
-          .eq('id', editingProject.id);
-
-        if (error) throw error;
-        toast.success('Projeto atualizado com sucesso!');
-      } else {
-        const { error } = await supabase
-          .from('projects')
-          .insert([project]);
-
-        if (error) throw error;
-        toast.success('Projeto criado com sucesso!');
-      }
-
-      setShowProjectModal(false);
-      setEditingProject(null);
-      loadProjects();
-    } catch (error) {
-      console.error('Error saving project:', error);
-      toast.error('Erro ao salvar projeto');
-    }
-  };
-
   const deleteProject = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este projeto?')) return;
 
@@ -471,16 +472,15 @@ export default function CMSPage() {
           <>
             {/* Dashboard Tab */}
             {activeTab === 'dashboard' && (
-              <DashboardTab stats={stats} />
+              <DashboardTab stats={stats} loading={loading} />
             )}
 
             {/* Projects Tab */}
             {activeTab === 'projects' && (
               <ProjectsTab
                 projects={projects}
-                onEdit={setEditingProject}
                 onDelete={deleteProject}
-                onAdd={() => setShowProjectModal(true)}
+                onReload={loadProjects}
               />
             )}
 
@@ -532,72 +532,161 @@ export default function CMSPage() {
 }
 
 // Dashboard Tab Component
-function DashboardTab({ stats }: { stats: DashboardStats }) {
+function DashboardTab({ stats, loading }: { stats: DashboardStats; loading: boolean }) {
+  const statCards = [
+    {
+      title: 'Total de Projetos',
+      value: stats.totalProjects,
+      icon: TreePine,
+      color: 'from-emerald-500 to-teal-500',
+      trend: '+12%',
+    },
+    {
+      title: 'Vendas Totais',
+      value: stats.totalSales,
+      icon: ShoppingCart,
+      color: 'from-cyan-500 to-sky-500',
+      trend: '+8%',
+    },
+    {
+      title: 'Receita Total',
+      value: `R$ ${stats.totalRevenue.toLocaleString('pt-BR')}`,
+      icon: DollarSign,
+      color: 'from-purple-500 to-pink-500',
+      trend: '+15%',
+    },
+    {
+      title: 'Certificados Emitidos',
+      value: stats.totalCertificates,
+      icon: Award,
+      color: 'from-orange-500 to-rose-500',
+    },
+    {
+      title: 'Usuários Ativos',
+      value: stats.activeUsers,
+      icon: Users,
+      color: 'from-indigo-500 to-purple-500',
+    },
+    {
+      title: 'Crescimento Mensal',
+      value: `${stats.monthlyGrowth}%`,
+      icon: TrendingUp,
+      color: 'from-teal-500 to-green-500',
+      trend: '↑',
+    },
+  ];
+
+  const quickActions = [
+    {
+      title: 'Novo Projeto',
+      description: 'Cadastre uma nova iniciativa e publique no site.',
+      icon: Plus,
+    },
+    {
+      title: 'Atualizar Hero',
+      description: 'Envie novas fotos para o banner principal.',
+      icon: ImageIcon,
+    },
+    {
+      title: 'Gerar Certificado',
+      description: 'Emita certificados de forma manual.',
+      icon: BadgeCheck,
+    },
+    {
+      title: 'Configurar Stripe',
+      description: 'Revise as chaves e webhooks de pagamento.',
+      icon: CreditCard,
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard
-          title="Total de Projetos"
-          value={stats.totalProjects}
-          icon={TreePine}
-          color="from-green-500 to-emerald-500"
-          trend="+12%"
-        />
-        <StatCard
-          title="Vendas Totais"
-          value={stats.totalSales}
-          icon={ShoppingCart}
-          color="from-blue-500 to-cyan-500"
-          trend="+8%"
-        />
-        <StatCard
-          title="Receita Total"
-          value={`R$ ${stats.totalRevenue.toLocaleString('pt-BR')}`}
-          icon={DollarSign}
-          color="from-purple-500 to-pink-500"
-          trend="+15%"
-        />
-        <StatCard
-          title="Certificados Emitidos"
-          value={stats.totalCertificates}
-          icon={Award}
-          color="from-orange-500 to-red-500"
-        />
-        <StatCard
-          title="Usuários Ativos"
-          value={stats.activeUsers}
-          icon={Users}
-          color="from-indigo-500 to-purple-500"
-        />
-        <StatCard
-          title="Crescimento Mensal"
-          value={`${stats.monthlyGrowth}%`}
-          icon={TrendingUp}
-          color="from-teal-500 to-green-500"
-          trend="↑"
-        />
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {statCards.map((card) => (
+          <StatCard key={card.title} {...card} isLoading={loading} />
+        ))}
+      </div>
+
+      <div className={`${cmsTokens.glass} p-6 grid gap-6 xl:grid-cols-[2fr,3fr]`}>
+        <div className="space-y-5">
+          <p className={cmsTokens.heading}>Resumo rápido</p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">
+                <Sparkles className="w-5 h-5" />
+              </span>
+              <div>
+                <p className="text-sm text-gray-500">Receita acumulada</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  R$ {stats.totalRevenue.toLocaleString('pt-BR')}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+                <LayoutGrid className="w-5 h-5" />
+              </span>
+              <div>
+                <p className="text-sm text-gray-500">Projetos publicados</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalProjects}</p>
+              </div>
+            </div>
+          </div>
+          <div className="text-sm text-gray-500 leading-relaxed">
+            Acompanhe o desempenho em tempo real e use os atalhos para manter a plataforma
+            sempre atualizada. Os números são recalculados ao clicar em “Atualizar”.
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {quickActions.map((action) => (
+            <button
+              key={action.title}
+              type="button"
+              className="group p-4 text-left rounded-2xl border border-white/30 bg-white/70 backdrop-blur hover:-translate-y-0.5 hover:border-emerald-200 transition-all shadow-sm hover:shadow-md"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                  <action.icon className="w-4 h-4" />
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-emerald-600" />
+              </div>
+              <p className="font-semibold text-gray-900">{action.title}</p>
+              <p className="text-sm text-gray-500 mt-1">{action.description}</p>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
 // Stat Card Component
-function StatCard({ title, value, icon: Icon, color, trend }: any) {
+function StatCard({ title, value, icon: Icon, color, trend, isLoading }: any) {
+  if (isLoading) {
+    return (
+      <div className={`${cmsTokens.glass} h-36 animate-pulse`}>
+        <div className="h-full w-full bg-gradient-to-r from-white/60 to-white/30 rounded-2xl" />
+      </div>
+    );
+  }
+
   return (
-    <div className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl shadow-black/5 hover:shadow-2xl hover:shadow-black/10 transition-all group">
-      <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-10 transition-opacity`} />
-      <div className="relative">
-        <div className="flex items-center justify-between mb-4">
+    <div
+      className={`${cmsTokens.glass} relative overflow-hidden p-6 shadow-xl shadow-emerald-900/5 hover:-translate-y-0.5 transition-all`}
+    >
+      <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-5`} />
+      <div className="relative flex flex-col gap-6">
+        <div className="flex items-center justify-between">
           <div className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg`}>
-            <Icon className="w-6 h-6 text-white" />
+            <Icon className="w-5 h-5 text-white" />
           </div>
-          {trend && (
-            <span className="text-sm font-semibold text-green-600">{trend}</span>
-          )}
+          {trend && <span className="text-xs font-semibold text-emerald-600">{trend}</span>}
         </div>
-        <h3 className="text-sm font-medium text-gray-600 mb-1">{title}</h3>
-        <p className="text-3xl font-bold text-gray-900">{value}</p>
+        <div>
+          <p className="text-xs uppercase tracking-[0.15em] text-gray-500">{title}</p>
+          <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
+        </div>
       </div>
     </div>
   );
@@ -792,65 +881,99 @@ function ProjectsTab({ projects, onDelete, onReload }: { projects: Project[]; on
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Projetos</h2>
-        <button
-          onClick={handleAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all"
-        >
-          <Plus className="w-4 h-4" />
-          Novo Projeto
-        </button>
+    <div className="space-y-8">
+      <div className={`${cmsTokens.glass} p-6 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between`}>
+        <div>
+          <p className={cmsTokens.heading}>Catálogo de projetos</p>
+          <div className="flex items-baseline gap-3">
+            <h2 className="text-3xl font-bold text-gray-900">{projects.length}</h2>
+            <span className="text-sm text-gray-500">projetos publicados</span>
+          </div>
+          <p className="text-sm text-gray-500 mt-2">
+            Gerencie cards, disponibilidade e storytelling de cada iniciativa em destaque.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button
+            type="button"
+            onClick={onReload}
+            className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:border-emerald-300 transition-colors flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Atualizar lista
+          </button>
+          <button
+            onClick={handleAdd}
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5 transition"
+          >
+            Novo projeto
+          </button>
+        </div>
       </div>
 
       {projects.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
+        <div className={`${cmsTokens.glass} p-12 text-center text-gray-500`}>
           Nenhum projeto cadastrado ainda.
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {projects.map((project: Project) => (
-            <div
+            <article
               key={project.id}
-              className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl shadow-black/5 hover:shadow-2xl transition-all"
+              className={`${cmsTokens.glass} p-5 flex flex-col gap-4`}
             >
               <div className="flex gap-4">
-                {(project.image || project.image_url) && (
-                  <img
-                    src={project.image || project.image_url}
-                    alt={project.name}
-                    className="w-24 h-24 rounded-xl object-cover"
-                  />
-                )}
+                <div className="w-28 h-28 rounded-2xl bg-gray-100 overflow-hidden">
+                  {(project.image || project.image_url) ? (
+                    <img
+                      src={project.image || project.image_url}
+                      alt={project.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
+                      Sem imagem
+                    </div>
+                  )}
+                </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-gray-900 mb-1">{project.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{project.location}</p>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span className="text-green-600 font-semibold">
-                      R$ {project.price_per_sqm}/m²
-                    </span>
-                    <span className="text-gray-600">
-                      {project.available_area}m² disponíveis
+                  <div className="flex items-center gap-3 mb-1">
+                    <h3 className="font-semibold text-lg text-gray-900">{project.name}</h3>
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-700 capitalize">
+                      {project.status === 'active' ? 'ativo' : project.status}
                     </span>
                   </div>
+                  <p className="text-sm text-gray-500">{project.location}</p>
+                  <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-xl bg-emerald-50 text-emerald-700 px-3 py-2 font-semibold">
+                      R$ {project.price_per_sqm}/m²
+                    </div>
+                    <div className="rounded-xl bg-gray-100 text-gray-700 px-3 py-2 font-medium">
+                      {project.available_area}m² disponíveis
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-2">
+              </div>
+              <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                <span className="text-xs text-gray-500">
+                  Atualizado em {new Date(project.created_at).toLocaleDateString('pt-BR')}
+                </span>
+                <div className="flex gap-2">
                   <button
                     onClick={() => handleEdit(project)}
-                    className="p-2 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="px-3 py-2 rounded-xl border border-transparent text-sm text-blue-600 hover:bg-blue-50 transition"
                   >
-                    <Edit3 className="w-4 h-4 text-blue-600" />
+                    Editar
                   </button>
                   <button
                     onClick={() => onDelete(project.id)}
-                    className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                    className="px-3 py-2 rounded-xl border border-transparent text-sm text-red-600 hover:bg-red-50 transition"
                   >
-                    <Trash2 className="w-4 h-4 text-red-600" />
+                    Remover
                   </button>
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
       )}
@@ -873,130 +996,127 @@ function ProjectsTab({ projects, onDelete, onReload }: { projects: Project[]; on
               </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nome</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
+            <form onSubmit={handleSubmit} className="p-6 space-y-8">
+              {FORM_SECTIONS.map((section) => (
+                <div key={section.id} className="space-y-4">
+                  <div className="space-y-1">
+                    <p className={cmsTokens.heading}>{section.title}</p>
+                    <p className="text-sm text-gray-500">{section.description}</p>
+                  </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Descrição Curta</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows={2}
-                  placeholder="Descrição breve que aparece no card do projeto"
-                  required
-                />
-              </div>
+                  {section.id === 'basic' && (
+                    <div className="space-y-4">
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="Nome do projeto"
+                        className={cmsTokens.input}
+                        required
+                      />
+                      <textarea
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        className={`${cmsTokens.input} min-h-[70px]`}
+                        placeholder="Descrição breve para o card do site"
+                        required
+                      />
+                      <div>
+                        <textarea
+                          value={formData.long_description || ''}
+                          onChange={(e) => setFormData({ ...formData, long_description: e.target.value })}
+                          className={`${cmsTokens.input} min-h-[160px]`}
+                          placeholder="Conte o storytelling completo, metas e etapas do projeto..."
+                        />
+                        <p className="text-xs text-gray-500 mt-2">
+                          Este texto aparece na página detalhada do projeto.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Detalhes Completos</label>
-                <textarea
-                  value={formData.long_description || ''}
-                  onChange={(e) => setFormData({ ...formData, long_description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows={6}
-                  placeholder="Descrição detalhada do projeto com todas as informações relevantes..."
-                />
-                <p className="text-xs text-gray-500 mt-1">Este texto aparecerá na página de detalhes do projeto</p>
-              </div>
+                  {section.id === 'geo' && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <input
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="Ex: Paragominas - PA"
+                        className={cmsTokens.input}
+                        required
+                      />
+                      <select
+                        value={formData.type}
+                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                        className={cmsTokens.input}
+                      >
+                        <option value="conservation">Conservação</option>
+                        <option value="reforestation">Reflorestamento</option>
+                        <option value="restoration">Restauração</option>
+                      </select>
+                    </div>
+                  )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Localização</label>
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
+                  {section.id === 'metrics' && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {[
+                        { id: 'price_per_sqm', label: 'Preço/m²', step: '0.01' },
+                        { id: 'available_area', label: 'Área disponível (m²)' },
+                        { id: 'total_area', label: 'Área total (m²)' },
+                      ].map((field) => (
+                        <div key={field.id}>
+                          <label className={`${cmsTokens.label} mb-2 block`}>{field.label}</label>
+                          <input
+                            type="number"
+                            step={field.step}
+                            value={(formData as any)[field.id]}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              [field.id]: e.target.value ? Number(e.target.value) : 0
+                            })}
+                            className={cmsTokens.input}
+                            required
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {section.id === 'media' && (
+                    <div className="space-y-4">
+                      <ImageUploadWithResizer
+                        images={formData.gallery_images}
+                        onChange={(images) => setFormData((prev) => ({
+                          ...prev,
+                          gallery_images: images,
+                          image: images[0] || prev.image
+                        }))}
+                        maxImages={5}
+                        maxFileSize={5}
+                      />
+                      <p className="text-xs text-gray-500">
+                        Use imagens com pelo menos 1600px de largura para manter a qualidade no site.
+                      </p>
+                    </div>
+                  )}
                 </div>
+              ))}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tipo</label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="conservation">Conservação</option>
-                    <option value="reforestation">Reflorestamento</option>
-                    <option value="restoration">Restauração</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Preço/m²</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.price_per_sqm}
-                    onChange={(e) => setFormData({ ...formData, price_per_sqm: parseFloat(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Área Disponível (m²)</label>
-                  <input
-                    type="number"
-                    value={formData.available_area}
-                    onChange={(e) => setFormData({ ...formData, available_area: parseInt(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Área Total (m²)</label>
-                  <input
-                    type="number"
-                    value={formData.total_area}
-                    onChange={(e) => setFormData({ ...formData, total_area: parseInt(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-              </div>
-
-              <ImageUploadWithResizer
-                images={formData.gallery_images}
-                onChange={(images) => setFormData((prev) => ({
-                  ...prev,
-                  gallery_images: images,
-                  image: images[0] || prev.image
-                }))}
-                maxImages={5}
-                maxFileSize={5}
-              />
-
-              <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+                  className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:border-emerald-300 transition"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-60"
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold shadow-lg transition disabled:opacity-60"
                 >
                   <Save className="w-4 h-4" />
-                  {saving ? 'Salvando...' : editingProject ? 'Atualizar' : 'Criar'}
+                  {saving ? 'Salvando...' : editingProject ? 'Atualizar projeto' : 'Publicar projeto'}
                 </button>
               </div>
             </form>
@@ -1056,34 +1176,44 @@ function CertificatesTab({ certificates }: { certificates: Certificate[] }) {
 // Images Tab Component
 function ImagesTab({ siteImages, certImages, onReload }: any) {
   const [uploading, setUploading] = useState(false);
+  const heroSlots = [
+    {
+      key: 'hero_primary',
+      label: 'Imagem principal',
+      description: 'Primeiros 5 segundos – destaque desktop',
+      accent: 'from-emerald-500 to-teal-500',
+    },
+    {
+      key: 'hero_secondary',
+      label: 'Imagem secundária',
+      description: 'Transição intermediária e tablet',
+      accent: 'from-blue-500 to-cyan-500',
+    },
+    {
+      key: 'hero_tertiary',
+      label: 'Imagem terciária',
+      description: 'Fallback mobile / campanhas sazonais',
+      accent: 'from-amber-500 to-orange-500',
+    },
+  ];
 
-  const handleUploadSiteImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleUploadSiteImage = async (file: File, slotKey?: string) => {
     if (!file) return;
-
-    // Validate max 3 images
-    if (siteImages.length >= 3) {
+    if (!slotKey && siteImages.length >= heroSlots.length) {
       toast.error('Máximo de 3 imagens do Hero permitido');
       return;
     }
-
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Por favor, selecione uma imagem válida');
       return;
     }
-
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024;
-    if (file.size > maxSize) {
+    if (file.size > 5 * 1024 * 1024) {
       toast.error('Imagem muito grande! Máximo 5MB');
       return;
     }
 
     try {
       setUploading(true);
-
-      // Compress if needed
       let fileToUpload = file;
       if (file.size > 1024 * 1024) {
         fileToUpload = await compressImage(file);
@@ -1096,28 +1226,31 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
       const { error: uploadError } = await supabase.storage
         .from('images')
         .upload(filePath, fileToUpload);
-
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('images').getPublicUrl(filePath);
 
-      // Determine the correct key based on current count
-      const heroKeys = ['hero_primary', 'hero_secondary', 'hero_tertiary'];
-      const nextKey = heroKeys[siteImages.length] || `hero_${siteImages.length + 1}`;
+      const resolvedKey =
+        slotKey || heroSlots[siteImages.length]?.key || `hero_${siteImages.length + 1}`;
+      const slotIndex = heroSlots.findIndex((slot) => slot.key === resolvedKey);
+      const displayOrder = slotIndex >= 0 ? slotIndex : siteImages.length;
 
-      // Insert into site_images table
       const { error: dbError } = await supabase
         .from('site_images')
-        .insert([{
-          key: nextKey,
-          url: publicUrl,
-          alt_text: 'Hero Banner Image',
-          display_order: siteImages.length,
-          is_active: true
-        }]);
-
+        .upsert(
+          [
+            {
+              key: resolvedKey,
+              url: publicUrl,
+              alt_text: file.name,
+              display_order: displayOrder,
+              is_active: true,
+            },
+          ],
+          { onConflict: 'key' },
+        );
       if (dbError) throw dbError;
 
       toast.success('Imagem do site adicionada!');
@@ -1312,114 +1445,291 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-xl font-bold text-gray-900">Gerenciar Imagens</h2>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Site Images */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Imagens do Hero Banner ({siteImages.length}/3)
-            </h3>
-            <label className={`flex items-center gap-2 px-3 py-2 text-white text-sm rounded-xl cursor-pointer transition-all ${
-              siteImages.length >= 3 ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:shadow-lg'
-            }`}>
-              <Upload className="w-4 h-4" />
-              {uploading ? 'Enviando...' : siteImages.length >= 3 ? 'Máximo atingido' : 'Adicionar'}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleUploadSiteImage}
-                className="hidden"
-                disabled={uploading || siteImages.length >= 3}
-              />
-            </label>
-          </div>
-          <p className="text-xs text-gray-600 mb-4">
-            Adicione até 3 imagens que serão exibidas em rotação automática a cada 5 segundos
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className={cmsTokens.heading}>Biblioteca visual</p>
+          <h2 className="text-2xl font-bold text-gray-900">Gerenciar imagens</h2>
+          <p className="text-sm text-gray-500">
+            Atualize os banners do site e a galeria usada nos certificados digitais.
           </p>
-          <div className="space-y-3">
-            {siteImages.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-8">Nenhuma imagem cadastrada</p>
-            ) : (
-              siteImages.map((img: any, index: number) => (
-                <div key={img.id} className="bg-gray-50 rounded-xl p-4 group">
-                  <div className="flex items-center justify-between mb-3">
-                    <div>
-                      <p className="font-medium text-sm">{img.key}</p>
-                      <p className="text-xs text-gray-600">Posição {index + 1}</p>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteSiteImage(img.id, img.url)}
-                      className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </button>
-                  </div>
-                  <img 
-                    src={img.url} 
-                    alt={img.alt_text || ''} 
-                    className="w-full h-48 rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" 
-                    onClick={() => window.open(img.url, '_blank')}
-                  />
-                  <p className="text-xs text-gray-500 mt-2">{img.alt_text || 'Hero Image'}</p>
-                </div>
-              ))
-            )}
+        </div>
+        <button
+          type="button"
+          onClick={onReload}
+          className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:border-emerald-300 transition-colors flex items-center gap-2"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Recarregar
+        </button>
+      </div>
+      {/* Hero slots */}
+      <section className={`${cmsTokens.glass} p-6 space-y-6`}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Hero Banner</h3>
+            <p className="text-sm text-gray-500">
+              Escolha até 3 imagens para rotacionar a cada 5 segundos no topo do site.
+            </p>
           </div>
+          <span className="text-xs text-gray-500">{siteImages.length}/3 slots preenchidos</span>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {heroSlots.map((slot) => {
+            const current = siteImages.find((img: any) => img.key === slot.key);
+            return (
+              <div
+                key={slot.key}
+                className="relative rounded-[24px] border border-white/30 bg-white/70 backdrop-blur-xl p-4 flex flex-col gap-4 shadow-md"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${slot.accent} opacity-10 rounded-[24px] pointer-events-none`} />
+                <div className="relative flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{slot.label}</p>
+                    <p className="text-xs text-gray-500">{slot.description}</p>
+                  </div>
+                  <span className={`px-2 py-0.5 text-xs rounded-full ${current ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {current ? 'Em uso' : 'Vazio'}
+                  </span>
+                </div>
+                <div className="relative rounded-2xl overflow-hidden bg-gray-100 h-40">
+                  {current ? (
+                    <img
+                      src={current.url}
+                      alt={current.alt_text || slot.label}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 text-xs gap-1">
+                      <ImageIcon className="w-5 h-5" />
+                      Aguardando upload
+                    </div>
+                  )}
+                </div>
+                <div className="relative flex gap-2">
+                  <label className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white ${uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:shadow-lg'} transition`}>
+                    <Upload className="w-4 h-4" />
+                    {uploading ? 'Enviando...' : current ? 'Substituir' : 'Enviar'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={uploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleUploadSiteImage(file, slot.key);
+                      }}
+                    />
+                  </label>
+                  {current && (
+                    <button
+                      onClick={() => handleDeleteSiteImage(current.id, current.url)}
+                      className="px-3 py-2 rounded-xl border border-transparent text-sm text-red-600 hover:bg-red-50 transition"
+                    >
+                      Remover
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Certificate gallery */}
+      <section className={`${cmsTokens.glass} p-6 space-y-6`}>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              Galeria de certificados ({certImages.length}/8)
+            </h3>
+            <p className="text-sm text-gray-500">
+              As imagens são sorteadas aleatoriamente em cada certificado emitido.
+            </p>
+          </div>
+          <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white ${
+            certImages.length >= 8 || uploading
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:shadow-lg'
+          } transition`}>
+            <Upload className="w-4 h-4" />
+            {uploading ? 'Enviando...' : 'Adicionar imagem'}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploading || certImages.length >= 8}
+              onChange={handleUploadCertImage}
+            />
+          </label>
         </div>
 
-        {/* Certificate Images */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">
-              Imagens dos Certificados ({certImages.length}/8)
-            </h3>
-            <label className={`flex items-center gap-2 px-3 py-2 text-white text-sm rounded-xl cursor-pointer transition-all ${
-              certImages.length >= 8 
-                ? 'bg-gray-400 cursor-not-allowed' 
+        {certImages.length === 0 ? (
+          <div className="py-16 text-center text-gray-500">
+            Nenhuma imagem cadastrada ainda.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {certImages.map((image: any, index: number) => (
+              <article
+                key={image.id}
+                className="rounded-2xl border border-white/30 bg-white/80 backdrop-blur p-3 flex flex-col gap-3"
+              >
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span className="font-medium text-gray-900">#{index + 1}</span>
+                  <button
+                    onClick={() => handleDeleteCertImage(image.id, image.url)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+                <div className="rounded-xl overflow-hidden h-40 bg-gray-100">
+                  <img
+                    src={image.url}
+                    alt={image.alt_text || `Certificado ${index + 1}`}
+                    className="w-full h-full object-cover cursor-pointer"
+                    onClick={() => window.open(image.url, '_blank')}
+                  />
+                </div>
+                <p className="text-xs text-gray-500 line-clamp-2">
+                  {image.alt_text || 'Sem descrição'}
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+            </div>
+            <span className="text-xs text-gray-500">{siteImages.length}/3 slots preenchidos</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {heroSlots.map((slot) => {
+              const current = siteImages.find((img: any) => img.key === slot.key);
+              return (
+                <div
+                  key={slot.key}
+                  className="relative rounded-[24px] border border-white/30 bg-white/70 backdrop-blur-xl p-4 flex flex-col gap-4 shadow-md"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${slot.accent} opacity-10 rounded-[24px] pointer-events-none`} />
+                  <div className="relative flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{slot.label}</p>
+                      <p className="text-xs text-gray-500">{slot.description}</p>
+                    </div>
+                    <span className={`px-2 py-0.5 text-xs rounded-full ${current ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {current ? 'Em uso' : 'Vazio'}
+                    </span>
+                  </div>
+                  <div className="relative rounded-2xl overflow-hidden bg-gray-100 h-40">
+                    {current ? (
+                      <img
+                        src={current.url}
+                        alt={current.alt_text || slot.label}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 text-xs gap-1">
+                        <ImageIcon className="w-5 h-5" />
+                        Aguardando upload
+                      </div>
+                    )}
+                  </div>
+                  <div className="relative flex gap-2">
+                    <label className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white ${uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:shadow-lg'} transition`}>
+                      <Upload className="w-4 h-4" />
+                      {uploading ? 'Enviando...' : current ? 'Substituir' : 'Enviar'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        disabled={uploading}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadSiteImage(file, slot.key);
+                        }}
+                      />
+                    </label>
+                    {current && (
+                      <button
+                        onClick={() => handleDeleteSiteImage(current.id, current.url)}
+                        className="px-3 py-2 rounded-xl border border-transparent text-sm text-red-600 hover:bg-red-50 transition"
+                      >
+                        Remover
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Certificate gallery */}
+        <section className={`${cmsTokens.glass} p-6 space-y-6`}>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Galeria de certificados ({certImages.length}/8)
+              </h3>
+              <p className="text-sm text-gray-500">
+                As imagens são sorteadas aleatoriamente em cada certificado emitido.
+              </p>
+            </div>
+            <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white ${
+              certImages.length >= 8 || uploading
+                ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:shadow-lg'
-            }`}>
+            } transition`}>
               <Upload className="w-4 h-4" />
-              {uploading ? 'Enviando...' : 'Adicionar'}
+              {uploading ? 'Enviando...' : 'Adicionar imagem'}
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleUploadCertImage}
                 className="hidden"
                 disabled={uploading || certImages.length >= 8}
+                onChange={handleUploadCertImage}
               />
             </label>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {certImages.length === 0 ? (
-              <p className="col-span-2 text-sm text-gray-500 text-center py-8">Nenhuma imagem cadastrada</p>
-            ) : (
-              certImages.map((img: any, index: number) => (
-                <div key={img.id} className="relative group bg-gray-50 rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <p className="text-xs text-gray-600">Imagem {index + 1}</p>
+
+          {certImages.length === 0 ? (
+            <div className="py-16 text-center text-gray-500">
+              Nenhuma imagem cadastrada ainda.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {certImages.map((image: any, index: number) => (
+                <article
+                  key={image.id}
+                  className="rounded-2xl border border-white/30 bg-white/80 backdrop-blur p-3 flex flex-col gap-3"
+                >
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span className="font-medium text-gray-900">#{index + 1}</span>
                     <button
-                      onClick={() => handleDeleteCertImage(img.id, img.url)}
-                      className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
+                      onClick={() => handleDeleteCertImage(image.id, image.url)}
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition"
                     >
-                      <Trash2 className="w-4 h-4 text-red-600" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                  <img 
-                    src={img.url} 
-                    alt={`Certificate ${index + 1}`} 
-                    className="w-full h-40 rounded-lg object-cover cursor-pointer hover:opacity-90 transition-opacity" 
-                    onClick={() => window.open(img.url, '_blank')}
-                  />
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+                  <div className="rounded-xl overflow-hidden h-40 bg-gray-100">
+                    <img
+                      src={image.url}
+                      alt={image.alt_text || `Certificado ${index + 1}`}
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={() => window.open(image.url, '_blank')}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 line-clamp-2">
+                    {image.alt_text || 'Sem descrição'}
+                  </p>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   );
 }
-
