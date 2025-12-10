@@ -193,7 +193,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase
           .from('donation_projects')
           .select('*')
-          .eq('is_active', true)
+          .eq('status', 'active')
           .order('created_at', { ascending: false });
 
         if (error) {
