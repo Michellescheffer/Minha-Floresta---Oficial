@@ -3,8 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const SUPABASE_URL = 'https://ngnybwsovjignsflrhyr.supabase.co';
-const SUPABASE_SERVICE_KEY = '***REMOVED***';
+const SUPABASE_URL = 'https://mcohgaxlxxhrbvajjsvh.supabase.co';
+const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1jb2hnYXhseHhocmJ2YWpqc3ZoIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDY2OTM3MSwiZXhwIjoyMDgwMjQ1MzcxfQ.YV29B6bDoBaxzUHbOMnElfBfaaJYUudZxyuA25SIyMA';
 
 async function runMigration() {
   try {
