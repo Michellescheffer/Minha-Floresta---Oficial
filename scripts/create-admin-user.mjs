@@ -1,7 +1,13 @@
+import 'dotenv/config';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = 'https://ngnybwsovjignsflrhyr.supabase.co';
-const SUPABASE_SERVICE_KEY = '***REMOVED***';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'https://ngnybwsovjignsflrhyr.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_SERVICE_KEY) {
+  console.error('❌ SUPABASE_SERVICE_ROLE_KEY não encontrado. Configure no .env ou exporte antes de rodar o script.');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   auth: {
