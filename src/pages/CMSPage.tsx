@@ -173,9 +173,46 @@ export default function CMSPage() {
 
   const loadProjects = async () => {
     try {
-      // Placeholder - tabela projects não existe ainda
-      setProjects([]);
-      toast.info('Funcionalidade de projetos em desenvolvimento');
+      // Dados mock enquanto a tabela não existe
+      const mockProjects = [
+        {
+          id: '1',
+          name: 'Projeto Amazônia Verde',
+          description: 'Reflorestamento de áreas degradadas na Amazônia',
+          location: 'Pará, Brasil',
+          type: 'reflorestamento',
+          price_per_sqm: 150.00,
+          available_area: 5000,
+          total_area: 10000,
+          status: 'active',
+          created_at: new Date().toISOString()
+        },
+        {
+          id: '2',
+          name: 'Projeto Mata Atlântica',
+          description: 'Recuperação de nascentes e mata ciliar',
+          location: 'São Paulo, Brasil',
+          type: 'conservacao',
+          price_per_sqm: 200.00,
+          available_area: 3000,
+          total_area: 5000,
+          status: 'active',
+          created_at: new Date().toISOString()
+        },
+        {
+          id: '3',
+          name: 'Projeto Pantanal',
+          description: 'Preservação de áreas úmidas e biodiversidade',
+          location: 'Mato Grosso do Sul, Brasil',
+          type: 'preservacao',
+          price_per_sqm: 120.00,
+          available_area: 8000,
+          total_area: 15000,
+          status: 'active',
+          created_at: new Date().toISOString()
+        }
+      ];
+      setProjects(mockProjects);
     } catch (error) {
       console.error('Error loading projects:', error);
       toast.error('Erro ao carregar projetos');
