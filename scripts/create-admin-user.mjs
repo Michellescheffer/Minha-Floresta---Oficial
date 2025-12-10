@@ -24,54 +24,50 @@ async function createAdminUser() {
   const adminName = 'Nei Maciel';
 
   try {
-    // Criar usuário via Admin API
     console.log('📧 Email:', adminEmail);
     console.log('👤 Nome:', adminName);
-    
-    const { data, error } = await supabase.auth.admin.createUser({
+
+    const { data: existingData, error: listError } = await supabase.auth.admin.listUsers({
       email: adminEmail,
-      password: adminPassword,
-      email_confirm: true, // Auto-confirma o email
-      user_metadata: {
-        name: adminName,
-        role: 'admin'
-      }
     });
 
-    if (error) {
-      if (error.message.includes('already registered')) {
-        console.log('\n⚠️  Usuário já existe!');
-        console.log('Tentando atualizar senha...\n');
-        
-        // Buscar usuário existente
-        const { data: users } = await supabase.auth.admin.listUsers();
-        const existingUser = users?.users?.find(u => u.email === adminEmail);
-        
-        if (existingUser) {
-          // Atualizar senha
-          const { error: updateError } = await supabase.auth.admin.updateUserById(
-            existingUser.id,
-            {
-              password: adminPassword,
-              user_metadata: {
-                name: adminName,
-                role: 'admin'
-              }
-            }
-          );
-          
-          if (updateError) {
-            console.error('❌ Erro ao atualizar usuário:', updateError.message);
-            return;
-          }
-          
-          console.log('✅ Senha atualizada com sucesso!');
-          console.log('✅ Metadata atualizado com role: admin');
-        }
-      } else {
-        throw error;
+    if (listError) {
+      throw listError;
+    }
+
+    const existingUser = existingData?.users?.[0];
+
+    if (existingUser) {
+      console.log('\n⚠️  Usuário já existe! Atualizando credenciais...\n');
+      const { error: updateError } = await supabase.auth.admin.updateUserById(existingUser.id, {
+        password: adminPassword,
+        email_confirm: true,
+        user_metadata: {
+          name: adminName,
+          role: 'admin',
+        },
+      });
+
+      if (updateError) {
+        throw updateError;
       }
+
+      console.log('✅ Senha e metadata atualizados com sucesso!');
     } else {
+      const { data, error: createError } = await supabase.auth.admin.createUser({
+        email: adminEmail,
+        password: adminPassword,
+        email_confirm: true,
+        user_metadata: {
+          name: adminName,
+          role: 'admin',
+        },
+      });
+
+      if (createError) {
+        throw createError;
+      }
+
       console.log('\n✅ Usuário criado com sucesso!');
       console.log('📝 ID:', data.user?.id);
     }
