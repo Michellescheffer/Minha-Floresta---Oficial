@@ -173,13 +173,9 @@ export default function CMSPage() {
 
   const loadProjects = async () => {
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setProjects(data || []);
+      // Placeholder - tabela projects não existe ainda
+      setProjects([]);
+      toast.info('Funcionalidade de projetos em desenvolvimento');
     } catch (error) {
       console.error('Error loading projects:', error);
       toast.error('Erro ao carregar projetos');
@@ -291,59 +287,9 @@ export default function CMSPage() {
 
   const loadCustomers = async () => {
     try {
-      // Get all sales with customer info
-      const { data: sales, error: salesError } = await supabase
-        .from('sales')
-        .select('*')
-        .order('sale_date', { ascending: false });
-
-      if (salesError) throw salesError;
-
-      // Get all certificates
-      const { data: certificates, error: certsError } = await supabase
-        .from('certificates')
-        .select('*, projects(name)')
-        .order('issue_date', { ascending: false });
-
-      if (certsError) throw certsError;
-
-      // Group by customer
-      const customerMap = new Map();
-      
-      sales?.forEach(sale => {
-        const key = sale.customer_email;
-        if (!customerMap.has(key)) {
-          customerMap.set(key, {
-            id: sale.customer_id,
-            name: sale.customer_name,
-            email: sale.customer_email,
-            phone: sale.customer_phone,
-            cpf: sale.customer_cpf,
-            address: sale.customer_address,
-            sales: [],
-            certificates: [],
-            totalSpent: 0,
-            totalM2: 0,
-            totalCO2: 0
-          });
-        }
-        
-        const customer = customerMap.get(key);
-        customer.sales.push(sale);
-        customer.totalSpent += sale.total_value;
-        customer.totalM2 += sale.total_m2;
-      });
-
-      // Add certificates to customers
-      certificates?.forEach(cert => {
-        const customer = customerMap.get(cert.customer_email);
-        if (customer) {
-          customer.certificates.push(cert);
-          customer.totalCO2 += cert.co2_offset_kg;
-        }
-      });
-
-      setCustomers(Array.from(customerMap.values()));
+      // Placeholder - tabela sales não existe ainda
+      setCustomers([]);
+      toast.info('Funcionalidade de clientes em desenvolvimento');
     } catch (error) {
       console.error('Error loading customers:', error);
       toast.error('Erro ao carregar clientes');
