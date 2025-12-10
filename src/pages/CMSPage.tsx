@@ -1463,6 +1463,7 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
           Recarregar
         </button>
       </div>
+
       {/* Hero slots */}
       <section className={`${cmsTokens.glass} p-6 space-y-6`}>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -1474,6 +1475,7 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
           </div>
           <span className="text-xs text-gray-500">{siteImages.length}/3 slots preenchidos</span>
         </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {heroSlots.map((slot) => {
             const current = siteImages.find((img: any) => img.key === slot.key);
@@ -1482,13 +1484,19 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
                 key={slot.key}
                 className="relative rounded-[24px] border border-white/30 bg-white/70 backdrop-blur-xl p-4 flex flex-col gap-4 shadow-md"
               >
-                <div className={`absolute inset-0 bg-gradient-to-br ${slot.accent} opacity-10 rounded-[24px] pointer-events-none`} />
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${slot.accent} opacity-10 rounded-[24px] pointer-events-none`}
+                />
                 <div className="relative flex items-start justify-between">
                   <div>
                     <p className="text-sm font-semibold text-gray-900">{slot.label}</p>
                     <p className="text-xs text-gray-500">{slot.description}</p>
                   </div>
-                  <span className={`px-2 py-0.5 text-xs rounded-full ${current ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <span
+                    className={`px-2 py-0.5 text-xs rounded-full ${
+                      current ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
                     {current ? 'Em uso' : 'Vazio'}
                   </span>
                 </div>
@@ -1507,7 +1515,11 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
                   )}
                 </div>
                 <div className="relative flex gap-2">
-                  <label className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white ${uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:shadow-lg'} transition`}>
+                  <label
+                    className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white ${
+                      uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:shadow-lg'
+                    } transition`}
+                  >
                     <Upload className="w-4 h-4" />
                     {uploading ? 'Enviando...' : current ? 'Substituir' : 'Enviar'}
                     <input
@@ -1600,136 +1612,6 @@ function ImagesTab({ siteImages, certImages, onReload }: any) {
           </div>
         )}
       </section>
-            </div>
-            <span className="text-xs text-gray-500">{siteImages.length}/3 slots preenchidos</span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {heroSlots.map((slot) => {
-              const current = siteImages.find((img: any) => img.key === slot.key);
-              return (
-                <div
-                  key={slot.key}
-                  className="relative rounded-[24px] border border-white/30 bg-white/70 backdrop-blur-xl p-4 flex flex-col gap-4 shadow-md"
-                >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${slot.accent} opacity-10 rounded-[24px] pointer-events-none`} />
-                  <div className="relative flex items-start justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{slot.label}</p>
-                      <p className="text-xs text-gray-500">{slot.description}</p>
-                    </div>
-                    <span className={`px-2 py-0.5 text-xs rounded-full ${current ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {current ? 'Em uso' : 'Vazio'}
-                    </span>
-                  </div>
-                  <div className="relative rounded-2xl overflow-hidden bg-gray-100 h-40">
-                    {current ? (
-                      <img
-                        src={current.url}
-                        alt={current.alt_text || slot.label}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 text-xs gap-1">
-                        <ImageIcon className="w-5 h-5" />
-                        Aguardando upload
-                      </div>
-                    )}
-                  </div>
-                  <div className="relative flex gap-2">
-                    <label className={`flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-white ${uploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:shadow-lg'} transition`}>
-                      <Upload className="w-4 h-4" />
-                      {uploading ? 'Enviando...' : current ? 'Substituir' : 'Enviar'}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        disabled={uploading}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleUploadSiteImage(file, slot.key);
-                        }}
-                      />
-                    </label>
-                    {current && (
-                      <button
-                        onClick={() => handleDeleteSiteImage(current.id, current.url)}
-                        className="px-3 py-2 rounded-xl border border-transparent text-sm text-red-600 hover:bg-red-50 transition"
-                      >
-                        Remover
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Certificate gallery */}
-        <section className={`${cmsTokens.glass} p-6 space-y-6`}>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">
-                Galeria de certificados ({certImages.length}/8)
-              </h3>
-              <p className="text-sm text-gray-500">
-                As imagens são sorteadas aleatoriamente em cada certificado emitido.
-              </p>
-            </div>
-            <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white ${
-              certImages.length >= 8 || uploading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:shadow-lg'
-            } transition`}>
-              <Upload className="w-4 h-4" />
-              {uploading ? 'Enviando...' : 'Adicionar imagem'}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                disabled={uploading || certImages.length >= 8}
-                onChange={handleUploadCertImage}
-              />
-            </label>
-          </div>
-
-          {certImages.length === 0 ? (
-            <div className="py-16 text-center text-gray-500">
-              Nenhuma imagem cadastrada ainda.
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {certImages.map((image: any, index: number) => (
-                <article
-                  key={image.id}
-                  className="rounded-2xl border border-white/30 bg-white/80 backdrop-blur p-3 flex flex-col gap-3"
-                >
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span className="font-medium text-gray-900">#{index + 1}</span>
-                    <button
-                      onClick={() => handleDeleteCertImage(image.id, image.url)}
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-red-600 transition"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="rounded-xl overflow-hidden h-40 bg-gray-100">
-                    <img
-                      src={image.url}
-                      alt={image.alt_text || `Certificado ${index + 1}`}
-                      className="w-full h-full object-cover cursor-pointer"
-                      onClick={() => window.open(image.url, '_blank')}
-                    />
-                  </div>
-                  <p className="text-xs text-gray-500 line-clamp-2">
-                    {image.alt_text || 'Sem descrição'}
-                  </p>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-      </div>
     </div>
   );
 }
