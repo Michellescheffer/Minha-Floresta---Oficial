@@ -5,13 +5,13 @@
 
 import { useState, useEffect } from 'react';
 import { loadStripe, Stripe, StripeElements } from '@stripe/stripe-js';
-import { 
+import {
   STRIPE_PUBLIC_KEY,
   STRIPE_ENDPOINTS,
   StripeCheckoutParams,
   StripeCheckoutResponse,
   getStripeErrorMessage,
-  isStripeConfigured 
+  isStripeConfigured
 } from '../utils/supabase/stripeConfig';
 import { publicAnonKey } from '../utils/supabase/info';
 import { supabase } from '../services/supabaseClient';
@@ -75,7 +75,7 @@ export function useStripeCheckout(): UseStripeCheckoutReturn {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao criar pagamento');
+        throw new Error(errorData.message || errorData.error || 'Erro ao criar pagamento');
       }
 
       const data: StripeCheckoutResponse = await response.json();
@@ -97,7 +97,7 @@ export function useStripeCheckout(): UseStripeCheckoutReturn {
       const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
       setError(errorMessage);
       console.error('Error creating payment intent:', err);
-      
+
       return {
         success: false,
         error: errorMessage,
@@ -149,7 +149,7 @@ export function useStripeCheckout(): UseStripeCheckoutReturn {
       const errorMessage = err instanceof Error ? err.message : 'Erro ao confirmar pagamento';
       setError(errorMessage);
       console.error('Error confirming payment:', err);
-      
+
       return { success: false, error: errorMessage };
     } finally {
       setIsLoading(false);
