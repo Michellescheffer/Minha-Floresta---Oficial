@@ -31,7 +31,10 @@ export interface Certificate {
     issue_date: string;
     status: string;
     project_id: string;
-    projects?: { name: string };
+    projects?: {
+        name: string;
+        location: string;
+    };
 }
 
 export interface SaleData {

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import {
     TreePine, ShoppingCart, DollarSign, Award, Users, TrendingUp,
     Sparkles, LayoutGrid, Plus, Image as ImageIcon, CreditCard, BadgeCheck, ChevronRight
@@ -80,41 +80,50 @@ export function DashboardTab({ stats, loading }: DashboardTabProps) {
     ];
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-8 animate-in fade-in duration-700">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {statCards.map((card) => (
                     <StatCard key={card.title} {...card} isLoading={loading} />
                 ))}
             </div>
 
-            <GlassCard className="p-6 grid gap-6 xl:grid-cols-[2fr,3fr] border-0 bg-white/40 backdrop-blur-md">
-                <div className="space-y-5">
-                    <p className={cmsTokens.heading}>Resumo rápido</p>
-                    <div className="space-y-3">
-                        <div className="flex items-center gap-3">
-                            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700 shadow-sm">
-                                <Sparkles className="w-5 h-5" />
+            <GlassCard
+                variant="featured"
+                intensity="high"
+                className="p-8 grid gap-8 xl:grid-cols-[2fr,3fr] border-white/50"
+            >
+                <div className="space-y-6">
+                    <div className="flex items-center gap-3 mb-2">
+                        <Sparkles className="w-5 h-5 text-emerald-500 animate-pulse" />
+                        <p className={cmsTokens.heading}>Resumo rápido</p>
+                    </div>
+
+                    <div className="space-y-4">
+                        <GlassCard variant="flat" intensity="medium" className="p-4 flex items-center gap-4">
+                            <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-teal-50 text-emerald-600 shadow-inner">
+                                <DollarSign className="w-7 h-7" />
                             </span>
                             <div>
                                 <p className="text-sm text-gray-500 font-medium">Receita acumulada</p>
-                                <p className="text-2xl font-bold text-gray-900">
+                                <p className="text-3xl font-bold text-gray-900 tracking-tight">
                                     R$ {stats.totalRevenue.toLocaleString('pt-BR')}
                                 </p>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                            <span className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shadow-sm">
-                                <LayoutGrid className="w-5 h-5" />
+                        </GlassCard>
+
+                        <GlassCard variant="flat" intensity="medium" className="p-4 flex items-center gap-4">
+                            <span className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-100 to-orange-50 text-amber-600 shadow-inner">
+                                <LayoutGrid className="w-7 h-7" />
                             </span>
                             <div>
                                 <p className="text-sm text-gray-500 font-medium">Projetos publicados</p>
-                                <p className="text-2xl font-bold text-gray-900">{stats.totalProjects}</p>
+                                <p className="text-3xl font-bold text-gray-900 tracking-tight">{stats.totalProjects}</p>
                             </div>
-                        </div>
+                        </GlassCard>
                     </div>
-                    <div className="text-sm text-gray-500 leading-relaxed max-w-md">
-                        Acompanhe o desempenho em tempo real e use os atalhos para manter a plataforma
-                        sempre atualizada. Os números são recalculados ao clicar em “Atualizar”.
+
+                    <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100/50 text-sm text-emerald-800/80 leading-relaxed font-medium">
+                        Acompanhe o desempenho em tempo real. Os números são atualizados automaticamente a cada nova transação.
                     </div>
                 </div>
 
@@ -123,16 +132,16 @@ export function DashboardTab({ stats, loading }: DashboardTabProps) {
                         <button
                             key={action.title}
                             type="button"
-                            className="group p-4 text-left rounded-2xl border border-white/40 bg-white/50 hover:bg-white/80 backdrop-blur hover:-translate-y-0.5 hover:border-emerald-200 transition-all shadow-sm hover:shadow-md"
+                            className="group p-5 text-left rounded-3xl border border-white/40 bg-white/40 hover:bg-white/60 backdrop-blur-md hover:-translate-y-1 hover:border-emerald-200/50 transition-all duration-300 shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 ring-1 ring-white/30"
                         >
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="p-2 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                                    <action.icon className="w-4 h-4" />
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="p-3 rounded-2xl bg-white/60 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300 shadow-sm">
+                                    <action.icon className="w-5 h-5" />
                                 </div>
-                                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-emerald-600" />
+                                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-emerald-500 transition-colors" />
                             </div>
-                            <p className="font-semibold text-gray-900">{action.title}</p>
-                            <p className="text-sm text-gray-500 mt-1">{action.description}</p>
+                            <p className="font-bold text-gray-800 text-lg mb-1 group-hover:text-emerald-900 transition-colors">{action.title}</p>
+                            <p className="text-sm text-gray-500 group-hover:text-gray-600 font-medium">{action.description}</p>
                         </button>
                     ))}
                 </div>
@@ -144,32 +153,35 @@ export function DashboardTab({ stats, loading }: DashboardTabProps) {
 function StatCard({ title, value, icon: Icon, color, trend, isLoading }: any) {
     if (isLoading) {
         return (
-            <GlassCard className="h-36 animate-pulse">
-                <div className="h-full w-full bg-gradient-to-r from-white/60 to-white/30 rounded-2xl" />
+            <GlassCard variant="flat" className="h-40 animate-pulse">
+                <div className="h-full w-full bg-gradient-to-r from-white/40 via-white/20 to-white/40 rounded-3xl" />
             </GlassCard>
         );
     }
 
     return (
         <GlassCard
-            className="relative overflow-hidden p-6 hover:-translate-y-1 transition-all duration-300 group border-0 bg-white/40 backdrop-blur-md"
+            hoverEffect
+            variant="default"
+            className="group p-6 overflow-hidden relative cursor-default"
         >
-            <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-[0.03] group-hover:opacity-[0.08] transition-opacity`} />
-            <div className="relative flex flex-col gap-6">
+            <div className={`absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br ${color} opacity-[0.05] group-hover:opacity-[0.12] rounded-full blur-2xl transition-all duration-500 group-hover:scale-150`} />
+
+            <div className="relative flex flex-col gap-6 z-10">
                 <div className="flex items-center justify-between">
-                    <div className={`p-3 rounded-xl bg-gradient-to-br ${color} shadow-lg shadow-black/5`}>
-                        <Icon className="w-5 h-5 text-white" />
+                    <div className={`p-3.5 rounded-2xl bg-gradient-to-br ${color} shadow-lg shadow-emerald-900/10 ring-1 ring-white/20 group-hover:scale-110 transition-transform duration-300`}>
+                        <Icon className="w-6 h-6 text-white" />
                     </div>
                     {trend && (
-                        <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
-                            <TrendingUp className="w-3 h-3" />
+                        <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full backdrop-blur-sm border border-emerald-200/50">
+                            <TrendingUp className="w-3.5 h-3.5" />
                             {trend}
                         </span>
                     )}
                 </div>
                 <div>
-                    <p className="text-xs uppercase tracking-[0.15em] text-gray-500 font-semibold">{title}</p>
-                    <p className="text-3xl font-bold text-gray-900 mt-1 tracking-tight">{value}</p>
+                    <p className={cmsTokens.heading}>{title}</p>
+                    <p className="text-3xl font-extrabold text-gray-900 mt-2 tracking-tight group-hover:text-emerald-900 transition-colors">{value}</p>
                 </div>
             </div>
         </GlassCard>
