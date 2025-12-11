@@ -16,97 +16,8 @@ export interface Project {
   coordinates?: { lat: number; lng: number };
 }
 
-// Mock data local (fallback)
-const MOCK_PROJECTS: Project[] = [
-  {
-    id: 'proj_1',
-    name: 'Amazônia Verde',
-    description: 'Reflorestamento da Amazônia com espécies nativas, contribuindo para a preservação da maior floresta tropical do mundo.',
-    location: 'Amazônia, Brasil',
-    price: 25,
-    available: 10000,
-    sold: 2500,
-    image: 'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1441974231531-c6227db76b6e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
-    type: 'reforestation',
-    status: 'active',
-    coordinates: { lat: -3.4653, lng: -62.2159 }
-  },
-  {
-    id: 'proj_2',
-    name: 'Mata Atlântica Viva',
-    description: 'Restauração da Mata Atlântica através do plantio de espécies endêmicas e proteção da biodiversidade.',
-    location: 'São Paulo, Brasil',
-    price: 30,
-    available: 5000,
-    sold: 1200,
-    image: 'https://images.unsplash.com/photo-1574263867128-ca4c7707e1c8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1574263867128-ca4c7707e1c8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
-    type: 'restoration',
-    status: 'active',
-    coordinates: { lat: -23.5505, lng: -46.6333 }
-  },
-  {
-    id: 'proj_3',
-    name: 'Cerrado Sustentável',
-    description: 'Conservação e reflorestamento do cerrado brasileiro com foco na preservação dos recursos hídricos.',
-    location: 'Minas Gerais, Brasil',
-    price: 20,
-    available: 8000,
-    sold: 3200,
-    image: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-    images: ['https://images.unsplash.com/photo-1506905925346-21bda4d32df4?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'],
-    type: 'conservation',
-    status: 'active',
-    coordinates: { lat: -19.9167, lng: -43.9345 }
-  },
-  {
-    id: 'proj_4',
-    name: 'Mangue Azul',
-    description: 'Proteção e restauração de manguezais, ecossistemas fundamentais para o equilíbrio marinho.',
-    location: 'Bahia, Brasil',
-    price: 35.00,
-    available: 3000,
-    sold: 800,
-    image: 'https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=800',
-    images: ['https://images.unsplash.com/photo-1569163139394-de4e4f43e4e3?w=800'],
-    type: 'blue_carbon',
-    status: 'active',
-    coordinates: { lat: -12.9718, lng: -38.5014 }
-  },
-  {
-    id: 'proj_5',
-    name: 'Floresta Urbana',
-    description: 'Criação de florestas urbanas para melhorar a qualidade do ar e a qualidade de vida nas cidades.',
-    location: 'Rio de Janeiro, Brasil',
-    price: 40.00,
-    available: 2000,
-    sold: 1500,
-    image: 'https://images.unsplash.com/photo-1519452575417-564c1401ecc0?w=800',
-    images: ['https://images.unsplash.com/photo-1519452575417-564c1401ecc0?w=800'],
-    type: 'urban',
-    status: 'active',
-    coordinates: { lat: -22.9068, lng: -43.1729 }
-  },
-  {
-    id: 'proj_6',
-    name: 'Caatinga Resiliente',
-    description: 'Recuperação da vegetação da caatinga e desenvolvimento de sistemas agroflorestais sustentáveis.',
-    location: 'Pernambuco, Brasil',
-    price: 18.00,
-    available: 12000,
-    sold: 4500,
-    image: 'https://images.unsplash.com/photo-1536431311719-398b6704d4cc?w=800',
-    images: ['https://images.unsplash.com/photo-1536431311719-398b6704d4cc?w=800'],
-    type: 'agroforestry',
-    status: 'active',
-    coordinates: { lat: -8.0476, lng: -34.8770 }
-  }
-];
-
 export function useProjects() {
   const { supabase, isConnected } = useSupabase();
-  const ENABLE_MOCKS = import.meta.env.VITE_ENABLE_PROJECTS_MOCKS === 'true';
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -121,21 +32,21 @@ export function useProjects() {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       // Buscar projetos do Supabase
       const { data, error: supabaseError } = await supabase
         .from('projects')
         .select('*')
         .eq('status', 'active')
         .order('created_at', { ascending: false });
-      
+
       if (supabaseError) {
         console.error('Error fetching projects:', supabaseError);
         setError(supabaseError.message);
-        setProjects(ENABLE_MOCKS ? MOCK_PROJECTS : []);
+        setProjects([]);
         return;
       }
-      
+
       if (data && data.length > 0) {
         // Transform Supabase data to frontend format (current schema)
         const transformedProjects = data.map(project => {
@@ -157,15 +68,15 @@ export function useProjects() {
             coordinates: project.coordinates || { lat: -15.7942, lng: -47.8822 }
           } as Project;
         });
-        
+
         setProjects(transformedProjects);
       } else {
-        setProjects(ENABLE_MOCKS ? MOCK_PROJECTS : []);
+        setProjects([]);
       }
     } catch (err) {
       console.error('Error loading projects:', err);
       setError(err instanceof Error ? err.message : 'Erro ao carregar projetos');
-      setProjects(ENABLE_MOCKS ? MOCK_PROJECTS : []);
+      setProjects([]);
     } finally {
       setIsLoading(false);
     }
@@ -173,17 +84,32 @@ export function useProjects() {
 
   const updateProjectAvailability = async (projectId: string, purchasedArea: number) => {
     try {
+      // First fetch the current project to get latest values
+      const { data: currentProject, error: fetchError } = await supabase
+        .from('projects')
+        .select('available_area, sold_area')
+        .eq('id', projectId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      if (!currentProject) throw new Error('Projeto não encontrado');
+
+      const newAvailable = Math.max(0, (currentProject.available_area || 0) - purchasedArea);
+      const newSold = (currentProject.sold_area || 0) + purchasedArea;
+
       // Update in Supabase
       const { error: updateError } = await supabase
         .from('projects')
         .update({
-          available_area: supabase.raw(`available_area - ${purchasedArea}`),
-          sold_area: supabase.raw(`sold_area + ${purchasedArea}`)
+          available_area: newAvailable,
+          sold_area: newSold
         })
         .eq('id', projectId);
 
       if (updateError) {
         console.error('Failed to update project availability:', updateError);
+        throw updateError;
       }
 
       // Update local state immediately for better UX
@@ -192,8 +118,8 @@ export function useProjects() {
           if (project.id === projectId) {
             return {
               ...project,
-              available: project.available - purchasedArea,
-              sold: project.sold + purchasedArea
+              available: newAvailable,
+              sold: newSold
             };
           }
           return project;
@@ -201,7 +127,7 @@ export function useProjects() {
       });
     } catch (err) {
       console.error('Error updating project availability:', err);
-      // Still update locally for offline capability
+      // Still update locally for offline capability if needed, or handle rollback
       setProjects(prevProjects => {
         return prevProjects.map(project => {
           if (project.id === projectId) {
@@ -288,7 +214,7 @@ export function useProjects() {
   const updateProject = async (id: string, updates: Partial<Project>) => {
     try {
       const updateData: any = {};
-      
+
       if (updates.name) updateData.name = updates.name;
       if (updates.description) updateData.description = updates.description;
       if (updates.location) updateData.location = updates.location;
@@ -314,21 +240,21 @@ export function useProjects() {
 
       if (data) {
         // Update local state
-        setProjects(prev => prev.map(project => 
-          project.id === id 
+        setProjects(prev => prev.map(project =>
+          project.id === id
             ? {
-                ...project,
-                name: data.name,
-                description: data.description,
-                location: data.location,
-                type: data.type,
-                price: data.price_per_m2,
-                available: data.available_area,
-                sold: data.sold_area,
-                image: data.main_image,
-                images: data.gallery_images,
-                status: data.status
-              }
+              ...project,
+              name: data.name,
+              description: data.description,
+              location: data.location,
+              type: data.type,
+              price: data.price_per_m2,
+              available: data.available_area,
+              sold: data.sold_area,
+              image: data.main_image,
+              images: data.gallery_images,
+              status: data.status
+            }
             : project
         ));
         return { data: true, error: null };

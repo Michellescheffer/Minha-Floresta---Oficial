@@ -1,31 +1,36 @@
 import React, { useState } from 'react';
-import { RefreshCw, Save, X } from 'lucide-react';
+import { RefreshCw, Save, X, Plus, MapPin, Tag, DollarSign, Ruler, Image as ImageIcon, Trash2, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../../services/supabaseClient';
 import { ImageUploadWithResizer } from '../ImageUploadWithResizer';
 import { cmsTokens } from './constants';
 import { Project } from './types';
+import { GlassCard } from '../GlassCard';
 
 const FORM_SECTIONS = [
     {
         id: 'basic',
         title: 'Informações Básicas',
         description: 'Título, descrição curta e narrativa completa do projeto.',
+        icon: Tag
     },
     {
         id: 'geo',
         title: 'Localização & Categoria',
         description: 'Defina onde o projeto acontece e o tipo de impacto.',
+        icon: MapPin
     },
     {
         id: 'metrics',
         title: 'Metas e Métricas',
         description: 'Preço por metro quadrado e disponibilidade da área.',
+        icon: Ruler
     },
     {
         id: 'media',
         title: 'Biblioteca Visual',
         description: 'Faça upload das imagens que representam o projeto.',
+        icon: ImageIcon
     },
 ];
 
@@ -224,209 +229,306 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
     };
 
     return (
-        <div className="space-y-8">
-            <div className={`${cmsTokens.glass} p-6 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between`}>
+        <div className="space-y-8 animate-in fade-in duration-500">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <p className={cmsTokens.heading}>Catálogo de projetos</p>
-                    <div className="flex items-baseline gap-3">
-                        <h2 className="text-3xl font-bold text-gray-900">{projects.length}</h2>
-                        <span className="text-sm text-gray-500">projetos publicados</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                        Gerencie cards, disponibilidade e storytelling de cada iniciativa em destaque.
+                    <h2 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-500">
+                        Catálogo de Projetos
+                    </h2>
+                    <p className="text-gray-500 text-sm mt-1">
+                        Gerencie e monitore seus projetos de sustentabilidade
                     </p>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-3">
+
+                <div className="flex gap-3">
                     <button
-                        type="button"
-                        onClick={onReload}
-                        className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:border-emerald-300 transition-colors flex items-center justify-center gap-2"
+                        onClick={() => onReload()}
+                        className="p-2.5 rounded-xl border border-gray-200 text-gray-500 hover:text-emerald-600 hover:border-emerald-200 hover:bg-emerald-50 transition-all duration-300"
+                        title="Atualizar lista"
                     >
-                        <RefreshCw className="w-4 h-4" />
-                        Atualizar lista
+                        <RefreshCw className="w-5 h-5" />
                     </button>
+
                     <button
                         onClick={handleAdd}
-                        className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-semibold shadow-lg shadow-emerald-500/20 hover:-translate-y-0.5 transition"
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all duration-300"
                     >
-                        Novo projeto
+                        <Plus className="w-5 h-5" />
+                        <span>Novo Projeto</span>
                     </button>
                 </div>
             </div>
 
+            {/* Projects Grid */}
             {projects.length === 0 ? (
-                <div className={`${cmsTokens.glass} p-12 text-center text-gray-500`}>
-                    Nenhum projeto cadastrado ainda.
-                </div>
+                <GlassCard className="p-12 text-center flex flex-col items-center justify-center border-dashed border-2 border-gray-200">
+                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                        <ImageIcon className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-medium text-gray-600">Nenhum projeto encontrado</h3>
+                    <p className="text-gray-400 text-sm mt-1 mb-6">Comece adicionando seu primeiro projeto de impacto.</p>
+                    <button
+                        onClick={handleAdd}
+                        className="text-emerald-600 font-medium hover:underline"
+                    >
+                        Adicionar projeto agora
+                    </button>
+                </GlassCard>
             ) : (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                     {projects.map((project: Project) => (
-                        <article
+                        <GlassCard
                             key={project.id}
-                            className={`${cmsTokens.glass} p-5 flex flex-col gap-4`}
+                            className="group flex flex-col overflow-hidden hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 border-0 bg-white/40 backdrop-blur-md"
                         >
-                            <div className="flex gap-4">
-                                <div className="w-28 h-28 rounded-2xl bg-gray-100 overflow-hidden">
-                                    {(project.image || project.image_url) ? (
-                                        <img
-                                            src={project.image || project.image_url}
-                                            alt={project.name}
-                                            className="w-full h-full object-cover"
-                                        />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">
-                                            Sem imagem
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-3 mb-1">
-                                        <h3 className="font-semibold text-lg text-gray-900">{project.name}</h3>
-                                        <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-50 text-emerald-700 capitalize">
-                                            {project.status === 'active' ? 'ativo' : project.status}
-                                        </span>
+                            {/* Image Area */}
+                            <div className="relative h-48 overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent z-10" />
+
+                                <span className={`absolute top-4 right-4 z-20 px-3 py-1 rounded-full text-xs font-medium backdrop-blur-md ${project.status === 'active'
+                                        ? 'bg-emerald-500/20 text-emerald-100 border border-emerald-500/20'
+                                        : 'bg-gray-500/20 text-gray-100 border border-gray-500/20'
+                                    }`}>
+                                    {project.status === 'active' ? 'Ativo' : project.status}
+                                </span>
+
+                                {(project.image || project.image_url) ? (
+                                    <img
+                                        src={project.image || project.image_url}
+                                        alt={project.name}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gray-100 text-gray-400">
+                                        <ImageIcon className="w-8 h-8 opacity-50" />
                                     </div>
-                                    <p className="text-sm text-gray-500">{project.location}</p>
-                                    <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                                        <div className="rounded-xl bg-emerald-50 text-emerald-700 px-3 py-2 font-semibold">
-                                            R$ {project.price_per_sqm}/m²
-                                        </div>
-                                        <div className="rounded-xl bg-gray-100 text-gray-700 px-3 py-2 font-medium">
-                                            {project.available_area}m² disponíveis
-                                        </div>
+                                )}
+                            </div>
+
+                            {/* Content Area */}
+                            <div className="p-5 flex-1 flex flex-col gap-4">
+                                <div>
+                                    <div className="flex items-center gap-2 text-xs text-emerald-600 font-medium mb-1">
+                                        <MapPin className="w-3.5 h-3.5" />
+                                        {project.location}
+                                    </div>
+                                    <h3 className="text-lg font-bold text-gray-900 group-hover:text-emerald-700 transition-colors">
+                                        {project.name}
+                                    </h3>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3 mt-auto">
+                                    <div className="bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100">
+                                        <p className="text-xs text-emerald-600 font-medium mb-0.5">Preço/m²</p>
+                                        <p className="text-sm font-bold text-gray-900">R$ {project.price_per_sqm}</p>
+                                    </div>
+                                    <div className="bg-blue-50/50 p-2.5 rounded-lg border border-blue-100">
+                                        <p className="text-xs text-blue-600 font-medium mb-0.5">Disponível</p>
+                                        <p className="text-sm font-bold text-gray-900">{project.available_area} m²</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                                <span className="text-xs text-gray-500">
+
+                            {/* Actions Footer */}
+                            <div className="p-4 border-t border-gray-100 bg-gray-50/30 flex items-center justify-between">
+                                <span className="text-xs text-gray-400">
                                     Atualizado em {new Date(project.created_at).toLocaleDateString('pt-BR')}
                                 </span>
                                 <div className="flex gap-2">
                                     <button
                                         onClick={() => handleEdit(project)}
-                                        className="px-3 py-2 rounded-xl border border-transparent text-sm text-blue-600 hover:bg-blue-50 transition"
+                                        className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                        title="Editar"
                                     >
-                                        Editar
+                                        <Edit className="w-4 h-4" />
                                     </button>
                                     <button
                                         onClick={() => onDelete(project.id)}
-                                        className="px-3 py-2 rounded-xl border border-transparent text-sm text-red-600 hover:bg-red-50 transition"
+                                        className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                        title="Excluir"
                                     >
-                                        Remover
+                                        <Trash2 className="w-4 h-4" />
                                     </button>
                                 </div>
                             </div>
-                        </article>
+                        </GlassCard>
                     ))}
                 </div>
             )}
 
             {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                        <div className="p-6 border-b border-gray-200">
-                            <div className="flex items-center justify-between">
-                                <h3 className="text-xl font-bold text-gray-900">
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-300">
+                        {/* Modal Header */}
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-emerald-50/50 to-transparent rounded-t-2xl">
+                            <div>
+                                <h3 className="text-xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600">
                                     {editingProject ? 'Editar Projeto' : 'Novo Projeto'}
                                 </h3>
-                                <button
-                                    onClick={() => setShowModal(false)}
-                                    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Preencha as informações abaixo para publicar
+                                </p>
                             </div>
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-6 space-y-8">
-                            {FORM_SECTIONS.map((section) => (
-                                <div key={section.id} className="space-y-4">
-                                    <div className="space-y-1">
-                                        <p className={cmsTokens.heading}>{section.title}</p>
-                                        <p className="text-sm text-gray-500">{section.description}</p>
-                                    </div>
+                        {/* Modal Body */}
+                        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 md:p-8">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Left Column: Basic Info */}
+                                <div className="space-y-8">
+                                    {/* Section 1: Basic */}
+                                    <div className="space-y-5">
+                                        <div className="flex items-center gap-2 text-emerald-600 font-medium pb-2 border-b border-emerald-100">
+                                            <Tag className="w-4 h-4" />
+                                            <span>Informações Básicas</span>
+                                        </div>
 
-                                    {section.id === 'basic' && (
                                         <div className="space-y-4">
-                                            <input
-                                                type="text"
-                                                value={formData.name}
-                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                placeholder="Nome do projeto"
-                                                className={cmsTokens.input}
-                                                required
-                                            />
-                                            <textarea
-                                                value={formData.description}
-                                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                                className={`${cmsTokens.input} min-h-[70px]`}
-                                                placeholder="Descrição breve para o card do site"
-                                                required
-                                            />
                                             <div>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Nome do Projeto</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                    placeholder="Ex: Reflorestamento Amazônia Legal"
+                                                    className={cmsTokens.input}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Resumo</label>
+                                                <textarea
+                                                    value={formData.description}
+                                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                    className={`${cmsTokens.input} min-h-[80px]`}
+                                                    placeholder="Uma breve descrição que aparecerá no card..."
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Narrativa Completa</label>
                                                 <textarea
                                                     value={formData.long_description || ''}
                                                     onChange={(e) => setFormData({ ...formData, long_description: e.target.value })}
                                                     className={`${cmsTokens.input} min-h-[160px]`}
-                                                    placeholder="Conte o storytelling completo, metas e etapas do projeto..."
+                                                    placeholder="Detalhes completos sobre o impacto, metodologia e história do projeto..."
                                                 />
-                                                <p className="text-xs text-gray-500 mt-2">
-                                                    Este texto aparece na página detalhada do projeto.
-                                                </p>
                                             </div>
                                         </div>
-                                    )}
+                                    </div>
 
-                                    {section.id === 'geo' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <input
-                                                type="text"
-                                                value={formData.location}
-                                                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                                placeholder="Ex: Paragominas - PA"
-                                                className={cmsTokens.input}
-                                                required
-                                            />
-                                            <select
-                                                value={formData.type}
-                                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                                className={cmsTokens.input}
-                                            >
-                                                <option value="conservation">Conservação</option>
-                                                <option value="reforestation">Reflorestamento</option>
-                                                <option value="restoration">Restauração</option>
-                                            </select>
+                                    {/* Section 2: Geo */}
+                                    <div className="space-y-5">
+                                        <div className="flex items-center gap-2 text-emerald-600 font-medium pb-2 border-b border-emerald-100">
+                                            <MapPin className="w-4 h-4" />
+                                            <span>Localização</span>
                                         </div>
-                                    )}
 
-                                    {section.id === 'metrics' && (
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            {[
-                                                { id: 'price_per_sqm', label: 'Preço/m²', step: '0.01' },
-                                                { id: 'available_area', label: 'Área disponível (m²)' },
-                                                { id: 'total_area', label: 'Área total (m²)' },
-                                            ].map((field) => (
-                                                <div key={field.id}>
-                                                    <label className={`${cmsTokens.label} mb-2 block`}>{field.label}</label>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Local</label>
+                                                <input
+                                                    type="text"
+                                                    value={formData.location}
+                                                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                                    placeholder="Cidade - UF"
+                                                    className={cmsTokens.input}
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Tipo</label>
+                                                <select
+                                                    value={formData.type}
+                                                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                                    className={cmsTokens.input}
+                                                >
+                                                    <option value="conservation">Conservação</option>
+                                                    <option value="reforestation">Reflorestamento</option>
+                                                    <option value="restoration">Restauração</option>
+                                                    <option value="blue_carbon">Blue Carbon</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Right Column: Metrics & Media */}
+                                <div className="space-y-8">
+                                    {/* Section 3: Metrics */}
+                                    <div className="space-y-5">
+                                        <div className="flex items-center gap-2 text-emerald-600 font-medium pb-2 border-b border-emerald-100">
+                                            <Ruler className="w-4 h-4" />
+                                            <span>Métricas de Venda</span>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="col-span-2">
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Preço por m² (R$)</label>
+                                                <div className="relative">
+                                                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                                                     <input
                                                         type="number"
-                                                        step={field.step}
-                                                        value={(formData as any)[field.id]}
+                                                        step="0.01"
+                                                        value={formData.price_per_sqm}
                                                         onChange={(e) => setFormData({
                                                             ...formData,
-                                                            [field.id]: e.target.value ? Number(e.target.value) : 0
+                                                            price_per_sqm: e.target.value ? Number(e.target.value) : 0
                                                         })}
-                                                        className={cmsTokens.input}
+                                                        className={`${cmsTokens.input} pl-9`}
                                                         required
                                                     />
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                            </div>
 
-                                    {section.id === 'media' && (
-                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Área Total</label>
+                                                <input
+                                                    type="number"
+                                                    value={formData.total_area}
+                                                    onChange={(e) => setFormData({
+                                                        ...formData,
+                                                        total_area: e.target.value ? Number(e.target.value) : 0
+                                                    })}
+                                                    className={cmsTokens.input}
+                                                    required
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5 block">Disponível</label>
+                                                <input
+                                                    type="number"
+                                                    value={formData.available_area}
+                                                    onChange={(e) => setFormData({
+                                                        ...formData,
+                                                        available_area: e.target.value ? Number(e.target.value) : 0
+                                                    })}
+                                                    className={cmsTokens.input}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Section 4: Media */}
+                                    <div className="space-y-5">
+                                        <div className="flex items-center gap-2 text-emerald-600 font-medium pb-2 border-b border-emerald-100">
+                                            <ImageIcon className="w-4 h-4" />
+                                            <span>Galeria de Imagens</span>
+                                        </div>
+
+                                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 border-dashed">
                                             <ImageUploadWithResizer
                                                 images={formData.gallery_images}
                                                 onChange={(images) => setFormData((prev) => ({
@@ -437,32 +539,30 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                                                 maxImages={5}
                                                 maxFileSize={5}
                                             />
-                                            <p className="text-xs text-gray-500">
-                                                Use imagens com pelo menos 1600px de largura para manter a qualidade no site.
-                                            </p>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-                            ))}
-
-                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="px-4 py-2 rounded-xl border border-gray-200 text-gray-600 hover:border-emerald-300 transition"
-                                >
-                                    Cancelar
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={saving}
-                                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-500 text-white font-semibold shadow-lg transition disabled:opacity-60"
-                                >
-                                    <Save className="w-4 h-4" />
-                                    {saving ? 'Salvando...' : editingProject ? 'Atualizar projeto' : 'Publicar projeto'}
-                                </button>
                             </div>
                         </form>
+
+                        {/* Modal Footer */}
+                        <div className="p-6 border-t border-gray-100 bg-gray-50 flex items-center justify-end gap-3 rounded-b-2xl">
+                            <button
+                                type="button"
+                                onClick={() => setShowModal(false)}
+                                className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-100 transition font-medium"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleSubmit}
+                                disabled={saving}
+                                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                <Save className="w-4 h-4" />
+                                {saving ? 'Salvando...' : editingProject ? 'Salvar Alterações' : 'Criar Projeto'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -3,9 +3,11 @@ import { Search, Download, CheckCircle, Calendar, MapPin, Award, Copy, QrCode, A
 import { GlassCard } from '../components/GlassCard';
 import { useCertificates, type Certificate } from '../hooks/useCertificates';
 import { useAuth } from '../contexts/AuthContext';
+import { useSupabase } from '../contexts/SupabaseContext';
 import { ImageWithFallback } from '../components/figma/ImageWithFallback';
 import { Badge } from '../components/ui/badge';
 import QRCodeLib from 'qrcode';
+import { toast } from 'sonner';
 
 export function VerificarCertificadoPage() {
   const [certificateCode, setCertificateCode] = useState('');
@@ -16,6 +18,7 @@ export function VerificarCertificadoPage() {
   const [transactionId, setTransactionId] = useState<string>('');
   const { verifyCertificate } = useCertificates();
   const { user } = useAuth();
+  const { supabase } = useSupabase();
 
   const handleSearch = async () => {
     if (!certificateCode.trim()) {
@@ -31,71 +34,24 @@ export function VerificarCertificadoPage() {
       const normalized = certificateCode.replace(/\s+/g, '').toUpperCase();
       setCertificateCode(normalized);
       const foundCertificate = await verifyCertificate(normalized);
-      
+
       if (foundCertificate) {
         setCertificate(foundCertificate);
+
+        // Extract transaction ID if present in ID
+        if (foundCertificate.id?.includes('synth-')) {
+          const txId = foundCertificate.id.replace('synth-', '').split('-')[0];
+          setTransactionId(txId);
+        } else {
+          setTransactionId(foundCertificate.id.substring(0, 8));
+        }
+
         setError('');
       } else {
-        // Fallback: try to find in user-dashboard
-        const emailToUse = user?.email || 'destaquewmarketing@gmail.com';
-        try {
-          const dashRes = await fetch(`https://ngnybwsovjignsflrhyr.supabase.co/functions/v1/user-dashboard?email=${encodeURIComponent(emailToUse)}`, {
-            headers: { 'Authorization': 'Bearer ***REMOVED***' }
-          });
-          if (dashRes.ok) {
-            const dashData = await dashRes.json();
-            const matchingCert = dashData.certificates?.find((c: any) => {
-              const certNum = String(c.certificate_number || '')
-                .trim()
-                .toUpperCase()
-                .replace(/^PENDENTE-PI_/i, '')
-                .replace(/^PI_/i, '');
-              const searchNum = normalized
-                .trim()
-                .toUpperCase()
-                .replace(/^PENDENTE-PI_/i, '')
-                .replace(/^PI_/i, '');
-              return certNum === searchNum;
-            });
-            if (matchingCert) {
-              // Calculate validity (30 years from issue date)
-              const issueDate = matchingCert.issued_at || new Date().toISOString();
-              const validUntil = new Date(new Date(issueDate).getTime() + 30 * 365 * 24 * 60 * 60 * 1000)
-                .toISOString()
-                .split('T')[0];
-              
-              // Extract transaction ID from certificate ID
-              const txId = matchingCert.id?.replace('synth-', '').split('-')[0] || 'N/A';
-              setTransactionId(txId);
-              
-              // Calculate price: area * R$22/m²
-              const calculatedPrice = (matchingCert.area_sqm || 0) * 22;
-              
-              const syntheticCert: Certificate = {
-                id: 'synth-temp',
-                projectId: '',
-                projectName: matchingCert.project_name || 'Projeto',
-                buyerName: user?.name || '',
-                buyerEmail: emailToUse,
-                area: matchingCert.area_sqm || 0,
-                price: calculatedPrice,
-                issueDate: issueDate.split('T')[0],
-                status: 'active',
-                certificateNumber: normalized,
-                qrCode: '',
-                co2Offset: Math.round((matchingCert.area_sqm || 0) * 22),
-                validUntil: validUntil,
-                pdfUrl: matchingCert.pdf_url || undefined,
-              };
-              setCertificate(syntheticCert);
-              setError('');
-              return;
-            }
-          }
-        } catch {}
         setError('Certificado não encontrado. Verifique o código e tente novamente.');
       }
     } catch (error) {
+      console.error(error);
       setError('Erro ao verificar certificado. Tente novamente.');
     } finally {
       setVerifying(false);
@@ -109,6 +65,8 @@ export function VerificarCertificadoPage() {
     const match = hash.match(/numero=([^&]+)/i);
     if (!match) return;
     const code = decodeURIComponent(match[1]).replace(/\s+/g, '').toUpperCase();
+
+    // Self-invoking async function to handle verification
     (async () => {
       setVerifying(true);
       setError('');
@@ -117,77 +75,28 @@ export function VerificarCertificadoPage() {
         const found = await verifyCertificate(code);
         if (found) {
           setCertificate(found);
+          if (found.id?.includes('synth-')) {
+            const txId = found.id.replace('synth-', '').split('-')[0];
+            setTransactionId(txId);
+          } else {
+            setTransactionId(found.id.substring(0, 8));
+          }
         } else {
-          // Fallback: try to find in user-dashboard
-          const emailToUse = user?.email || 'destaquewmarketing@gmail.com';
-          try {
-            const dashRes = await fetch(`https://ngnybwsovjignsflrhyr.supabase.co/functions/v1/user-dashboard?email=${encodeURIComponent(emailToUse)}`, {
-              headers: { 'Authorization': 'Bearer ***REMOVED***' }
-            });
-            if (dashRes.ok) {
-              const dashData = await dashRes.json();
-              const matchingCert = dashData.certificates?.find((c: any) => {
-                const certNum = String(c.certificate_number || '')
-                  .trim()
-                  .toUpperCase()
-                  .replace(/^PENDENTE-PI_/i, '')
-                  .replace(/^PI_/i, '');
-                const searchNum = code
-                  .trim()
-                  .toUpperCase()
-                  .replace(/^PENDENTE-PI_/i, '')
-                  .replace(/^PI_/i, '');
-                return certNum === searchNum;
-              });
-              if (matchingCert) {
-                // Calculate validity (30 years from issue date)
-                const issueDate = matchingCert.issued_at || new Date().toISOString();
-                const validUntil = new Date(new Date(issueDate).getTime() + 30 * 365 * 24 * 60 * 60 * 1000)
-                  .toISOString()
-                  .split('T')[0];
-                
-                // Extract transaction ID from certificate ID
-                const txId = matchingCert.id?.replace('synth-', '').split('-')[0] || 'N/A';
-                setTransactionId(txId);
-                
-                // Calculate price: area * R$22/m²
-                const calculatedPrice = (matchingCert.area_sqm || 0) * 22;
-                
-                const syntheticCert: Certificate = {
-                  id: 'synth-temp',
-                  projectId: '',
-                  projectName: matchingCert.project_name || 'Projeto',
-                  buyerName: user?.name || '',
-                  buyerEmail: emailToUse,
-                  area: matchingCert.area_sqm || 0,
-                  price: calculatedPrice,
-                  issueDate: issueDate.split('T')[0],
-                  status: 'active',
-                  certificateNumber: code,
-                  qrCode: '',
-                  co2Offset: Math.round((matchingCert.area_sqm || 0) * 22),
-                  validUntil: validUntil,
-                  pdfUrl: matchingCert.pdf_url || undefined,
-                };
-                setCertificate(syntheticCert);
-                return;
-              }
-            }
-          } catch {}
           setError('Certificado não encontrado. Verifique o código e tente novamente.');
         }
-      } catch (_) {
+      } catch (err) {
+        console.error(err);
         setError('Erro ao verificar certificado. Tente novamente.');
       } finally {
         setVerifying(false);
       }
     })();
-  }, []);
+  }, []); // Run once on mount
 
   // Generate QR Code when certificate is loaded
   useEffect(() => {
     if (certificate?.certificateNumber) {
-      const verifyUrl = `https://minha-floresta.vercel.app/#verificar-certificado?numero=${encodeURIComponent(certificate.certificateNumber)}`;
+      const verifyUrl = `${window.location.origin}/#verificar-certificado?numero=${encodeURIComponent(certificate.certificateNumber)}`;
       QRCodeLib.toDataURL(verifyUrl, {
         width: 200,
         margin: 1,
@@ -207,14 +116,14 @@ export function VerificarCertificadoPage() {
     if (certificate) {
       const code = certificate.certificateNumber || certificateCode;
       navigator.clipboard.writeText(code);
-      alert('Código copiado para a área de transferência!');
+      toast.success('Código copiado para a área de transferência!');
     }
   };
 
   const handleDownload = async () => {
     if (!certificate) return;
     const code = certificate.certificateNumber || certificateCode;
-    
+
     // Se existir URL do PDF no backend, baixar diretamente
     if (certificate.pdfUrl) {
       const link = document.createElement('a');
@@ -223,44 +132,37 @@ export function VerificarCertificadoPage() {
       link.click();
       return;
     }
-    
+
     // Se for certificado sintético, não pode gerar PDF ainda
-    if (certificate.id === 'synth-temp') {
-      alert('Certificado em processamento. O PDF oficial estará disponível em breve.');
+    if (certificate.id === 'synth-temp' || certificate.isSynthetic) {
+      toast.info('Certificado em processamento. O PDF oficial estará disponível em breve.');
       return;
     }
-    
+
     // Gerar PDF oficial via backend
     try {
       setVerifying(true);
-      const response = await fetch('https://ngnybwsovjignsflrhyr.supabase.co/functions/v1/certificate-generate', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ***REMOVED***',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ certificate_id: certificate.id }),
+      const { data, error } = await supabase.functions.invoke('certificate-generate', {
+        body: { certificate_id: certificate.id }
       });
-      
-      if (!response.ok) {
-        throw new Error('Falha ao gerar PDF');
-      }
-      
-      const data = await response.json();
-      if (data.pdf_url) {
+
+      if (error) throw error;
+
+      if (data && data.pdf_url) {
         // Baixar o PDF gerado
         const link = document.createElement('a');
         link.href = data.pdf_url;
         link.download = `certificado-${code}.pdf`;
         link.click();
-        
-        // Atualizar o certificado com a URL do PDF
+
+        // Atualizar o certificado com a URL do PDF (optimistic update)
         setCertificate({ ...certificate, pdfUrl: data.pdf_url });
+        toast.success('PDF gerado com sucesso!');
       } else {
-        throw new Error('PDF não foi gerado');
+        throw new Error('PDF não foi retornado pelo servidor');
       }
     } catch (error) {
-      alert('Erro ao gerar PDF. Por favor, tente novamente mais tarde.');
+      toast.error('Erro ao gerar PDF. Por favor, tente novamente mais tarde.');
       console.error('Error generating PDF:', error);
     } finally {
       setVerifying(false);
@@ -308,7 +210,7 @@ export function VerificarCertificadoPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-br from-green-50/90 via-emerald-50/90 to-teal-50/90"></div>
       </div>
-      
+
       <div className="relative z-10 max-w-6xl mx-auto px-6">
         {/* Header */}
         <div className="text-center mb-12">
@@ -316,23 +218,23 @@ export function VerificarCertificadoPage() {
             <QrCode className="w-4 h-4 text-green-600" />
             <span className="text-green-700">Verificar Certificado</span>
           </div>
-          
+
           <h1 className="text-5xl md:text-6xl font-medium text-gray-800 mb-6">
             Verifique seu
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600">
               Certificado Digital
             </span>
           </h1>
-          
+
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Insira o código enviado por e-mail para verificar a autenticidade do seu 
+            Insira o código enviado por e-mail para verificar a autenticidade do seu
             certificado de compensação de carbono.
           </p>
-          
+
           {/* Indicador de banco de dados */}
           <div className="flex justify-center mt-6">
-            <Badge 
-              variant="secondary" 
+            <Badge
+              variant="secondary"
               className="bg-blue-100 text-blue-800 px-3 py-1"
             >
               <Database className="w-3 h-3 mr-1" />
@@ -345,7 +247,7 @@ export function VerificarCertificadoPage() {
         <GlassCard className="p-8 mb-8">
           <div className="max-w-2xl mx-auto">
             <h3 className="text-gray-800 mb-6 text-center">Código do Certificado</h3>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 mb-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
@@ -358,7 +260,7 @@ export function VerificarCertificadoPage() {
                   className="w-full pl-10 pr-4 py-4 bg-white/50 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500/20 text-lg font-mono"
                 />
               </div>
-              
+
               <button
                 onClick={handleSearch}
                 disabled={verifying}
@@ -395,7 +297,7 @@ export function VerificarCertificadoPage() {
                     <p className="text-gray-600">Este certificado é válido e autêntico</p>
                   </div>
                 </div>
-                
+
                 <div className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(certificate.status || 'active')}`}>
                   {getStatusText(certificate.status || 'active')}
                 </div>
@@ -416,7 +318,7 @@ export function VerificarCertificadoPage() {
                       <span className="text-sm">Copiar código</span>
                     </button>
                   </div>
-                  
+
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
@@ -425,21 +327,21 @@ export function VerificarCertificadoPage() {
                           {certificate.certificateNumber}
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className="text-gray-600 text-sm">ID da Transação</label>
                         <div className="text-gray-800 font-mono bg-gray-50/50 p-3 rounded-lg text-xs break-all">
                           {transactionId || 'N/A'}
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className="text-gray-600 text-sm">Beneficiário</label>
                         <div className="text-gray-800 bg-gray-50/50 p-3 rounded-lg">
                           {certificate.buyerName || 'N/A'}
                         </div>
                       </div>
-                      
+
                       <div>
                         <label className="text-gray-600 text-sm">E-mail</label>
                         <div className="text-gray-800 bg-gray-50/50 p-3 rounded-lg">
@@ -447,7 +349,7 @@ export function VerificarCertificadoPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="text-gray-600 text-sm">Projeto</label>
                       <div className="text-gray-800 bg-gray-50/50 p-3 rounded-lg flex items-center space-x-2">
@@ -460,7 +362,7 @@ export function VerificarCertificadoPage() {
 
                 <GlassCard className="p-8">
                   <h3 className="text-gray-800 mb-6">Compensação Ambiental</h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="text-center p-6 bg-green-50/50 rounded-lg">
                       <div className="text-3xl font-medium text-green-600 mb-2">
@@ -468,14 +370,14 @@ export function VerificarCertificadoPage() {
                       </div>
                       <div className="text-gray-600">metros quadrados</div>
                     </div>
-                    
+
                     <div className="text-center p-6 bg-blue-50/50 rounded-lg">
                       <div className="text-3xl font-medium text-blue-600 mb-2">
                         {(certificate.co2Offset || 0).toLocaleString()}
                       </div>
                       <div className="text-gray-600">kg CO₂ compensados</div>
                     </div>
-                    
+
                     <div className="text-center p-6 bg-emerald-50/50 rounded-lg">
                       <div className="text-3xl font-medium text-emerald-600 mb-2">
                         R$ {(certificate.price || 0).toLocaleString()}
@@ -487,7 +389,7 @@ export function VerificarCertificadoPage() {
 
                 <GlassCard className="p-8">
                   <h3 className="text-gray-800 mb-6">Informações de Validade</h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex items-center space-x-3">
                       <Calendar className="w-5 h-5 text-green-600" />
@@ -496,7 +398,7 @@ export function VerificarCertificadoPage() {
                         <div className="text-gray-800">{formatDate(certificate.issueDate)}</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center space-x-3">
                       <Calendar className="w-5 h-5 text-blue-600" />
                       <div>
@@ -536,11 +438,10 @@ export function VerificarCertificadoPage() {
                     <button
                       onClick={handleDownload}
                       disabled={verifying || certificate?.id === 'synth-temp'}
-                      className={`w-full py-3 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 ${
-                        verifying || certificate?.id === 'synth-temp'
+                      className={`w-full py-3 rounded-lg transition-all duration-300 flex items-center justify-center space-x-2 ${verifying || certificate?.id === 'synth-temp'
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600'
-                      }`}
+                        }`}
                     >
                       {verifying ? (
                         <>
@@ -554,7 +455,7 @@ export function VerificarCertificadoPage() {
                         </>
                       )}
                     </button>
-                    
+
                     <button
                       onClick={handleCopyCode}
                       className="w-full border-2 border-green-500/30 text-green-600 py-3 rounded-lg hover:bg-green-500/10 transition-all duration-300 flex items-center justify-center space-x-2"
@@ -579,7 +480,7 @@ export function VerificarCertificadoPage() {
                     <h4 className="text-gray-800">Certificação</h4>
                   </div>
                   <p className="text-gray-600 text-sm">
-                    Este certificado é emitido em conformidade com padrões internacionais 
+                    Este certificado é emitido em conformidade com padrões internacionais
                     de compensação de carbono e possui validade legal.
                   </p>
                 </GlassCard>
@@ -599,7 +500,7 @@ export function VerificarCertificadoPage() {
               <h4 className="text-gray-800 mb-2">Não encontrou seu código?</h4>
               <p className="text-gray-600 text-sm">Verifique sua caixa de spam ou entre em contato conosco</p>
             </div>
-            
+
             <div>
               <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
                 <Download className="w-6 h-6 text-blue-600" />
@@ -607,7 +508,7 @@ export function VerificarCertificadoPage() {
               <h4 className="text-gray-800 mb-2">Problemas no download?</h4>
               <p className="text-gray-600 text-sm">Verifique seu navegador ou tente novamente mais tarde</p>
             </div>
-            
+
             <div>
               <div className="w-12 h-12 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
                 <QrCode className="w-6 h-6 text-emerald-600" />
@@ -616,7 +517,7 @@ export function VerificarCertificadoPage() {
               <p className="text-gray-600 text-sm">Entre em contato com nosso suporte técnico</p>
             </div>
           </div>
-          
+
           <div className="text-center mt-8">
             <button className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-8 py-3 rounded-lg hover:from-green-600 hover:to-emerald-600 transition-all duration-300">
               Falar com Suporte
