@@ -8,17 +8,17 @@ export function Footer() {
   return (
     <footer className="relative py-16 px-6">
       <div className="absolute inset-0 bg-gradient-to-t from-gray-900/95 to-gray-800/95"></div>
-      
+
       <div className="relative z-10 max-w-6xl mx-auto">
-        <GlassCard className="p-8 md:p-12">
+        <GlassCard className="p-8 md:p-12" variant="dark-glass" intensity="medium">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {/* Company Info */}
             <div className="lg:col-span-2">
               <div className="flex items-center space-x-3 mb-6">
                 <div className="w-24 h-24 flex items-center justify-center">
-                  <img 
-                    src={logoImage} 
-                    alt="Minha Floresta" 
+                  <img
+                    src={logoImage}
+                    alt="Minha Floresta"
                     className="w-full h-full object-contain brightness-0 invert"
                   />
                 </div>
@@ -27,12 +27,12 @@ export function Footer() {
                   <span className="text-sm text-green-300 leading-tight">CONSERVAÇÕES</span>
                 </div>
               </div>
-              
+
               <p className="text-gray-300 leading-relaxed mb-6">
-                Conectamos pessoas e empresas com projetos de reflorestamento verificados, 
+                Conectamos pessoas e empresas com projetos de reflorestamento verificados,
                 democratizando o acesso à compensação de carbono e contribuindo para um futuro mais sustentável.
               </p>
-              
+
               <div className="flex space-x-4">
                 <a href="#" className="w-10 h-10 bg-green-500/20 rounded-full flex items-center justify-center text-green-400 hover:bg-green-500/30 transition-colors">
                   <Facebook className="w-5 h-5" />
@@ -48,7 +48,7 @@ export function Footer() {
                 </a>
               </div>
             </div>
-            
+
             {/* Quick Links */}
             <div>
               <h3 className="text-white mb-4">Links Rápidos</h3>
@@ -76,7 +76,7 @@ export function Footer() {
                 </li>
               </ul>
             </div>
-            
+
             {/* Contact Info */}
             <div>
               <h3 className="text-white mb-4">Contato</h3>
@@ -96,7 +96,7 @@ export function Footer() {
               </div>
             </div>
           </div>
-          
+
           <div className="border-t border-white/20 mt-8 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 text-sm">
               © 2025 Minha Floresta Conservações. Todos os direitos reservados.
@@ -105,14 +105,14 @@ export function Footer() {
               <a href="#" className="text-gray-400 hover:text-green-400 text-sm transition-colors">Política de Privacidade</a>
               <a href="#" className="text-gray-400 hover:text-green-400 text-sm transition-colors">Termos de Uso</a>
               <a href="#" className="text-gray-400 hover:text-green-400 text-sm transition-colors">Cookies</a>
-              <a 
+              <a
                 href="#dashboard"
                 onClick={(e) => { e.preventDefault(); setCurrentPage('dashboard'); }}
                 className="text-gray-400 hover:text-green-400 text-sm transition-colors"
               >
                 Dashboard
               </a>
-              <a 
+              <a
                 href="#cms"
                 onClick={(e) => { e.preventDefault(); setCurrentPage('cms'); }}
                 className="text-gray-400 hover:text-green-400 text-sm transition-colors"

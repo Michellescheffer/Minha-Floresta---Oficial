@@ -42,7 +42,7 @@ export function CertificatesTab({ certificates }: CertificatesTabProps) {
                     </p>
                 </GlassCard>
             ) : (
-                <GlassCard variant="default" className="overflow-hidden border-white/50 bg-white/40 backdrop-blur-xl">
+                <GlassCard variant="solid" className="overflow-hidden border-white/50 bg-white/40 backdrop-blur-xl">
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>

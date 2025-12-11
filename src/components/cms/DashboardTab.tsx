@@ -88,7 +88,7 @@ export function DashboardTab({ stats, loading }: DashboardTabProps) {
             </div>
 
             <GlassCard
-                variant="featured"
+                variant="solid"
                 intensity="high"
                 className="p-8 grid gap-8 xl:grid-cols-[2fr,3fr] border-white/50"
             >
@@ -162,7 +162,7 @@ function StatCard({ title, value, icon: Icon, color, trend, isLoading }: any) {
     return (
         <GlassCard
             hoverEffect
-            variant="default"
+            variant="solid"
             className="group p-6 overflow-hidden relative cursor-default"
         >
             <div className={`absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br ${color} opacity-[0.05] group-hover:opacity-[0.12] rounded-full blur-2xl transition-all duration-500 group-hover:scale-150`} />

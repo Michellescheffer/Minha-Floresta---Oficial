@@ -257,7 +257,7 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                     {projects.map((project: Project) => (
                         <GlassCard
                             key={project.id}
-                            variant="default"
+                            variant="solid"
                             hoverEffect
                             className="group flex flex-col overflow-hidden"
                         >
