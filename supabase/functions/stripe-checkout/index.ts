@@ -7,10 +7,9 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import Stripe from 'https://esm.sh/stripe@14.5.0';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature, sentry-trace, baggage',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req: Request) => {
@@ -23,7 +22,7 @@ serve(async (req: Request) => {
     // ========================================================================
     // 1. INICIALIZAÇÃO
     // ========================================================================
-    
+
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     });
@@ -101,7 +100,7 @@ serve(async (req: Request) => {
 
           if (typeof project.available_m2 === 'number' && project.available_m2 < item.quantity) {
             return new Response(
-              JSON.stringify({ 
+              JSON.stringify({
                 error: `Insufficient stock for project ${item.project_id}`,
                 available: project.available_m2,
                 requested: item.quantity
@@ -348,7 +347,7 @@ serve(async (req: Request) => {
 
   } catch (error) {
     console.error('Stripe Checkout Error:', error);
-    
+
     return new Response(
       JSON.stringify({
         error: 'Internal server error',
