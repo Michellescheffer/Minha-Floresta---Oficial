@@ -19,12 +19,12 @@ interface Donation {
   created_at: string;
 }
 
-interface DonationsTabProps {
+interface SocialProjectsTabProps {
   donations: Donation[];
   onReload: () => void;
 }
 
-export function DonationsTab({ donations, onReload }: DonationsTabProps) {
+export function SocialProjectsTab({ donations, onReload }: SocialProjectsTabProps) {
   const [showModal, setShowModal] = useState(false);
   const [editingDonation, setEditingDonation] = useState<Donation | null>(null);
   const [saving, setSaving] = useState(false);
@@ -173,14 +173,14 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
           .eq('id', editingDonation.id);
 
         if (error) throw error;
-        toast.success('Projeto de doação atualizado!');
+        toast.success('Projeto social atualizado!');
       } else {
         const { error } = await supabase
           .from('donation_projects')
           .insert([payload]);
 
         if (error) throw error;
-        toast.success('Projeto de doação criado!');
+        toast.success('Projeto social criado!');
       }
 
       setShowModal(false);
@@ -189,14 +189,14 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
       onReload();
     } catch (error: any) {
       console.error('Error saving donation:', error);
-      toast.error('Erro ao salvar projeto de doação');
+      toast.error('Erro ao salvar projeto social');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este projeto de doação?')) return;
+    if (!confirm('Tem certeza que deseja excluir este projeto social?')) return;
 
     try {
       const { error } = await supabase
@@ -205,7 +205,7 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
         .eq('id', id);
 
       if (error) throw error;
-      toast.success('Projeto de doação excluído!');
+      toast.success('Projeto social excluído!');
       onReload();
     } catch (error) {
       console.error('Error deleting donation:', error);
@@ -220,13 +220,13 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-gray-900">Projetos de Doação ({donations.length})</h2>
+        <h2 className="text-xl font-bold text-gray-900">Projetos Sociais ({donations.length})</h2>
         <button
           onClick={handleAdd}
           className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-lg transition-all"
         >
           <Plus className="w-4 h-4" />
-          Novo Projeto
+          Novo Projeto Social
         </button>
       </div>
 
@@ -235,7 +235,7 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
         {donations.length === 0 ? (
           <GlassCard variant="solid" className="col-span-2 p-12 text-center">
             <Activity className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-            <p className="text-gray-500">Nenhum projeto de doação cadastrado</p>
+            <p className="text-gray-500">Nenhum projeto social cadastrado</p>
           </GlassCard>
         ) : (
           donations.map((donation) => (
@@ -259,8 +259,8 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
                   <p className="text-sm text-gray-600 mt-1">{donation.description}</p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold ${donation.status === 'active' ? 'bg-green-100 text-green-700' :
-                    donation.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-700'
+                  donation.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                    'bg-gray-100 text-gray-700'
                   }`}>
                   {donation.status === 'active' ? 'Ativo' :
                     donation.status === 'completed' ? 'Concluído' : 'Pausado'}
@@ -313,7 +313,7 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
               <h3 className="text-xl font-bold text-gray-900">
-                {editingDonation ? 'Editar Projeto' : 'Novo Projeto de Doação'}
+                {editingDonation ? 'Editar Projeto Social' : 'Novo Projeto Social'}
               </h3>
               <button
                 onClick={() => setShowModal(false)}

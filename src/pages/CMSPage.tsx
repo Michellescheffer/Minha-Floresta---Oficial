@@ -14,7 +14,7 @@ import { ImagesTab } from '../components/cms/ImagesTab';
 
 // Existing Components
 import { CustomersTab } from '../components/CustomersTab';
-import { DonationsTab } from '../components/DonationsTab';
+import { SocialProjectsTab } from '../components/SocialProjectsTab';
 import { SettingsTab } from '../components/SettingsTab';
 import { AnalyticsTab } from '../components/AnalyticsTab';
 
@@ -340,7 +340,7 @@ export default function CMSPage() {
             )}
 
             {activeTab === 'donations' && (
-              <DonationsTab
+              <SocialProjectsTab
                 donations={donations}
                 onReload={loadDonations}
               />

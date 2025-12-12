@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Calendar, Download, Filter, TrendingUp, DollarSign,
+  Filter, DollarSign,
   Users, Award, ShoppingCart, FileSpreadsheet, RefreshCw
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
@@ -282,41 +282,69 @@ export function AnalyticsTab() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 p-6 shadow-xl text-white">
-          <div className="flex items-center justify-between mb-2">
-            <DollarSign className="w-8 h-8 opacity-80" />
-            <span className="text-sm opacity-80">Total</span>
+        <GlassCard variant="solid" className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-green-50 rounded-lg">
+              <DollarSign className="w-6 h-6 text-green-600" />
+            </div>
           </div>
-          <p className="text-3xl font-bold">R$ {stats.totalRevenue.toLocaleString('pt-BR')}</p>
-          <p className="text-sm opacity-80 mt-1">Receita Total</p>
-        </div>
+          <p className="text-3xl font-bold text-gray-900">R$ {stats.totalRevenue.toLocaleString('pt-BR')}</p>
+          <p className="text-sm text-gray-500 mt-1">Receita Total</p>
+        </GlassCard>
 
-        <div className="rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-600 p-6 shadow-xl text-white">
-          <div className="flex items-center justify-between mb-2">
-            <ShoppingCart className="w-8 h-8 opacity-80" />
-            <span className="text-sm opacity-80">Vendas</span>
+        <GlassCard variant="solid" className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <ShoppingCart className="w-6 h-6 text-blue-600" />
+            </div>
           </div>
-          <p className="text-3xl font-bold">{stats.totalSales}</p>
-          <p className="text-sm opacity-80 mt-1">Ticket Médio: R$ {stats.avgTicket.toFixed(2)}</p>
-        </div>
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalSales}</p>
+              <p className="text-sm text-gray-500 mt-1">Vendas Totais</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-400">Ticket Médio</p>
+              <p className="text-sm font-medium text-gray-900">R$ {stats.avgTicket.toFixed(2)}</p>
+            </div>
+          </div>
+        </GlassCard>
 
-        <div className="rounded-2xl bg-gradient-to-br from-purple-500 to-pink-600 p-6 shadow-xl text-white">
-          <div className="flex items-center justify-between mb-2">
-            <Award className="w-8 h-8 opacity-80" />
-            <span className="text-sm opacity-80">Certificados</span>
+        <GlassCard variant="solid" className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-purple-50 rounded-lg">
+              <Award className="w-6 h-6 text-purple-600" />
+            </div>
           </div>
-          <p className="text-3xl font-bold">{stats.totalCertificates}</p>
-          <p className="text-sm opacity-80 mt-1">{stats.totalM2.toLocaleString('pt-BR')} m²</p>
-        </div>
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalCertificates}</p>
+              <p className="text-sm text-gray-500 mt-1">Certificados Emitidos</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-400">Área Preservada</p>
+              <p className="text-sm font-medium text-gray-900">{stats.totalM2.toLocaleString('pt-BR')} m²</p>
+            </div>
+          </div>
+        </GlassCard>
 
-        <div className="rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 p-6 shadow-xl text-white">
-          <div className="flex items-center justify-between mb-2">
-            <Users className="w-8 h-8 opacity-80" />
-            <span className="text-sm opacity-80">Clientes</span>
+        <GlassCard variant="solid" className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-orange-50 rounded-lg">
+              <Users className="w-6 h-6 text-orange-600" />
+            </div>
           </div>
-          <p className="text-3xl font-bold">{stats.totalCustomers}</p>
-          <p className="text-sm opacity-80 mt-1">{(stats.totalCO2 / 1000).toFixed(2)} ton CO₂</p>
-        </div>
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-3xl font-bold text-gray-900">{stats.totalCustomers}</p>
+              <p className="text-sm text-gray-500 mt-1">Usuários Ativos</p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-gray-400">Carbono Compensado</p>
+              <p className="text-sm font-medium text-gray-900">{(stats.totalCO2 / 1000).toFixed(2)} ton</p>
+            </div>
+          </div>
+        </GlassCard>
       </div>
 
       {/* Charts */}
@@ -434,8 +462,8 @@ export function AnalyticsTab() {
                   <td className="px-6 py-4 text-sm text-gray-900">{sale.total_m2} m²</td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-semibold ${sale.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
-                        sale.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
+                      sale.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-red-100 text-red-700'
                       }`}>
                       {sale.payment_status === 'paid' ? 'Pago' :
                         sale.payment_status === 'pending' ? 'Pendente' : 'Cancelado'}
