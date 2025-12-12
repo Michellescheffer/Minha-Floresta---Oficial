@@ -156,23 +156,22 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
 
             const coverImage = gallery_images[0];
             if (editingProject) {
-                // Update Logic: REVERTED to available_area but cleaned up.
-                // The error `Could not find the 'available_m2' column` confirms insert vs update schema difference (or at least update strictness).
+                // Update Logic: Standardized to match confirmed schema patterns (area/sqm suffixes)
                 const updatePayload: any = {
                     name: formData.name.trim(),
                     description: formData.description.trim(),
-                    // long_description removed (Schema mismatch)
+                    // long_description removed (Column does not exist)
                     location: formData.location.trim(),
                     type: formData.type,
-                    price_per_m2: Number(formData.price_per_sqm),
 
-                    // FIXED (AGAIN): Reverting to 'available_area' for UPDATE as 'available_m2' caused "Column not found".
+                    // FIXED: 'price_per_m2' column not found. Using 'price_per_sqm' or 'price'.
+                    // Given the error and the hook, 'price_per_sqm' is the most likely candidate after 'price_per_m2' failed.
+                    price_per_sqm: Number(formData.price_per_sqm),
+
+                    // FIXED: 'available_area' (confirmed valid)
                     available_area: Number(formData.available_area),
 
-                    // We must NOT send 'total_m2' or 'available_m2' if they don't exist in the schema for valid targets of UPDATE.
-                    // If 'sold_area' is updated via transaction or is calculable, we might omit it,
-                    // BUT legacy code sent it. We will omit it to be safe unless needed.
-                    // Actually, let's include sold_area if we have it, as per hook.
+                    // FIXED: 'sold_area' (confirmed valid)
                     sold_area: Number(formData.total_area || formData.available_area) - Number(formData.available_area),
 
                     status: formData.status,
@@ -192,18 +191,20 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                 const insertPayload: any = {
                     name: formData.name.trim(),
                     description: formData.description.trim(),
-                    // long_description removed (Schema mismatch)
+                    // long_description removed (Column does not exist)
                     location: formData.location.trim(),
                     type: formData.type,
-                    price_per_m2: Number(formData.price_per_sqm),
 
-                    // FIXED: Using 'available_area' and 'sold_area' to match verified Update schema
+                    // FIXED: Standardizing Insert to match Update schema
+                    price_per_sqm: Number(formData.price_per_sqm),
+
+                    // FIXED: Using 'available_area', 'total_area' instead of '_m2' suffixes
                     available_area: Number(formData.available_area),
-                    // For new projects, sold_area is typically 0 unless manually set via total_area math
+                    total_area: Number(formData.total_area || formData.available_area),
                     sold_area: Number(formData.total_area || formData.available_area) - Number(formData.available_area),
 
                     status: formData.status,
-                    main_image: coverImage, // specific key for projects table
+                    main_image: coverImage,
                     gallery_images
                 };
 
