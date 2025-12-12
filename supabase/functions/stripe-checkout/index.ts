@@ -87,23 +87,35 @@ serve(async (req: Request) => {
       // Validar estoque (relaxado para não bloquear o checkout)
       try {
         for (const item of items) {
+          // FIXED (v4.2.1): Update column names to match proven schema (available_area, price_per_sqm)
+          // Also fetch 'name' to display in Stripe Checkout
           const { data: project, error } = await supabase
             .from('projects')
-            .select('available_m2, price_per_m2')
+            .select('available_area, price_per_sqm, name')
             .eq('id', item.project_id)
             .single();
 
           if (error || !project) {
             // Log e continua (schema pode diferir neste ambiente)
             console.warn('Stock validation skipped: project not found or schema mismatch', item.project_id);
+            // Append fetched info to item for later use if partial data exists? 
+            // We can't easily mutate 'item' here without type issues, but we can store it in a map if needed.
+            // For now, relies on frontend data if backend fetch fails.
             continue;
           }
 
-          if (typeof project.available_m2 === 'number' && project.available_m2 < item.quantity) {
+          // Store the name in the item object (hacky but effective for the scope) to use below
+          item._fetched_name = project.name;
+
+          // Validate Available Area
+          if (typeof project.available_area === 'number' && project.available_area < item.quantity) {
+            // ... validation logic (optional to enforce)
+            // For now we just warn or return error if strictly needed.
+            // The original code returned 400. We'll keep that behavior.
             return new Response(
               JSON.stringify({
-                error: `Insufficient stock for project ${item.project_id}`,
-                available: project.available_m2,
+                error: `Insufficient stock for project ${project.name || item.project_id}`,
+                available: project.available_area,
                 requested: item.quantity
               }),
               { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -126,7 +138,8 @@ serve(async (req: Request) => {
           price_data: {
             currency: 'brl',
             product_data: {
-              name: `Compra - Projeto ${item.project_id}`,
+              // FIXED (v4.2.1): Use fetched name if available, else fallback to passed name, else 'Compra - Projeto ID'
+              name: item._fetched_name || item.name || `Compra - Projeto ${item.project_id}`,
             },
             unit_amount: Math.round(item.price * 100),
           },
