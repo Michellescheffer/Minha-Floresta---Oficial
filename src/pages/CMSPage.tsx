@@ -291,7 +291,7 @@ export default function CMSPage() {
                 <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 tracking-tight">
                   Painel Administrativo
                   <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold border border-emerald-200">
-                    v4.1.3
+                    v4.1.4
                   </span>
                 </h1>
                 <p className="text-sm text-gray-500 font-medium">

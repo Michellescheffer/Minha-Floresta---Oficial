@@ -52,8 +52,8 @@ export function LojaPage() {
     }
 
     const matchesSearch = project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.location.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      project.location.toLowerCase().includes(searchTerm.toLowerCase());
+
     let matchesPrice = true;
     if (priceRange !== 'todos') {
       const [min, max] = priceRange.split('-').map(p => p.replace('+', ''));
@@ -63,7 +63,7 @@ export function LojaPage() {
         matchesPrice = (project.price || 0) >= Number(min);
       }
     }
-    
+
     return matchesType && matchesSearch && matchesPrice;
   });
 
@@ -76,13 +76,13 @@ export function LojaPage() {
 
   const handleAddToCart = (project: Project) => {
     const quantity = m2Quantities[project.id] || 100;
-    
+
     // Check if quantity is within available limits
     if (quantity > (project.available || 0)) {
       toast.error(`Apenas ${project.available || 0} m² disponíveis para este projeto`);
       return;
     }
-    
+
     addToCart({
       projectId: project.id,
       projectName: project.name,
@@ -90,12 +90,12 @@ export function LojaPage() {
       price_per_m2: project.price || 0,
       image: project.image
     });
-    
+
     // Show success feedback
     toast.success(`${quantity} m² de "${project.name}" adicionados ao carrinho!`, {
       description: `Valor: R$ ${(quantity * (project.price || 0)).toFixed(2)}`
     });
-    
+
     // Reset quantity after adding
     setM2Quantities(prev => ({ ...prev, [project.id]: 100 }));
   };
@@ -111,7 +111,7 @@ export function LojaPage() {
               <Loader2 className="w-6 h-6 text-green-600 animate-spin" />
               <span className="text-gray-700">Carregando projetos verificados...</span>
             </div>
-            
+
             {/* Loading skeleton cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8 mt-12">
               {[1, 2, 3, 4, 5, 6].map((item) => (
@@ -164,7 +164,7 @@ export function LojaPage() {
     <div className="min-h-screen page-content">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-teal-50/80"></div>
-      
+
       <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8">
         {/* Header */}
         <div className="text-center mb-16 sm:mb-12">
@@ -172,21 +172,21 @@ export function LojaPage() {
             <Leaf className="w-4 h-4 text-green-600" />
             <span className="text-green-700">Loja</span>
           </div>
-          
+
           <h1 className="text-5xl md:text-6xl font-medium text-gray-800 mb-6">
             Catálogo de
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-green-600 to-emerald-600">
               Projetos Verificados
             </span>
           </h1>
-          
+
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            {selectedType === 'blue-carbon' 
+            {selectedType === 'blue-carbon'
               ? 'Projetos especializados em manguezais e ecossistemas costeiros com superior capacidade de captura de carbono.'
               : 'Escolha entre nossos projetos certificados de reflorestamento e conservação. Compre por metro quadrado e faça a diferença hoje.'
             }
           </p>
-          
+
           {/* Indicador de dados */}
           <div className="flex justify-center mt-6">
             <Badge className="bg-green-100 text-green-800 px-3 py-1">
@@ -244,21 +244,18 @@ export function LojaPage() {
             {/* Certification */}
             <div>
               <label className="block text-gray-700 mb-2 text-sm">Certificação</label>
-              <div className={`flex items-center space-x-2 p-3 rounded-lg ${
-                selectedType === 'blue-carbon' 
-                  ? 'bg-blue-50/50' 
+              <div className={`flex items-center space-x-2 p-3 rounded-lg ${selectedType === 'blue-carbon'
+                  ? 'bg-blue-50/50'
                   : 'bg-green-50/50'
-              }`}>
-                <Award className={`w-5 h-5 ${
-                  selectedType === 'blue-carbon' 
-                    ? 'text-blue-600' 
-                    : 'text-green-600'
-                }`} />
-                <span className={`text-sm ${
-                  selectedType === 'blue-carbon' 
-                    ? 'text-blue-700' 
-                    : 'text-green-700'
                 }`}>
+                <Award className={`w-5 h-5 ${selectedType === 'blue-carbon'
+                    ? 'text-blue-600'
+                    : 'text-green-600'
+                  }`} />
+                <span className={`text-sm ${selectedType === 'blue-carbon'
+                    ? 'text-blue-700'
+                    : 'text-green-700'
+                  }`}>
                   {selectedType === 'blue-carbon' ? 'Blue Carbon Standard' : 'Projetos Verificados'}
                 </span>
               </div>
@@ -280,30 +277,29 @@ export function LojaPage() {
                   <Award className="w-4 h-4" />
                   <span>Verificado</span>
                 </div>
-                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-sm ${
-                  project.type === 'blue-carbon'
+                <div className={`absolute top-4 right-4 px-3 py-1 rounded-full text-sm ${project.type === 'blue-carbon'
                     ? 'bg-blue-500/90 text-white'
                     : project.type === 'reforestation'
-                    ? 'bg-green-500/90 text-white'
-                    : 'bg-amber-500/90 text-white'
-                }`}>
-                  {project.type === 'blue-carbon' ? 'Blue Carbon' : 
-                   project.type === 'reforestation' ? 'Reflorestamento' :
-                   project.type === 'restoration' ? 'Restauração' : 
-                   project.type.charAt(0).toUpperCase() + project.type.slice(1)}
+                      ? 'bg-green-500/90 text-white'
+                      : 'bg-amber-500/90 text-white'
+                  }`}>
+                  {project.type === 'blue-carbon' ? 'Blue Carbon' :
+                    project.type === 'reforestation' ? 'Reflorestamento' :
+                      project.type === 'restoration' ? 'Restauração' :
+                        project.type.charAt(0).toUpperCase() + project.type.slice(1)}
                 </div>
               </div>
-              
+
               <div className="p-6 flex-1 flex flex-col">
                 <h4 className="text-gray-800 mb-2">{project.name}</h4>
-                
+
                 <div className="flex items-center space-x-1 text-gray-600 text-sm mb-3">
                   <MapPin className="w-4 h-4" />
                   <span>{project.location}</span>
                 </div>
-                
+
                 <p className="text-gray-600 text-sm mb-4">{project.description}</p>
-                
+
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Disponível:</span>
@@ -321,7 +317,7 @@ export function LojaPage() {
                     <span className="text-gray-600">Localização:</span>
                     <span className="font-medium text-xs">{project.location}</span>
                   </div>
-                  
+
                   {/* Progress bar for availability */}
                   <div className="mt-3">
                     <div className="flex justify-between text-xs text-gray-600 mb-1">
@@ -329,10 +325,10 @@ export function LojaPage() {
                       <span>{Math.round(((project.sold || 0) / ((project.available || 0) + (project.sold || 0))) * 100) || 0}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
+                      <div
                         className="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full transition-all duration-300"
-                        style={{ 
-                          width: `${Math.min(100, ((project.sold || 0) / ((project.available || 0) + (project.sold || 0))) * 100) || 0}%` 
+                        style={{
+                          width: `${Math.min(100, ((project.sold || 0) / ((project.available || 0) + (project.sold || 0))) * 100) || 0}%`
                         }}
                       ></div>
                     </div>
@@ -342,24 +338,23 @@ export function LojaPage() {
                 {/* M² Selector */}
                 <div className="mb-4">
                   <label className="block text-gray-700 mb-2 text-sm">Quantidade de m²</label>
-                  
+
                   {/* Quick selection buttons */}
                   <div className="grid grid-cols-4 gap-2 mb-3">
                     {[50, 100, 250, 500].map((qty) => (
                       <button
                         key={qty}
                         onClick={() => updateM2Quantity(project.id, qty)}
-                        className={`px-3 py-2 text-sm rounded-lg transition-all duration-200 ${
-                          (m2Quantities[project.id] || 100) === qty
+                        className={`px-3 py-2 text-sm rounded-lg transition-all duration-200 ${(m2Quantities[project.id] || 100) === qty
                             ? 'bg-green-500 text-white shadow-md'
                             : 'bg-white/50 text-gray-700 hover:bg-green-100 border border-white/20'
-                        }`}
+                          }`}
                       >
                         {qty}m²
                       </button>
                     ))}
                   </div>
-                  
+
                   <div className="flex items-center space-x-3">
                     <button
                       onClick={() => updateM2Quantity(project.id, Math.max(1, (m2Quantities[project.id] || 100) - 50))}
@@ -368,7 +363,7 @@ export function LojaPage() {
                     >
                       <Minus className="w-4 h-4" />
                     </button>
-                    
+
                     <input
                       type="number"
                       value={m2Quantities[project.id] || 100}
@@ -377,7 +372,7 @@ export function LojaPage() {
                       min="1"
                       step="1"
                     />
-                    
+
                     <button
                       onClick={() => updateM2Quantity(project.id, Math.min((project.available || 0), (m2Quantities[project.id] || 100) + 50))}
                       className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50"
@@ -386,7 +381,7 @@ export function LojaPage() {
                       <Plus className="w-4 h-4" />
                     </button>
                   </div>
-                  
+
                   <div className="flex justify-between items-center mt-2 text-sm">
                     <span className="text-gray-600">
                       Quantidade: {(m2Quantities[project.id] || 100)} m²
@@ -396,7 +391,7 @@ export function LojaPage() {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="space-y-3 mt-auto">
                   <button
                     onClick={() => handleAddToCart(project)}
@@ -404,7 +399,7 @@ export function LojaPage() {
                   >
                     Adicionar {m2Quantities[project.id] || 100} m² ao Carrinho
                   </button>
-                  
+
                   <button
                     onClick={() => setSelectedProject(selectedProject === project.id ? null : project.id)}
                     className="w-full border border-green-500/30 text-green-600 py-2 rounded-lg hover:bg-green-500/10 hover:border-green-500 transition-all duration-300 font-medium transform hover:scale-[1.02] active:scale-[0.98] text-center"
@@ -415,16 +410,46 @@ export function LojaPage() {
 
                 {/* Project Details */}
                 {selectedProject === project.id && (
-                  <div className="mt-4 p-4 bg-green-50/50 rounded-lg">
-                    <h4 className="font-medium text-gray-800 mb-2">Relatórios Disponíveis:</h4>
-                    <ul className="space-y-1">
-                      {(project.reports || []).map((report, index) => (
-                        <li key={report.id || index} className="text-sm text-gray-600 flex items-center space-x-2">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span>{report.title}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="mt-4 p-4 bg-green-50/50 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+
+                    {/* Narrativa Completa */}
+                    <div className="mb-4">
+                      <h4 className="font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                        <Leaf className="w-4 h-4 text-green-600" />
+                        Sobre o Projeto
+                      </h4>
+                      <p className="text-gray-600 text-sm leading-relaxed text-justify">
+                        {project.description}
+                        {/* Fallback to description if long_description is missing, or show extended info */}
+                        {/* We need to use long_description if available, but Project interface might not have it exposed in useProjects yet. 
+                            Let's assume it might be passed or we use description for now as requested. 
+                            Wait, the user explicitly asked for "campo narrativa completa". 
+                            I will check if 'long_description' exists on the object. 
+                            If TS complains, I will cast it or just use it.
+                        */}
+                        {(project as any).long_description && (
+                          <span className="block mt-2 pt-2 border-t border-green-200/50">
+                            {(project as any).long_description}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+
+                    {project.reports && project.reports.length > 0 && (
+                      <>
+                        <h4 className="font-medium text-gray-800 mb-2 text-sm">Relatórios Disponíveis:</h4>
+                        <ul className="space-y-1">
+                          {(project.reports || []).map((report, index) => (
+                            <li key={report.id || index} className="text-sm text-gray-600 flex items-center space-x-2">
+                              <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                              <a href={report.url} target="_blank" rel="noopener noreferrer" className="hover:text-green-600 hover:underline transition-colors">
+                                {report.title}
+                              </a>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

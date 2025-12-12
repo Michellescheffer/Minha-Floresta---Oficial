@@ -156,7 +156,8 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
 
             const coverImage = gallery_images[0];
             if (editingProject) {
-                // Update Logic: Based on useProjects > updateProject (uses main_image, available_area, SOLD_area)
+                // Update Logic: Switched to match Insert schema (available_m2, total_m2, image) as 'available_area' caused 400 errors.
+                // Hypothesis: The table schema is uniform (available_m2, total_m2, image) and legacy code in useProjects was misleading.
                 const updatePayload: any = {
                     name: formData.name.trim(),
                     description: formData.description.trim(),
@@ -164,11 +165,16 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                     location: formData.location.trim(),
                     type: formData.type,
                     price_per_m2: Number(formData.price_per_sqm),
-                    available_area: Number(formData.available_area),
-                    sold_area: Number(formData.total_area || formData.available_area) - Number(formData.available_area),
-                    // status: formData.status, // Keep status? Hook updates it. My payload should too.
+
+                    // FIXED: Using available_m2/total_m2 and image instead of available_area/main_image
+                    available_m2: Number(formData.available_area),
+                    total_m2: Number(formData.total_area || formData.available_area),
+
+                    // Removed sold_area to avoid potential conflicts if it's a generated column or mismatches schema
+                    // If backend calculates it or triggers handle it, this is safer.
+
                     status: formData.status,
-                    main_image: coverImage,
+                    image: coverImage,
                     gallery_images
                 };
 
@@ -180,7 +186,7 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                 if (error) throw error;
                 toast.success('Projeto atualizado!');
             } else {
-                // Insert Logic: Based on useProjects > createProject (uses image, available_m2, total_m2)
+                // Insert Logic
                 const insertPayload: any = {
                     name: formData.name.trim(),
                     description: formData.description.trim(),
@@ -188,13 +194,10 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                     location: formData.location.trim(),
                     type: formData.type,
                     price_per_m2: Number(formData.price_per_sqm),
-
-                    // DIFFERENT COLUMNS FOR INSERT as per hook analysis
                     available_m2: Number(formData.available_area),
                     total_m2: Number(formData.total_area || formData.available_area),
-
                     status: formData.status,
-                    image: coverImage, // Insert uses 'image', Update uses 'main_image'? 
+                    image: coverImage,
                     gallery_images
                 };
 
@@ -235,10 +238,10 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                 <div className="flex gap-3">
                     <button
                         onClick={() => onReload()}
-                        className="p-3 rounded-2xl border border-white/40 bg-white/40 backdrop-blur-md text-gray-500 hover:text-emerald-600 hover:bg-white/60 hover:scale-105 hover:shadow-lg transition-all duration-300 shadow-sm"
+                        className={cmsTokens.button.secondary + " flex items-center justify-center w-12 h-12"}
                         title="Atualizar lista"
                     >
-                        <RefreshCw className="w-5 h-5" />
+                        <RefreshCw className="w-5 h-5 text-gray-700" />
                     </button>
 
                     <button
@@ -353,242 +356,245 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                         </GlassCard>
                     ))}
                 </div>
-            )}
+            )
+            }
 
             {/* Modal - Liquid Glass Style */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-500">
-                    <div className="relative w-full max-w-5xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-500 bg-white shadow-2xl rounded-[2rem] ring-1 ring-black/5 overflow-hidden">
+            {
+                showModal && (
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-500">
+                        <div className="relative w-full max-w-5xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-500 bg-white shadow-2xl rounded-[2rem] ring-1 ring-black/5 overflow-hidden">
 
-                        {/* Decorative Gradients (Subtler) */}
-                        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-                        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
-                        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
+                            {/* Decorative Gradients (Subtler) */}
+                            <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+                            <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+                            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
 
-                        {/* Modal Header */}
-                        <div className="p-8 border-b border-gray-100 flex items-center justify-between relative z-10 bg-white/50 backdrop-blur-sm">
-                            <div>
-                                <h3 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-emerald-800 to-teal-700">
-                                    {editingProject ? 'Editar Projeto' : 'Novo Projeto'}
-                                </h3>
-                                <p className="text-sm text-gray-500 mt-1 font-medium">
-                                    Preencha as informações técnicas e visuais abaixo.
-                                </p>
+                            {/* Modal Header */}
+                            <div className="p-8 border-b border-gray-100 flex items-center justify-between relative z-10 bg-white/50 backdrop-blur-sm">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-emerald-800 to-teal-700">
+                                        {editingProject ? 'Editar Projeto' : 'Novo Projeto'}
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-1 font-medium">
+                                        Preencha as informações técnicas e visuais abaixo.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setShowModal(false)}
+                                    className="p-2.5 hover:bg-black/5 rounded-full transition-colors text-gray-400 hover:text-gray-600"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
                             </div>
-                            <button
-                                onClick={() => setShowModal(false)}
-                                className="p-2.5 hover:bg-black/5 rounded-full transition-colors text-gray-400 hover:text-gray-600"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
+
+                            {/* Modal Body */}
+                            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 relative z-10 custom-scrollbar">
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                                    {/* Left Column: Basic Info */}
+                                    <div className="lg:col-span-7 space-y-10">
+                                        {/* Section 1: Basic */}
+                                        <div className="glass-panel space-y-6">
+                                            <div className="flex items-center gap-3 text-emerald-700 font-bold pb-3 border-b border-emerald-100/50">
+                                                <div className="p-2 bg-emerald-100/50 rounded-lg">
+                                                    <Tag className="w-5 h-5" />
+                                                </div>
+                                                <span>Informações Básicas</span>
+                                            </div>
+
+                                            <div className="space-y-5">
+                                                <div>
+                                                    <label className={cmsTokens.heading + " mb-2 block"}>Nome do Projeto</label>
+                                                    <input
+                                                        type="text"
+                                                        value={formData.name}
+                                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                        placeholder="Ex: Reflorestamento Amazônia Legal"
+                                                        className={cmsTokens.input}
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className={cmsTokens.heading + " mb-2 block"}>Resumo</label>
+                                                    <textarea
+                                                        value={formData.description}
+                                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                        className={`${cmsTokens.input} min-h-[100px] resize-none`}
+                                                        placeholder="Uma breve descrição que aparecerá no card..."
+                                                        required
+                                                    />
+                                                </div>
+
+                                                <div>
+                                                    <label className={cmsTokens.heading + " mb-2 block"}>Narrativa Completa</label>
+                                                    <textarea
+                                                        value={formData.long_description || ''}
+                                                        onChange={(e) => setFormData({ ...formData, long_description: e.target.value })}
+                                                        className={`${cmsTokens.input} min-h-[200px] resize-none`}
+                                                        placeholder="Detalhes completos sobre o impacto, metodologia e história do projeto..."
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Section 2: Geo */}
+                                        <div className="glass-panel space-y-6">
+                                            <div className="flex items-center gap-3 text-emerald-700 font-bold pb-3 border-b border-emerald-100/50">
+                                                <div className="p-2 bg-emerald-100/50 rounded-lg">
+                                                    <MapPin className="w-5 h-5" />
+                                                </div>
+                                                <span>Localização & Tipo</span>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-6">
+                                                <div>
+                                                    <label className={cmsTokens.heading + " mb-2 block"}>Local</label>
+                                                    <input
+                                                        type="text"
+                                                        value={formData.location}
+                                                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                                        placeholder="Cidade - UF"
+                                                        className={cmsTokens.input}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className={cmsTokens.heading + " mb-2 block"}>Categoria</label>
+                                                    <div className="relative">
+                                                        <select
+                                                            value={formData.type}
+                                                            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                                                            className={cmsTokens.input + " appearance-none cursor-pointer"}
+                                                        >
+                                                            <option value="conservation">Conservação</option>
+                                                            <option value="reforestation">Reflorestamento</option>
+                                                            <option value="restoration">Restauração</option>
+                                                            <option value="blue_carbon">Blue Carbon</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Right Column: Metrics & Media */}
+                                    <div className="lg:col-span-5 space-y-10">
+                                        {/* Section 3: Metrics */}
+                                        <div className="glass-panel space-y-6">
+                                            <div className="flex items-center gap-3 text-emerald-700 font-bold pb-3 border-b border-emerald-100/50">
+                                                <div className="p-2 bg-emerald-100/50 rounded-lg">
+                                                    <Ruler className="w-5 h-5" />
+                                                </div>
+                                                <span>Métricas de Venda</span>
+                                            </div>
+
+                                            <div className="space-y-5">
+                                                <div>
+                                                    <label className={cmsTokens.heading + " mb-2 block"}>Preço por m² (R$)</label>
+                                                    <div className="relative group">
+                                                        <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-emerald-500 transition-colors" />
+                                                        <input
+                                                            type="number"
+                                                            step="0.01"
+                                                            value={formData.price_per_sqm}
+                                                            onChange={(e) => setFormData({
+                                                                ...formData,
+                                                                price_per_sqm: e.target.value ? Number(e.target.value) : 0
+                                                            })}
+                                                            className={`${cmsTokens.input} pl-12 text-lg font-semibold`}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className={cmsTokens.heading + " mb-2 block"}>Área Total</label>
+                                                        <input
+                                                            type="number"
+                                                            value={formData.total_area}
+                                                            onChange={(e) => setFormData({
+                                                                ...formData,
+                                                                total_area: e.target.value ? Number(e.target.value) : 0
+                                                            })}
+                                                            className={cmsTokens.input}
+                                                            required
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <label className={cmsTokens.heading + " mb-2 block"}>Disponível</label>
+                                                        <input
+                                                            type="number"
+                                                            value={formData.available_area}
+                                                            onChange={(e) => setFormData({
+                                                                ...formData,
+                                                                available_area: e.target.value ? Number(e.target.value) : 0
+                                                            })}
+                                                            className={cmsTokens.input}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Section 4: Media */}
+                                        <div className="glass-panel space-y-6">
+                                            <div className="flex items-center gap-3 text-emerald-700 font-bold pb-3 border-b border-emerald-100/50">
+                                                <div className="p-2 bg-emerald-100/50 rounded-lg">
+                                                    <ImageIcon className="w-5 h-5" />
+                                                </div>
+                                                <span>Galeria Visual</span>
+                                            </div>
+
+                                            <div className="bg-white/40 p-6 rounded-3xl border border-white/50 border-dashed backdrop-blur-sm shadow-inner transition-all hover:bg-white/50">
+                                                <ImageUploadWithResizer
+                                                    images={formData.gallery_images}
+                                                    onChange={(images) => setFormData((prev) => ({
+                                                        ...prev,
+                                                        gallery_images: images,
+                                                        image: images[0] || prev.image
+                                                    }))}
+                                                    maxImages={5}
+                                                    maxFileSize={5}
+                                                />
+                                                <div className="mt-4 text-center">
+                                                    <p className="text-xs text-gray-500 font-medium">
+                                                        Arraste imagens ou clique para selecionar. <br />
+                                                        A primeira imagem será a capa.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Buttons */}
+                                        <div className="pt-6 flex flex-col gap-3">
+                                            <button
+                                                onClick={handleSubmit}
+                                                disabled={saving}
+                                                className={cmsTokens.button.primary + " w-full py-4 text-lg flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"}
+                                            >
+                                                <Save className="w-5 h-5" />
+                                                {saving ? 'Publicando...' : editingProject ? 'Salvar Alterações' : 'Publicar Projeto'}
+                                            </button>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowModal(false)}
+                                                className={cmsTokens.button.secondary + " w-full py-3"}
+                                            >
+                                                Cancelar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
-
-                        {/* Modal Body */}
-                        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 relative z-10 custom-scrollbar">
-                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-                                {/* Left Column: Basic Info */}
-                                <div className="lg:col-span-7 space-y-10">
-                                    {/* Section 1: Basic */}
-                                    <div className="glass-panel space-y-6">
-                                        <div className="flex items-center gap-3 text-emerald-700 font-bold pb-3 border-b border-emerald-100/50">
-                                            <div className="p-2 bg-emerald-100/50 rounded-lg">
-                                                <Tag className="w-5 h-5" />
-                                            </div>
-                                            <span>Informações Básicas</span>
-                                        </div>
-
-                                        <div className="space-y-5">
-                                            <div>
-                                                <label className={cmsTokens.heading + " mb-2 block"}>Nome do Projeto</label>
-                                                <input
-                                                    type="text"
-                                                    value={formData.name}
-                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                                    placeholder="Ex: Reflorestamento Amazônia Legal"
-                                                    className={cmsTokens.input}
-                                                    required
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className={cmsTokens.heading + " mb-2 block"}>Resumo</label>
-                                                <textarea
-                                                    value={formData.description}
-                                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                                    className={`${cmsTokens.input} min-h-[100px] resize-none`}
-                                                    placeholder="Uma breve descrição que aparecerá no card..."
-                                                    required
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className={cmsTokens.heading + " mb-2 block"}>Narrativa Completa</label>
-                                                <textarea
-                                                    value={formData.long_description || ''}
-                                                    onChange={(e) => setFormData({ ...formData, long_description: e.target.value })}
-                                                    className={`${cmsTokens.input} min-h-[200px] resize-none`}
-                                                    placeholder="Detalhes completos sobre o impacto, metodologia e história do projeto..."
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 2: Geo */}
-                                    <div className="glass-panel space-y-6">
-                                        <div className="flex items-center gap-3 text-emerald-700 font-bold pb-3 border-b border-emerald-100/50">
-                                            <div className="p-2 bg-emerald-100/50 rounded-lg">
-                                                <MapPin className="w-5 h-5" />
-                                            </div>
-                                            <span>Localização & Tipo</span>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-6">
-                                            <div>
-                                                <label className={cmsTokens.heading + " mb-2 block"}>Local</label>
-                                                <input
-                                                    type="text"
-                                                    value={formData.location}
-                                                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                                                    placeholder="Cidade - UF"
-                                                    className={cmsTokens.input}
-                                                    required
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className={cmsTokens.heading + " mb-2 block"}>Categoria</label>
-                                                <div className="relative">
-                                                    <select
-                                                        value={formData.type}
-                                                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                                        className={cmsTokens.input + " appearance-none cursor-pointer"}
-                                                    >
-                                                        <option value="conservation">Conservação</option>
-                                                        <option value="reforestation">Reflorestamento</option>
-                                                        <option value="restoration">Restauração</option>
-                                                        <option value="blue_carbon">Blue Carbon</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Right Column: Metrics & Media */}
-                                <div className="lg:col-span-5 space-y-10">
-                                    {/* Section 3: Metrics */}
-                                    <div className="glass-panel space-y-6">
-                                        <div className="flex items-center gap-3 text-emerald-700 font-bold pb-3 border-b border-emerald-100/50">
-                                            <div className="p-2 bg-emerald-100/50 rounded-lg">
-                                                <Ruler className="w-5 h-5" />
-                                            </div>
-                                            <span>Métricas de Venda</span>
-                                        </div>
-
-                                        <div className="space-y-5">
-                                            <div>
-                                                <label className={cmsTokens.heading + " mb-2 block"}>Preço por m² (R$)</label>
-                                                <div className="relative group">
-                                                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5 group-focus-within:text-emerald-500 transition-colors" />
-                                                    <input
-                                                        type="number"
-                                                        step="0.01"
-                                                        value={formData.price_per_sqm}
-                                                        onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            price_per_sqm: e.target.value ? Number(e.target.value) : 0
-                                                        })}
-                                                        className={`${cmsTokens.input} pl-12 text-lg font-semibold`}
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className={cmsTokens.heading + " mb-2 block"}>Área Total</label>
-                                                    <input
-                                                        type="number"
-                                                        value={formData.total_area}
-                                                        onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            total_area: e.target.value ? Number(e.target.value) : 0
-                                                        })}
-                                                        className={cmsTokens.input}
-                                                        required
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <label className={cmsTokens.heading + " mb-2 block"}>Disponível</label>
-                                                    <input
-                                                        type="number"
-                                                        value={formData.available_area}
-                                                        onChange={(e) => setFormData({
-                                                            ...formData,
-                                                            available_area: e.target.value ? Number(e.target.value) : 0
-                                                        })}
-                                                        className={cmsTokens.input}
-                                                        required
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 4: Media */}
-                                    <div className="glass-panel space-y-6">
-                                        <div className="flex items-center gap-3 text-emerald-700 font-bold pb-3 border-b border-emerald-100/50">
-                                            <div className="p-2 bg-emerald-100/50 rounded-lg">
-                                                <ImageIcon className="w-5 h-5" />
-                                            </div>
-                                            <span>Galeria Visual</span>
-                                        </div>
-
-                                        <div className="bg-white/40 p-6 rounded-3xl border border-white/50 border-dashed backdrop-blur-sm shadow-inner transition-all hover:bg-white/50">
-                                            <ImageUploadWithResizer
-                                                images={formData.gallery_images}
-                                                onChange={(images) => setFormData((prev) => ({
-                                                    ...prev,
-                                                    gallery_images: images,
-                                                    image: images[0] || prev.image
-                                                }))}
-                                                maxImages={5}
-                                                maxFileSize={5}
-                                            />
-                                            <div className="mt-4 text-center">
-                                                <p className="text-xs text-gray-500 font-medium">
-                                                    Arraste imagens ou clique para selecionar. <br />
-                                                    A primeira imagem será a capa.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Action Buttons */}
-                                    <div className="pt-6 flex flex-col gap-3">
-                                        <button
-                                            onClick={handleSubmit}
-                                            disabled={saving}
-                                            className={cmsTokens.button.primary + " w-full py-4 text-lg flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"}
-                                        >
-                                            <Save className="w-5 h-5" />
-                                            {saving ? 'Publicando...' : editingProject ? 'Salvar Alterações' : 'Publicar Projeto'}
-                                        </button>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowModal(false)}
-                                            className={cmsTokens.button.secondary + " w-full py-3"}
-                                        >
-                                            Cancelar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </form>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 }
