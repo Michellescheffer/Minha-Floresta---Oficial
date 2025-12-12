@@ -3,6 +3,7 @@ import { Plus, Edit3, Trash2, Save, X, Activity } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { toast } from 'sonner';
 import { ImageUploadWithResizer } from './ImageUploadWithResizer';
+import { GlassCard } from './GlassCard';
 
 interface Donation {
   id: string;
@@ -232,15 +233,17 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
       {/* Donations Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {donations.length === 0 ? (
-          <div className="col-span-2 rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-12 text-center shadow-xl">
+          <GlassCard variant="solid" className="col-span-2 p-12 text-center">
             <Activity className="w-16 h-16 mx-auto mb-4 text-gray-400" />
             <p className="text-gray-500">Nenhum projeto de doação cadastrado</p>
-          </div>
+          </GlassCard>
         ) : (
           donations.map((donation) => (
-            <div
+            <GlassCard
               key={donation.id}
-              className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl hover:shadow-2xl transition-all"
+              variant="solid"
+              hoverEffect
+              className="group"
             >
               {donation.image_url && (
                 <img
@@ -255,13 +258,12 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
                   <h3 className="font-bold text-lg text-gray-900">{donation.title}</h3>
                   <p className="text-sm text-gray-600 mt-1">{donation.description}</p>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                  donation.status === 'active' ? 'bg-green-100 text-green-700' :
-                  donation.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  {donation.status === 'active' ? 'Ativo' : 
-                   donation.status === 'completed' ? 'Concluído' : 'Pausado'}
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${donation.status === 'active' ? 'bg-green-100 text-green-700' :
+                    donation.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-700'
+                  }`}>
+                  {donation.status === 'active' ? 'Ativo' :
+                    donation.status === 'completed' ? 'Concluído' : 'Pausado'}
                 </span>
               </div>
 
@@ -300,7 +302,7 @@ export function DonationsTab({ donations, onReload }: DonationsTabProps) {
                   Excluir
                 </button>
               </div>
-            </div>
+            </GlassCard>
           ))
         )}
       </div>

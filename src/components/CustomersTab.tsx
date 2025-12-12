@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Search, Filter, Download, Mail, Phone, User, 
+import {
+  Search, Filter, Download, Mail, Phone, User,
   CreditCard, Calendar, Award, FileSpreadsheet, X, Eye
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+import { GlassCard } from './GlassCard';
 
 interface Customer {
   id: string;
@@ -31,11 +33,11 @@ export function CustomersTab({ customers, selectedCustomer, onSelectCustomer }: 
 
   // Filter customers
   const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = 
+    const matchesSearch =
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.cpf?.includes(searchTerm);
-    
+
     return matchesSearch;
   });
 
@@ -64,7 +66,7 @@ export function CustomersTab({ customers, selectedCustomer, onSelectCustomer }: 
     link.href = URL.createObjectURL(blob);
     link.download = `clientes_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
-    
+
     toast.success('Planilha exportada com sucesso!');
   };
 
@@ -83,7 +85,7 @@ export function CustomersTab({ customers, selectedCustomer, onSelectCustomer }: 
       </div>
 
       {/* Filters */}
-      <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-4 shadow-xl">
+      <GlassCard variant="solid" className="p-4">
         <div className="flex flex-col sm:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
@@ -111,24 +113,24 @@ export function CustomersTab({ customers, selectedCustomer, onSelectCustomer }: 
             </select>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Customers List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* List */}
         <div className="space-y-4">
           {filteredCustomers.length === 0 ? (
-            <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-8 text-center shadow-xl">
+            <GlassCard variant="solid" className="p-8 text-center">
               <p className="text-gray-500">Nenhum cliente encontrado</p>
-            </div>
+            </GlassCard>
           ) : (
             filteredCustomers.map((customer) => (
-              <div
+              <GlassCard
                 key={customer.id}
+                variant="solid"
                 onClick={() => onSelectCustomer(customer)}
-                className={`rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl cursor-pointer transition-all hover:shadow-2xl ${
-                  selectedCustomer?.id === customer.id ? 'ring-2 ring-blue-500' : ''
-                }`}
+                className={`p-6 cursor-pointer transition-all hover:shadow-lg ${selectedCustomer?.id === customer.id ? 'ring-2 ring-green-500' : ''
+                  }`}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -165,7 +167,7 @@ export function CustomersTab({ customers, selectedCustomer, onSelectCustomer }: 
                     <p className="font-semibold">{customer.certificates.length}</p>
                   </div>
                 </div>
-              </div>
+              </GlassCard>
             ))
           )}
         </div>
@@ -173,7 +175,7 @@ export function CustomersTab({ customers, selectedCustomer, onSelectCustomer }: 
         {/* Customer Details */}
         <div className="sticky top-4">
           {selectedCustomer ? (
-            <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
+            <GlassCard variant="solid" className="p-6">
               <div className="flex items-start justify-between mb-6">
                 <h3 className="text-lg font-bold text-gray-900">Detalhes do Cliente</h3>
                 <button
@@ -280,12 +282,12 @@ export function CustomersTab({ customers, selectedCustomer, onSelectCustomer }: 
                   ))}
                 </div>
               </div>
-            </div>
+            </GlassCard>
           ) : (
-            <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-8 text-center shadow-xl">
+            <GlassCard variant="solid" className="p-8 text-center">
               <User className="w-16 h-16 mx-auto mb-4 text-gray-400" />
               <p className="text-gray-500">Selecione um cliente para ver os detalhes</p>
-            </div>
+            </GlassCard>
           )}
         </div>
       </div>

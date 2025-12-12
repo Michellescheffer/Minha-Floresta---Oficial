@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Calendar, Download, Filter, TrendingUp, DollarSign, 
+import {
+  Calendar, Download, Filter, TrendingUp, DollarSign,
   Users, Award, ShoppingCart, FileSpreadsheet, RefreshCw
 } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { toast } from 'sonner';
-import { 
+import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
+import { GlassCard } from './GlassCard';
 
 const COLORS = ['#10b981', '#059669', '#047857', '#065f46', '#064e3b', '#6ee7b7'];
 
@@ -34,7 +35,7 @@ export function AnalyticsTab() {
     projects: [],
     customers: []
   });
-  
+
   const [filters, setFilters] = useState<Filters>({
     startDate: new Date(new Date().setMonth(new Date().getMonth() - 3)).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
@@ -118,10 +119,10 @@ export function AnalyticsTab() {
 
   const exportToCSV = () => {
     const headers = [
-      'Data', 'Cliente', 'Email', 'Valor', 'Área (m²)', 
+      'Data', 'Cliente', 'Email', 'Valor', 'Área (m²)',
       'Método Pagamento', 'Status', 'Projeto'
     ];
-    
+
     const rows = data.sales.map(sale => [
       new Date(sale.sale_date).toLocaleDateString('pt-BR'),
       sale.customer_name,
@@ -143,22 +144,22 @@ export function AnalyticsTab() {
     link.href = URL.createObjectURL(blob);
     link.download = `analytics_${filters.startDate}_${filters.endDate}.csv`;
     link.click();
-    
+
     toast.success('Relatório exportado com sucesso!');
   };
 
   // Prepare chart data
   const getSalesOverTime = () => {
     const monthlyData: { [key: string]: { revenue: number; sales: number } } = {};
-    
+
     data.sales.forEach(sale => {
       const date = new Date(sale.sale_date);
       const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      
+
       if (!monthlyData[monthKey]) {
         monthlyData[monthKey] = { revenue: 0, sales: 0 };
       }
-      
+
       monthlyData[monthKey].revenue += sale.total_value;
       monthlyData[monthKey].sales += 1;
     });
@@ -174,7 +175,7 @@ export function AnalyticsTab() {
 
   const getProjectDistribution = () => {
     const projectSales: { [key: string]: number } = {};
-    
+
     data.sales.forEach(sale => {
       const project = sale.notes || 'Outros';
       projectSales[project] = (projectSales[project] || 0) + sale.total_value;
@@ -188,7 +189,7 @@ export function AnalyticsTab() {
 
   const getPaymentMethodDistribution = () => {
     const methods: { [key: string]: number } = {};
-    
+
     data.sales.forEach(sale => {
       const method = sale.payment_method || 'Não informado';
       methods[method] = (methods[method] || 0) + 1;
@@ -222,7 +223,7 @@ export function AnalyticsTab() {
       </div>
 
       {/* Filters */}
-      <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
+      <GlassCard variant="solid" className="p-6">
         <div className="flex items-center gap-2 mb-4">
           <Filter className="w-5 h-5 text-green-600" />
           <h3 className="text-lg font-semibold text-gray-900">Filtros</h3>
@@ -277,7 +278,7 @@ export function AnalyticsTab() {
             </select>
           </div>
         </div>
-      </div>
+      </GlassCard>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -321,14 +322,14 @@ export function AnalyticsTab() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Revenue Over Time */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
+        <GlassCard variant="solid" className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Receita ao Longo do Tempo</h3>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={getSalesOverTime()}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="month" stroke="#6b7280" />
               <YAxis stroke="#6b7280" />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
                 formatter={(value: any) => `R$ ${value.toLocaleString('pt-BR')}`}
               />
@@ -336,27 +337,27 @@ export function AnalyticsTab() {
               <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name="Receita" />
             </LineChart>
           </ResponsiveContainer>
-        </div>
+        </GlassCard>
 
         {/* Sales Count Over Time */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
+        <GlassCard variant="solid" className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Vendas por Mês</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={getSalesOverTime()}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
               <XAxis dataKey="month" stroke="#6b7280" />
               <YAxis stroke="#6b7280" />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px' }}
               />
               <Legend />
               <Bar dataKey="sales" fill="#10b981" name="Vendas" />
             </BarChart>
           </ResponsiveContainer>
-        </div>
+        </GlassCard>
 
         {/* Project Distribution */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
+        <GlassCard variant="solid" className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Top 5 Projetos por Receita</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
@@ -377,10 +378,10 @@ export function AnalyticsTab() {
               <Tooltip formatter={(value: any) => `R$ ${value.toLocaleString('pt-BR')}`} />
             </PieChart>
           </ResponsiveContainer>
-        </div>
+        </GlassCard>
 
         {/* Payment Methods */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
+        <GlassCard variant="solid" className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Métodos de Pagamento</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
@@ -401,11 +402,11 @@ export function AnalyticsTab() {
               <Tooltip />
             </PieChart>
           </ResponsiveContainer>
-        </div>
+        </GlassCard>
       </div>
 
       {/* Recent Sales Table */}
-      <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 overflow-hidden shadow-xl">
+      <GlassCard variant="solid" className="overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <h3 className="text-lg font-semibold text-gray-900">Vendas Recentes</h3>
         </div>
@@ -432,13 +433,12 @@ export function AnalyticsTab() {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{sale.total_m2} m²</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      sale.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
-                      sale.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${sale.payment_status === 'paid' ? 'bg-green-100 text-green-700' :
+                        sale.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                      }`}>
                       {sale.payment_status === 'paid' ? 'Pago' :
-                       sale.payment_status === 'pending' ? 'Pendente' : 'Cancelado'}
+                        sale.payment_status === 'pending' ? 'Pendente' : 'Cancelado'}
                     </span>
                   </td>
                 </tr>
@@ -446,7 +446,7 @@ export function AnalyticsTab() {
             </tbody>
           </table>
         </div>
-      </div>
+      </GlassCard>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, Globe, Mail, Phone, MapPin, Facebook, Instagram, Linkedin, AlertCircle, Check } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
 import { toast } from 'sonner';
+import { GlassCard } from './GlassCard';
 
 interface SiteSettings {
   site_name: string;
@@ -47,7 +48,7 @@ export function SettingsTab() {
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
-      
+
       if (data) {
         setSettings(data);
       }
@@ -118,7 +119,7 @@ export function SettingsTab() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Site Information */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
+        <GlassCard variant="solid" className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Globe className="w-5 h-5 text-green-600" />
             <h3 className="text-lg font-semibold text-gray-900">Informações do Site</h3>
@@ -158,10 +159,10 @@ export function SettingsTab() {
               <p className="text-xs text-gray-500 mt-1 ml-6">Ativar para desabilitar o site temporariamente</p>
             </div>
           </div>
-        </div>
+        </GlassCard>
 
         {/* Contact Information */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
+        <GlassCard variant="solid" className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Mail className="w-5 h-5 text-green-600" />
             <h3 className="text-lg font-semibold text-gray-900">Informações de Contato</h3>
@@ -198,10 +199,10 @@ export function SettingsTab() {
               />
             </div>
           </div>
-        </div>
+        </GlassCard>
 
         {/* Social Media */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
+        <GlassCard variant="solid" className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <Instagram className="w-5 h-5 text-green-600" />
             <h3 className="text-lg font-semibold text-gray-900">Redes Sociais</h3>
@@ -250,10 +251,10 @@ export function SettingsTab() {
               />
             </div>
           </div>
-        </div>
+        </GlassCard>
 
         {/* Payment Settings */}
-        <div className="rounded-2xl bg-white/80 backdrop-blur-xl border border-white/20 p-6 shadow-xl">
+        <GlassCard variant="solid" className="p-6">
           <div className="flex items-center gap-2 mb-4">
             <AlertCircle className="w-5 h-5 text-green-600" />
             <h3 className="text-lg font-semibold text-gray-900">Configurações de Pagamento</h3>
@@ -295,7 +296,7 @@ export function SettingsTab() {
               </div>
             </div>
           </div>
-        </div>
+        </GlassCard>
       </div>
 
       {/* Save Button (Mobile) */}

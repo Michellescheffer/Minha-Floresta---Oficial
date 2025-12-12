@@ -3,6 +3,7 @@ import { Upload, Trash2, RefreshCw, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../../services/supabaseClient';
 import { cmsTokens } from './constants';
+import { GlassCard } from '../GlassCard';
 
 interface ImagesTabProps {
     siteImages: any[];
@@ -301,7 +302,7 @@ export function ImagesTab({ siteImages, certImages, onReload }: ImagesTabProps) 
             </div>
 
             {/* Hero slots */}
-            <section className={`${cmsTokens.glass} p-6 space-y-6`}>
+            <GlassCard variant="solid" className="p-6 space-y-6">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h3 className="text-lg font-semibold text-gray-900">Hero Banner</h3>
@@ -318,7 +319,7 @@ export function ImagesTab({ siteImages, certImages, onReload }: ImagesTabProps) 
                         return (
                             <div
                                 key={slot.key}
-                                className="relative rounded-[24px] border border-white/30 bg-white/70 backdrop-blur-xl p-4 flex flex-col gap-4 shadow-md"
+                                className="relative rounded-2xl border border-gray-200 bg-gray-50 p-4 flex flex-col gap-4"
                             >
                                 <div
                                     className={`absolute inset-0 bg-gradient-to-br ${slot.accent} opacity-10 rounded-[24px] pointer-events-none`}
@@ -380,10 +381,10 @@ export function ImagesTab({ siteImages, certImages, onReload }: ImagesTabProps) 
                         );
                     })}
                 </div>
-            </section>
+            </GlassCard>
 
             {/* Certificate gallery */}
-            <section className={`${cmsTokens.glass} p-6 space-y-6`}>
+            <GlassCard variant="solid" className="p-6 space-y-6">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h3 className="text-lg font-semibold text-gray-900">
@@ -394,8 +395,8 @@ export function ImagesTab({ siteImages, certImages, onReload }: ImagesTabProps) 
                         </p>
                     </div>
                     <label className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white ${certImages.length >= 8 || uploading
-                            ? 'bg-gray-400 cursor-not-allowed'
-                            : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:shadow-lg'
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:shadow-lg'
                         } transition`}>
                         <Upload className="w-4 h-4" />
                         {uploading ? 'Enviando...' : 'Adicionar imagem'}
@@ -418,7 +419,7 @@ export function ImagesTab({ siteImages, certImages, onReload }: ImagesTabProps) 
                         {certImages.map((image: any, index: number) => (
                             <article
                                 key={image.id}
-                                className="rounded-2xl border border-white/30 bg-white/80 backdrop-blur p-3 flex flex-col gap-3"
+                                className="rounded-2xl border border-gray-200 bg-gray-50 p-3 flex flex-col gap-3"
                             >
                                 <div className="flex items-center justify-between text-xs text-gray-500">
                                     <span className="font-medium text-gray-900">#{index + 1}</span>
@@ -444,7 +445,7 @@ export function ImagesTab({ siteImages, certImages, onReload }: ImagesTabProps) 
                         ))}
                     </div>
                 )}
-            </section>
+            </GlassCard>
         </div>
     );
 }
