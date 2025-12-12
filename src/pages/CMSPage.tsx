@@ -265,7 +265,7 @@ export default function CMSPage() {
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'projects', label: 'Projetos', icon: TreePine },
-    { id: 'donations', label: 'Doações', icon: Activity },
+    { id: 'donations', label: 'Projetos Sociais', icon: Activity },
     { id: 'certificates', label: 'Certificados', icon: Award },
     { id: 'customers', label: 'Clientes', icon: Users },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp },
