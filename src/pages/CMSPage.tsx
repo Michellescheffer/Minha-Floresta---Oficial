@@ -290,10 +290,13 @@ export default function CMSPage() {
               <div>
                 <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900 tracking-tight">
                   Painel Administrativo
-                  <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold border border-emerald-200">
-                    v4.1.4
-                  </span>
                 </h1>
+                <div className="hidden md:flex flex-col items-end mr-4">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Versão</span>
+                  <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600">
+                    v4.1.5
+                  </span>
+                </div>
                 <p className="text-sm text-gray-500 font-medium">
                   Gerencie a plataforma <span className="text-emerald-600">Minha Floresta</span>
                 </p>

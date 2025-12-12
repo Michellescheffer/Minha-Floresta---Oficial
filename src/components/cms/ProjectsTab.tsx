@@ -156,8 +156,8 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
 
             const coverImage = gallery_images[0];
             if (editingProject) {
-                // Update Logic: Switched to match Insert schema (available_m2, total_m2, image) as 'available_area' caused 400 errors.
-                // Hypothesis: The table schema is uniform (available_m2, total_m2, image) and legacy code in useProjects was misleading.
+                // Update Logic: REVERTED to available_area but cleaned up.
+                // The error `Could not find the 'available_m2' column` confirms insert vs update schema difference (or at least update strictness).
                 const updatePayload: any = {
                     name: formData.name.trim(),
                     description: formData.description.trim(),
@@ -166,15 +166,17 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                     type: formData.type,
                     price_per_m2: Number(formData.price_per_sqm),
 
-                    // FIXED: Using available_m2/total_m2 and image instead of available_area/main_image
-                    available_m2: Number(formData.available_area),
-                    total_m2: Number(formData.total_area || formData.available_area),
+                    // FIXED (AGAIN): Reverting to 'available_area' for UPDATE as 'available_m2' caused "Column not found".
+                    available_area: Number(formData.available_area),
 
-                    // Removed sold_area to avoid potential conflicts if it's a generated column or mismatches schema
-                    // If backend calculates it or triggers handle it, this is safer.
+                    // We must NOT send 'total_m2' or 'available_m2' if they don't exist in the schema for valid targets of UPDATE.
+                    // If 'sold_area' is updated via transaction or is calculable, we might omit it, 
+                    // BUT legacy code sent it. We will omit it to be safe unless needed.
+                    // Actually, let's include sold_area if we have it, as per hook.
+                    sold_area: Number(formData.total_area || formData.available_area) - Number(formData.available_area),
 
                     status: formData.status,
-                    image: coverImage,
+                    main_image: coverImage,
                     gallery_images
                 };
 
