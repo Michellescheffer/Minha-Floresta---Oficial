@@ -158,14 +158,15 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
             const payload = {
                 name: formData.name.trim(),
                 description: formData.description.trim(),
-                long_description: formData.long_description.trim(),
+                long_description: formData.long_description.trim() || null, // Ensure null if empty, or mapped correctly
                 location: formData.location.trim(),
                 type: formData.type,
                 price_per_m2: Number(formData.price_per_sqm),
-                available_m2: Number(formData.available_area),
-                total_m2: Number(formData.total_area || formData.available_area),
+                available_area: Number(formData.available_area),
+                sold_area: Number(formData.total_area || formData.available_area) - Number(formData.available_area), // Calculate sold if needed, or just standard columns
+                total_area: Number(formData.total_area || formData.available_area), // Maybe keep total_area if it exists
                 status: formData.status,
-                image: coverImage,
+                main_image: coverImage,
                 gallery_images
             };
 

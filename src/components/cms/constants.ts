@@ -17,6 +17,6 @@ export const cmsTokens = {
 
     button: {
         primary: 'inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-emerald-600 text-white font-medium hover:bg-emerald-700 focus:ring-4 focus:ring-emerald-500/20 transition-all shadow-sm hover:shadow active:scale-95',
-        secondary: 'inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-white border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 hover:text-gray-900 focus:ring-4 focus:ring-gray-100 transition-all shadow-sm active:scale-95'
+        secondary: 'inline-flex items-center justify-center px-4 py-2.5 rounded-lg bg-white border border-gray-300 text-gray-900 font-semibold hover:bg-gray-50 focus:ring-4 focus:ring-gray-100 transition-all shadow-sm active:scale-95'
     }
 };
