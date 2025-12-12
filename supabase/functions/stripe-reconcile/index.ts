@@ -5,7 +5,7 @@ import { PDFDocument, StandardFonts, rgb } from 'https://esm.sh/pdf-lib@1.17.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature, sentry-trace, baggage',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
@@ -154,7 +154,7 @@ serve(async (req: Request) => {
                 const certificateType = meta.certificate_type || 'digital';
                 for (const it of rows) {
                   const certNumber = `MF-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-                  
+
                   // Get project name
                   const { data: project } = await supabase
                     .from('projects')
@@ -162,7 +162,7 @@ serve(async (req: Request) => {
                     .eq('id', it.project_id)
                     .maybeSingle();
                   const projectName = project?.name || 'Projeto de Reflorestamento';
-                  
+
                   // Insert certificate
                   const { data: cert, error: certErr } = await supabase
                     .from('certificates')
@@ -177,12 +177,12 @@ serve(async (req: Request) => {
                     })
                     .select('id')
                     .single();
-                  
+
                   if (certErr) {
                     console.error('reconcile insert certificate error', certErr);
                     continue;
                   }
-                  
+
                   // Generate PDF immediately
                   try {
                     const pdfBytes = await generateCertificatePDF({
@@ -191,22 +191,22 @@ serve(async (req: Request) => {
                       area: it.quantity,
                       holderName: meta.email || email || 'Titular',
                     });
-                    
+
                     // Upload to Storage
                     const bucket = Deno.env.get('CERTIFICATES_BUCKET') || 'certificates';
                     const path = `${certNumber}.pdf`;
                     const { error: uploadErr } = await supabase
                       .storage
                       .from(bucket)
-                      .upload(path, new Blob([pdfBytes.buffer], { type: 'application/pdf' }), { 
-                        upsert: true, 
-                        contentType: 'application/pdf' 
+                      .upload(path, new Blob([pdfBytes.buffer], { type: 'application/pdf' }), {
+                        upsert: true,
+                        contentType: 'application/pdf'
                       });
-                    
+
                     if (!uploadErr) {
                       const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path);
                       const pdfUrl = pub.publicUrl;
-                      
+
                       // Update certificate with PDF URL
                       await supabase
                         .from('certificates')

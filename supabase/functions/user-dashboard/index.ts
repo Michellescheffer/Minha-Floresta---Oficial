@@ -3,8 +3,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, stripe-signature, sentry-trace, baggage',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
 serve(async (req: Request) => {
@@ -145,7 +145,7 @@ serve(async (req: Request) => {
       const projectIdsByIntent = new Map<string, string[]>();
       for (const r of purchasesLike as any[]) {
         const meta = (r.metadata || {}) as any;
-        let items: Array<{ project_id: string; quantity: number } > = [];
+        let items: Array<{ project_id: string; quantity: number }> = [];
         if (meta.items_json) {
           try { items = JSON.parse(String(meta.items_json)); } catch { items = []; }
         } else if (meta.project_ids && meta.item_count) {
@@ -169,7 +169,7 @@ serve(async (req: Request) => {
             .select('id, name')
             .in('id', Array.from(new Set(projectIds)));
           (prows || []).forEach((p: any) => namesById.set(p.id, p.name || 'Projeto'));
-        } catch {}
+        } catch { }
       }
       // Aplicar fallback apenas quando purchaseId real não foi encontrado
       basePurchases.forEach(bp => {
@@ -183,7 +183,7 @@ serve(async (req: Request) => {
           if (projectNames.length > 0) bp.project_names = Array.from(new Set(projectNames));
         }
       });
-    } catch {}
+    } catch { }
 
     // 2c) Fallback final: se ainda não houver certificates, sintetizar a partir dos próprios intents
     try {
@@ -201,7 +201,7 @@ serve(async (req: Request) => {
           }
           items.forEach(it => allProjectIds.add(it.project_id));
         }
-        
+
         const projectNamesMap = new Map<string, string>();
         if (allProjectIds.size > 0) {
           try {
@@ -212,9 +212,9 @@ serve(async (req: Request) => {
             if (projectRows) {
               projectRows.forEach((p: any) => projectNamesMap.set(p.id, p.name));
             }
-          } catch {}
+          } catch { }
         }
-        
+
         const synth: any[] = [];
         for (const r of purchasesLike as any[]) {
           const meta = (r.metadata || {}) as any;
@@ -258,7 +258,7 @@ serve(async (req: Request) => {
         }
         certificates = synth;
       }
-    } catch {}
+    } catch { }
 
     // 2d) Doações: além dos intents, buscar tabela donations quando existir
     try {
@@ -279,7 +279,7 @@ serve(async (req: Request) => {
         const seen = new Set<string>();
         baseDonations = [...mapped, ...baseDonations.filter(d => { const k = d.id; if (seen.has(k)) return false; seen.add(k); return true; })];
       }
-    } catch {}
+    } catch { }
 
     // 3) Activity (últimos eventos simples)
     const activity = [...basePurchases, ...baseDonations]
@@ -304,7 +304,7 @@ serve(async (req: Request) => {
         const cnt = counts.get(bp.id);
         if (typeof cnt === 'number') (bp as any).cert_count = cnt;
       });
-    } catch {}
+    } catch { }
 
     const body = { purchases: basePurchases, donations: baseDonations, certificates, activity };
     return new Response(JSON.stringify(body), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
