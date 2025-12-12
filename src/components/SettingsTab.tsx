@@ -119,99 +119,110 @@ export function SettingsTab() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Site Information */}
-        <GlassCard variant="solid" className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Globe className="w-5 h-5 text-green-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Informações do Site</h3>
+        <GlassCard variant="glass" className="p-8 border-white/40">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100/50">
+            <div className="p-2 bg-emerald-100/50 rounded-lg">
+              <Globe className="w-5 h-5 text-emerald-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Informações do Site</h3>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Nome do Site</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Nome do Site</label>
               <input
                 type="text"
                 value={settings.site_name}
                 onChange={(e) => setSettings({ ...settings, site_name: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/50 border border-white/60 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Descrição</label>
               <textarea
                 value={settings.site_description}
                 onChange={(e) => setSettings({ ...settings, site_description: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/50 border border-white/60 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium resize-none"
                 rows={3}
               />
             </div>
 
-            <div>
-              <label className="flex items-center gap-2 cursor-pointer">
+            <div className="pt-2">
+              <label className="flex items-center gap-3 cursor-pointer group">
+                <div className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${settings.maintenance_mode ? 'bg-emerald-500' : 'bg-gray-300'}`}>
+                  <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform duration-300 ${settings.maintenance_mode ? 'translate-x-6' : 'translate-x-0'}`} />
+                </div>
                 <input
                   type="checkbox"
                   checked={settings.maintenance_mode}
                   onChange={(e) => setSettings({ ...settings, maintenance_mode: e.target.checked })}
-                  className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                  className="hidden"
                 />
-                <span className="text-sm font-medium text-gray-700">Modo Manutenção</span>
+                <div>
+                  <span className="text-sm font-bold text-gray-700 block">Modo Manutenção</span>
+                  <span className="text-xs text-gray-500 block">Ativar para desabilitar o site temporariamente</span>
+                </div>
               </label>
-              <p className="text-xs text-gray-500 mt-1 ml-6">Ativar para desabilitar o site temporariamente</p>
             </div>
           </div>
         </GlassCard>
 
         {/* Contact Information */}
-        <GlassCard variant="solid" className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Mail className="w-5 h-5 text-green-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Informações de Contato</h3>
+        <GlassCard variant="glass" className="p-8 border-white/40">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100/50">
+            <div className="p-2 bg-emerald-100/50 rounded-lg">
+              <Mail className="w-5 h-5 text-emerald-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Informações de Contato</h3>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Email</label>
               <input
                 type="email"
                 value={settings.contact_email}
                 onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/50 border border-white/60 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Telefone</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Telefone</label>
               <input
                 type="tel"
                 value={settings.contact_phone}
                 onChange={(e) => setSettings({ ...settings, contact_phone: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/50 border border-white/60 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Endereço</label>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Endereço</label>
               <input
                 type="text"
                 value={settings.contact_address}
                 onChange={(e) => setSettings({ ...settings, contact_address: e.target.value })}
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/50 border border-white/60 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium"
               />
             </div>
           </div>
         </GlassCard>
 
         {/* Social Media */}
-        <GlassCard variant="solid" className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Instagram className="w-5 h-5 text-green-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Redes Sociais</h3>
+        <GlassCard variant="glass" className="p-8 border-white/40">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100/50">
+            <div className="p-2 bg-emerald-100/50 rounded-lg">
+              <Instagram className="w-5 h-5 text-emerald-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Redes Sociais</h3>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <Facebook className="w-4 h-4" />
+              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <Facebook className="w-4 h-4 text-blue-600" />
                 Facebook
               </label>
               <input
@@ -219,13 +230,13 @@ export function SettingsTab() {
                 value={settings.social_facebook || ''}
                 onChange={(e) => setSettings({ ...settings, social_facebook: e.target.value })}
                 placeholder="https://facebook.com/..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/50 border border-white/60 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <Instagram className="w-4 h-4" />
+              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <Instagram className="w-4 h-4 text-pink-600" />
                 Instagram
               </label>
               <input
@@ -233,13 +244,13 @@ export function SettingsTab() {
                 value={settings.social_instagram || ''}
                 onChange={(e) => setSettings({ ...settings, social_instagram: e.target.value })}
                 placeholder="https://instagram.com/..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/50 border border-white/60 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
-                <Linkedin className="w-4 h-4" />
+              <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center gap-2">
+                <Linkedin className="w-4 h-4 text-blue-700" />
                 LinkedIn
               </label>
               <input
@@ -247,50 +258,64 @@ export function SettingsTab() {
                 value={settings.social_linkedin || ''}
                 onChange={(e) => setSettings({ ...settings, social_linkedin: e.target.value })}
                 placeholder="https://linkedin.com/company/..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                className="w-full px-4 py-3 bg-white/50 border border-white/60 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-medium"
               />
             </div>
           </div>
         </GlassCard>
 
         {/* Payment Settings */}
-        <GlassCard variant="solid" className="p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <AlertCircle className="w-5 h-5 text-green-600" />
-            <h3 className="text-lg font-semibold text-gray-900">Configurações de Pagamento</h3>
+        <GlassCard variant="glass" className="p-8 border-white/40">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100/50">
+            <div className="p-2 bg-emerald-100/50 rounded-lg">
+              <AlertCircle className="w-5 h-5 text-emerald-600" />
+            </div>
+            <h3 className="text-lg font-bold text-gray-900">Configurações de Pagamento</h3>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Stripe Public Key</label>
-              <input
-                type="text"
-                value={settings.stripe_public_key || ''}
-                onChange={(e) => setSettings({ ...settings, stripe_public_key: e.target.value })}
-                placeholder="pk_..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono text-sm"
-              />
+              <label className="block text-sm font-bold text-gray-700 mb-2">Stripe Public Key</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-xs">PK</span>
+                <input
+                  type="text"
+                  value={settings.stripe_public_key || ''}
+                  onChange={(e) => setSettings({ ...settings, stripe_public_key: e.target.value })}
+                  placeholder="pk_..."
+                  className="w-full pl-10 pr-4 py-3 bg-white/50 border border-white/60 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-mono text-sm"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Stripe Secret Key</label>
-              <input
-                type="password"
-                value={settings.stripe_secret_key || ''}
-                onChange={(e) => setSettings({ ...settings, stripe_secret_key: e.target.value })}
-                placeholder="sk_..."
-                className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent font-mono text-sm"
-              />
-              <p className="text-xs text-gray-500 mt-1">⚠️ Mantenha esta chave em segredo</p>
+              <label className="block text-sm font-bold text-gray-700 mb-2">Stripe Secret Key</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-mono text-xs">SK</span>
+                <input
+                  type="password"
+                  value={settings.stripe_secret_key || ''}
+                  onChange={(e) => setSettings({ ...settings, stripe_secret_key: e.target.value })}
+                  placeholder="sk_..."
+                  className="w-full pl-10 pr-4 py-3 bg-white/50 border border-white/60 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500/50 transition-all font-mono text-sm"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3 text-amber-500" />
+                Mantenha esta chave em segredo absoluto.
+              </p>
             </div>
 
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
-              <div className="flex items-start gap-2">
-                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="p-4 bg-amber-50/50 border border-amber-200/50 rounded-xl backdrop-blur-sm">
+              <div className="flex items-start gap-3">
+                <div className="p-1.5 bg-amber-100 rounded-full mt-0.5">
+                  <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                </div>
                 <div>
-                  <p className="text-sm font-medium text-amber-900">Importante</p>
-                  <p className="text-xs text-amber-700 mt-1">
-                    As chaves do Stripe são sensíveis. Certifique-se de usar as chaves corretas (test ou live).
+                  <p className="text-sm font-bold text-amber-900">Atenção</p>
+                  <p className="text-xs text-amber-800/80 mt-1 leading-relaxed">
+                    As chaves do Stripe definem se o sistema opera em modo de teste ou produção.
+                    Verifique se está usando as chaves corretas para o ambiente desejado.
                   </p>
                 </div>
               </div>

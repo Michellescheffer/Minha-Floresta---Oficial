@@ -307,144 +307,208 @@ export function SocialProjectsTab({ donations, onReload }: SocialProjectsTabProp
         )}
       </div>
 
-      {/* Modal */}
+      {/* Modal - Liquid Glass Style */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex items-center justify-between">
-              <h3 className="text-xl font-bold text-gray-900">
-                {editingDonation ? 'Editar Projeto Social' : 'Novo Projeto Social'}
-              </h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-500">
+          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-500 bg-white/80 backdrop-blur-3xl rounded-[2rem] shadow-2xl shadow-black/20 ring-1 ring-white/60 overflow-hidden">
+
+            {/* Decorative Gradients */}
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600" />
+            <div className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Modal Header */}
+            <div className="p-8 border-b border-gray-100/50 flex items-center justify-between relative z-10">
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-emerald-800 to-teal-700">
+                  {editingDonation ? 'Editar Projeto Social' : 'Novo Projeto Social'}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1 font-medium">
+                  Preencha os detalhes da campanha de doação.
+                </p>
+              </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2.5 hover:bg-black/5 rounded-full transition-colors text-gray-400 hover:text-gray-600"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Título</label>
-                <input
-                  type="text"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  required
-                />
-              </div>
+            {/* Modal Body */}
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-8 relative z-10 custom-scrollbar">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {/* Left Column */}
+                <div className="space-y-8">
+                  <div className="glass-panel space-y-6">
+                    <div className="flex items-center gap-2 text-emerald-700 font-bold pb-2 border-b border-emerald-100/50">
+                      <Activity className="w-5 h-5" />
+                      <span>Informações Principais</span>
+                    </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Descrição Curta</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  rows={2}
-                  required
-                />
-              </div>
+                    <div className="space-y-5">
+                      <div>
+                        <label className="text-sm font-bold text-gray-700 mb-2 block">Título</label>
+                        <input
+                          type="text"
+                          value={formData.title}
+                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                          className="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-medium"
+                          placeholder="Ex: Doação de Mudas Nativas"
+                          required
+                        />
+                      </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Detalhes Completos</label>
-                <textarea
-                  value={formData.long_description}
-                  onChange={(e) => setFormData({ ...formData, long_description: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  rows={4}
-                />
-              </div>
+                      <div>
+                        <label className="text-sm font-bold text-gray-700 mb-2 block">Descrição Curta</label>
+                        <textarea
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          className="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all min-h-[100px] resize-none"
+                          placeholder="Um resumo breve para o card do projeto..."
+                          required
+                        />
+                      </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Meta (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.goal_amount}
-                    onChange={(e) => setFormData({ ...formData, goal_amount: parseFloat(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
-                  />
+                      <div>
+                        <label className="text-sm font-bold text-gray-700 mb-2 block">Descrição Completa</label>
+                        <textarea
+                          value={formData.long_description}
+                          onChange={(e) => setFormData({ ...formData, long_description: e.target.value })}
+                          className="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all min-h-[150px] resize-none"
+                          placeholder="Detalhes completos sobre o impacto e objetivos..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass-panel space-y-6">
+                    <div className="flex items-center gap-2 text-emerald-700 font-bold pb-2 border-b border-emerald-100/50">
+                      <Activity className="w-5 h-5" />
+                      <span>Metas e Valores</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-5">
+                      <div>
+                        <label className="text-sm font-bold text-gray-700 mb-2 block">Meta (R$)</label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">R$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={formData.goal_amount}
+                            onChange={(e) => setFormData({ ...formData, goal_amount: parseFloat(e.target.value) })}
+                            className="w-full pl-10 pr-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-bold text-gray-700 mb-2 block">Arrecadado</label>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">R$</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={formData.current_amount}
+                            onChange={(e) => setFormData({ ...formData, current_amount: parseFloat(e.target.value) })}
+                            className="w-full pl-10 pr-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold"
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Arrecadado (R$)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={formData.current_amount}
-                    onChange={(e) => setFormData({ ...formData, current_amount: parseFloat(e.target.value) })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
-                  />
+                {/* Right Column */}
+                <div className="space-y-8">
+                  <div className="glass-panel space-y-6">
+                    <div className="flex items-center gap-2 text-emerald-700 font-bold pb-2 border-b border-emerald-100/50">
+                      <Activity className="w-5 h-5" />
+                      <span>Configurações</span>
+                    </div>
+
+                    <div className="space-y-5">
+                      <div className="grid grid-cols-2 gap-5">
+                        <div>
+                          <label className="text-sm font-bold text-gray-700 mb-2 block">Data Início</label>
+                          <input
+                            type="date"
+                            value={formData.start_date}
+                            onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                            className="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                            required
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-sm font-bold text-gray-700 mb-2 block">Data Fim</label>
+                          <input
+                            type="date"
+                            value={formData.end_date}
+                            onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                            className="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-bold text-gray-700 mb-2 block">Status</label>
+                        <select
+                          value={formData.status}
+                          onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                          className="w-full px-4 py-3 bg-white/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all cursor-pointer appearance-none"
+                        >
+                          <option value="active">Ativo (Visível)</option>
+                          <option value="paused">Pausado</option>
+                          <option value="completed">Concluído</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="glass-panel space-y-6">
+                    <div className="flex items-center gap-2 text-emerald-700 font-bold pb-2 border-b border-emerald-100/50">
+                      <Activity className="w-5 h-5" />
+                      <span>Imagem de Capa</span>
+                    </div>
+
+                    <div className="bg-white/40 p-6 rounded-3xl border border-white/50 border-dashed backdrop-blur-sm shadow-inner transition-all hover:bg-white/50">
+                      <ImageUploadWithResizer
+                        images={formData.gallery_images}
+                        onChange={(images) => setFormData((prev) => ({
+                          ...prev,
+                          gallery_images: images,
+                          image_url: images[0] || prev.image_url
+                        }))}
+                        maxImages={5}
+                        maxFileSize={5}
+                      />
+                      <p className="text-xs text-center text-gray-500 mt-3">A primeira imagem será usada como capa.</p>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-col gap-3 pt-4">
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="w-full py-4 text-lg font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 rounded-2xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      <Save className="w-5 h-5" />
+                      {saving ? 'Processando...' : editingDonation ? 'Salvar Alterações' : 'Criar Projeto'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowModal(false)}
+                      className="w-full py-3 text-gray-500 hover:text-gray-800 font-semibold hover:bg-black/5 rounded-2xl transition-all"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Data Início</label>
-                  <input
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Data Fim (opcional)</label>
-                  <input
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                <select
-                  value={formData.status}
-                  onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                >
-                  <option value="active">Ativo</option>
-                  <option value="paused">Pausado</option>
-                  <option value="completed">Concluído</option>
-                </select>
-              </div>
-
-              <ImageUploadWithResizer
-                images={formData.gallery_images}
-                onChange={(images) => setFormData((prev) => ({
-                  ...prev,
-                  gallery_images: images,
-                  image_url: images[0] || prev.image_url
-                }))}
-                maxImages={5}
-                maxFileSize={5}
-              />
-
-              <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-200">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-60"
-                >
-                  <Save className="w-4 h-4" />
-                  {saving ? 'Salvando...' : editingDonation ? 'Atualizar' : 'Criar'}
-                </button>
               </div>
             </form>
           </div>
