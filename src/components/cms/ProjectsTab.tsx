@@ -161,7 +161,7 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                 const updatePayload: any = {
                     name: formData.name.trim(),
                     description: formData.description.trim(),
-                    long_description: formData.long_description.trim() || null,
+                    // long_description removed (Schema mismatch)
                     location: formData.location.trim(),
                     type: formData.type,
                     price_per_m2: Number(formData.price_per_sqm),
@@ -170,7 +170,7 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                     available_area: Number(formData.available_area),
 
                     // We must NOT send 'total_m2' or 'available_m2' if they don't exist in the schema for valid targets of UPDATE.
-                    // If 'sold_area' is updated via transaction or is calculable, we might omit it, 
+                    // If 'sold_area' is updated via transaction or is calculable, we might omit it,
                     // BUT legacy code sent it. We will omit it to be safe unless needed.
                     // Actually, let's include sold_area if we have it, as per hook.
                     sold_area: Number(formData.total_area || formData.available_area) - Number(formData.available_area),
@@ -192,7 +192,7 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                 const insertPayload: any = {
                     name: formData.name.trim(),
                     description: formData.description.trim(),
-                    long_description: formData.long_description.trim() || null,
+                    // long_description removed (Schema mismatch)
                     location: formData.location.trim(),
                     type: formData.type,
                     price_per_m2: Number(formData.price_per_sqm),

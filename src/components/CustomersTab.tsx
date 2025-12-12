@@ -77,7 +77,7 @@ export function CustomersTab({ customers, selectedCustomer, onSelectCustomer }: 
         <h2 className="text-xl font-bold text-gray-900">Clientes ({customers.length})</h2>
         <button
           onClick={exportToCSV}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-lg transition-all"
+          className={cmsTokens.button.primary + " flex items-center gap-2"}
         >
           <FileSpreadsheet className="w-4 h-4" />
           Exportar Planilha

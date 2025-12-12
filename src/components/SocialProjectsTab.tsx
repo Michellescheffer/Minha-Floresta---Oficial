@@ -157,7 +157,7 @@ export function SocialProjectsTab({ donations, onReload }: SocialProjectsTabProp
       const payload = {
         title: formData.title.trim(),
         description: formData.description.trim(),
-        long_description: formData.long_description.trim(),
+        // long_description: formData.long_description.trim(), // Removed to avoid schema mismatch
         goal_amount: Number(formData.goal_amount),
         current_amount: Number(formData.current_amount),
         image_url: coverImage,
@@ -223,7 +223,7 @@ export function SocialProjectsTab({ donations, onReload }: SocialProjectsTabProp
         <h2 className="text-xl font-bold text-gray-900">Projetos Sociais ({donations.length})</h2>
         <button
           onClick={handleAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl hover:shadow-lg transition-all"
+          className={cmsTokens.button.primary + " flex items-center gap-2"}
         >
           <Plus className="w-4 h-4" />
           Novo Projeto Social
@@ -289,14 +289,14 @@ export function SocialProjectsTab({ donations, onReload }: SocialProjectsTabProp
               <div className="flex gap-2">
                 <button
                   onClick={() => handleEdit(donation)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors border border-blue-100 font-medium"
                 >
                   <Edit3 className="w-4 h-4" />
                   Editar
                 </button>
                 <button
                   onClick={() => handleDelete(donation.id)}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors border border-red-100 font-medium"
                 >
                   <Trash2 className="w-4 h-4" />
                   Excluir
@@ -494,7 +494,7 @@ export function SocialProjectsTab({ donations, onReload }: SocialProjectsTabProp
                     <button
                       type="submit"
                       disabled={saving}
-                      className="w-full py-4 text-lg font-bold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 rounded-2xl shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                      className={cmsTokens.button.primary + " w-full flex items-center justify-center gap-2"}
                     >
                       <Save className="w-5 h-5" />
                       {saving ? 'Processando...' : editingDonation ? 'Salvar Alterações' : 'Criar Projeto'}
@@ -503,7 +503,7 @@ export function SocialProjectsTab({ donations, onReload }: SocialProjectsTabProp
                     <button
                       type="button"
                       onClick={() => setShowModal(false)}
-                      className="w-full py-3 text-gray-500 hover:text-gray-800 font-semibold hover:bg-black/5 rounded-2xl transition-all"
+                      className={cmsTokens.button.secondary + " w-full"}
                     >
                       Cancelar
                     </button>

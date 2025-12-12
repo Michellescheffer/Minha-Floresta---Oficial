@@ -110,7 +110,7 @@ export function SettingsTab() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+          className={cmsTokens.button.primary + " flex items-center gap-2 disabled:opacity-50"}
         >
           <Save className="w-4 h-4" />
           {saving ? 'Salvando...' : 'Salvar Alterações'}
@@ -329,7 +329,7 @@ export function SettingsTab() {
         <button
           onClick={handleSave}
           disabled={saving}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:shadow-lg transition-all disabled:opacity-50"
+          className={cmsTokens.button.primary + " w-full flex items-center justify-center gap-2 disabled:opacity-50"}
         >
           <Save className="w-5 h-5" />
           {saving ? 'Salvando...' : 'Salvar Alterações'}
