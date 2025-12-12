@@ -161,16 +161,11 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                 long_description: formData.long_description.trim(),
                 location: formData.location.trim(),
                 type: formData.type,
-                price_per_sqm: Number(formData.price_per_sqm),
-                price_per_m2: Number(formData.price_per_sqm), // Legacy support if column exists
-                available_area: Number(formData.available_area),
-                available_m2: Number(formData.available_area), // Legacy support
-                total_area: Number(formData.total_area || formData.available_area),
-                total_m2: Number(formData.total_area || formData.available_area), // Legacy support
+                price_per_m2: Number(formData.price_per_sqm),
+                available_m2: Number(formData.available_area),
+                total_m2: Number(formData.total_area || formData.available_area),
                 status: formData.status,
                 image: coverImage,
-                image_url: coverImage, // Ensure consistent naming if one has renamed
-                main_image: coverImage,
                 gallery_images
             };
 
@@ -342,15 +337,15 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
             {/* Modal - Liquid Glass Style */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-500">
-                    <div className="relative w-full max-w-5xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-500 bg-white/80 backdrop-blur-3xl rounded-[2rem] shadow-2xl shadow-black/20 ring-1 ring-white/60 overflow-hidden">
+                    <div className="relative w-full max-w-5xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-500 bg-white shadow-2xl rounded-[2rem] ring-1 ring-black/5 overflow-hidden">
 
-                        {/* Decorative Gradients */}
-                        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600" />
-                        <div className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-                        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+                        {/* Decorative Gradients (Subtler) */}
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
 
                         {/* Modal Header */}
-                        <div className="p-8 border-b border-gray-100/50 flex items-center justify-between relative z-10">
+                        <div className="p-8 border-b border-gray-100 flex items-center justify-between relative z-10 bg-white/50 backdrop-blur-sm">
                             <div>
                                 <h3 className="text-2xl font-bold text-gray-900 bg-clip-text text-transparent bg-gradient-to-r from-emerald-800 to-teal-700">
                                     {editingProject ? 'Editar Projeto' : 'Novo Projeto'}

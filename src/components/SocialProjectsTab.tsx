@@ -310,12 +310,12 @@ export function SocialProjectsTab({ donations, onReload }: SocialProjectsTabProp
       {/* Modal - Liquid Glass Style */}
       {showModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-in fade-in duration-500">
-          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-500 bg-white/80 backdrop-blur-3xl rounded-[2rem] shadow-2xl shadow-black/20 ring-1 ring-white/60 overflow-hidden">
+          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-500 bg-white shadow-2xl rounded-[2rem] ring-1 ring-black/5 overflow-hidden">
 
-            {/* Decorative Gradients */}
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600" />
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+            {/* Decorative Gradients (Subtler) */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600" />
 
             {/* Modal Header */}
             <div className="p-8 border-b border-gray-100/50 flex items-center justify-between relative z-10">
