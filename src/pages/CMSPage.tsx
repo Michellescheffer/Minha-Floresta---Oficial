@@ -275,44 +275,53 @@ export default function CMSPage() {
 
   return (
     <div className="min-h-screen pt-56 sm:pt-52 pb-16 bg-gradient-to-br from-emerald-50 via-green-50 to-teal-50">
-      {/* Header */}
-      <div className="backdrop-blur-xl bg-white/70 border-b border-white/20 shadow-lg shadow-black/5 mb-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-green-700 to-emerald-600 bg-clip-text text-transparent">
-                CMS - Painel Administrativo
-              </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                Gerencie todos os aspectos da plataforma
-              </p>
-            </div>
-            <button
-              onClick={loadDashboardData}
-              className="flex items-center gap-2 px-4 py-2 bg-white/80 hover:bg-white border border-white/20 rounded-xl transition-all shadow-lg shadow-black/5"
-            >
-              <RefreshCw className="w-4 h-4" />
-              <span className="hidden sm:inline">Atualizar</span>
-            </button>
-          </div>
-        </div>
-      </div>
+      {/* Floating Glass Header */}
+      <div className="sticky top-4 z-40 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+        <div className="bg-white/40 backdrop-blur-xl border border-white/40 shadow-xl shadow-black/5 rounded-3xl p-4 sm:p-5 overflow-hidden relative">
+          {/* Decorative gradients */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-green-400/10 to-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
-      {/* Navigation Tabs */}
-      <div className="backdrop-blur-xl bg-white/50 border-b border-white/20 mb-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex gap-1 overflow-x-auto py-2">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+            {/* Brand & Title */}
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl shadow-lg shadow-green-500/20 text-white">
+                <TreePine className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                  Painel Administrativo
+                </h1>
+                <p className="text-sm text-gray-500 font-medium">
+                  Gerencie a plataforma <span className="text-emerald-600">Minha Floresta</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={loadDashboardData}
+                className="flex items-center gap-2 px-4 py-2.5 bg-white/60 hover:bg-white border border-white/40 hover:border-white rounded-xl transition-all shadow-sm hover:shadow-md text-sm font-medium text-gray-700"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Atualizar Dados</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Navigation Tabs */}
+          <div className="mt-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide mask-fade-right">
             {tabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all whitespace-nowrap ${activeTab === tab.id
-                  ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/30'
-                  : 'text-gray-600 hover:bg-white/50'
+                className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl transition-all whitespace-nowrap font-medium text-sm border ${activeTab === tab.id
+                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white border-transparent shadow-lg shadow-green-500/20'
+                    : 'bg-white/40 border-white/20 text-gray-600 hover:bg-white/60 hover:text-gray-900'
                   }`}
               >
-                <tab.icon className="w-4 h-4" />
-                <span className="text-sm font-medium">{tab.label}</span>
+                <tab.icon className={`w-4 h-4 ${activeTab === tab.id ? 'text-white' : 'text-gray-500'}`} />
+                {tab.label}
               </button>
             ))}
           </div>

@@ -153,37 +153,42 @@ export function DashboardTab({ stats, loading }: DashboardTabProps) {
 function StatCard({ title, value, icon: Icon, color, trend, isLoading }: any) {
     if (isLoading) {
         return (
-            <GlassCard variant="flat" className="h-40 animate-pulse">
-                <div className="h-full w-full bg-gradient-to-r from-white/40 via-white/20 to-white/40 rounded-3xl" />
-            </GlassCard>
+            <div className="h-40 rounded-3xl bg-white/20 animate-pulse border border-white/30" />
         );
     }
 
     return (
-        <GlassCard
-            hoverEffect
-            variant="solid"
-            className="group p-6 overflow-hidden relative cursor-default"
-        >
-            <div className={`absolute -right-6 -top-6 w-32 h-32 bg-gradient-to-br ${color} opacity-[0.05] group-hover:opacity-[0.12] rounded-full blur-2xl transition-all duration-500 group-hover:scale-150`} />
+        <div className="group relative overflow-hidden rounded-3xl p-1 pointer-events-none">
+            {/* Border Gradient */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${color} opacity-0 group-hover:opacity-20 transition-opacity duration-500 rounded-3xl`} />
 
-            <div className="relative flex flex-col gap-6 z-10">
-                <div className="flex items-center justify-between">
-                    <div className={`p-3.5 rounded-2xl bg-gradient-to-br ${color} shadow-lg shadow-emerald-900/10 ring-1 ring-white/20 group-hover:scale-110 transition-transform duration-300`}>
-                        <Icon className="w-6 h-6 text-white" />
+            <GlassCard
+                variant="glass"
+                intensity="medium" // Making it translucent
+                className="relative h-full p-6 transition-all duration-300 group-hover:-translate-y-1 pointer-events-auto border-white/40"
+            >
+                {/* Background Glow */}
+                <div className={`absolute -right-8 -top-8 w-32 h-32 bg-gradient-to-br ${color} opacity-[0.08] group-hover:opacity-[0.2] rounded-full blur-3xl transition-all duration-500 group-hover:scale-125`} />
+
+                <div className="relative z-10 flex flex-col justify-between h-full gap-4">
+                    <div className="flex items-center justify-between">
+                        <div className={`p-3 rounded-2xl bg-gradient-to-br ${color} text-white shadow-lg shadow-black/5 ring-4 ring-white/20`}>
+                            <Icon className="w-6 h-6" />
+                        </div>
+                        {trend && (
+                            <div className="flex items-center gap-1 px-3 py-1 rounded-full bg-white/40 border border-white/40 backdrop-blur-md shadow-sm">
+                                <TrendingUp className="w-3 h-3 text-emerald-600" />
+                                <span className="text-xs font-bold text-emerald-700">{trend}</span>
+                            </div>
+                        )}
                     </div>
-                    {trend && (
-                        <span className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-100/80 px-2.5 py-1 rounded-full backdrop-blur-sm border border-emerald-200/50">
-                            <TrendingUp className="w-3.5 h-3.5" />
-                            {trend}
-                        </span>
-                    )}
+
+                    <div>
+                        <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
+                        <p className="text-3xl font-bold text-gray-900 tracking-tight">{value}</p>
+                    </div>
                 </div>
-                <div>
-                    <p className={cmsTokens.heading}>{title}</p>
-                    <p className="text-3xl font-extrabold text-gray-900 mt-2 tracking-tight group-hover:text-emerald-900 transition-colors">{value}</p>
-                </div>
-            </div>
-        </GlassCard>
+            </GlassCard>
+        </div>
     );
 }
