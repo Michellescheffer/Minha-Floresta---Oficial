@@ -155,33 +155,52 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
             }
 
             const coverImage = gallery_images[0];
-            const payload = {
-                name: formData.name.trim(),
-                description: formData.description.trim(),
-                long_description: formData.long_description.trim() || null, // Ensure null if empty, or mapped correctly
-                location: formData.location.trim(),
-                type: formData.type,
-                price_per_m2: Number(formData.price_per_sqm),
-                available_area: Number(formData.available_area),
-                sold_area: Number(formData.total_area || formData.available_area) - Number(formData.available_area), // Calculate sold if needed, or just standard columns
-                total_area: Number(formData.total_area || formData.available_area), // Maybe keep total_area if it exists
-                status: formData.status,
-                main_image: coverImage,
-                gallery_images
-            };
-
             if (editingProject) {
+                // Update Logic: Based on useProjects > updateProject (uses main_image, available_area, SOLD_area)
+                const updatePayload: any = {
+                    name: formData.name.trim(),
+                    description: formData.description.trim(),
+                    long_description: formData.long_description.trim() || null,
+                    location: formData.location.trim(),
+                    type: formData.type,
+                    price_per_m2: Number(formData.price_per_sqm),
+                    available_area: Number(formData.available_area),
+                    sold_area: Number(formData.total_area || formData.available_area) - Number(formData.available_area),
+                    // status: formData.status, // Keep status? Hook updates it. My payload should too.
+                    status: formData.status,
+                    main_image: coverImage,
+                    gallery_images
+                };
+
                 const { error } = await supabase
                     .from('projects')
-                    .update(payload)
+                    .update(updatePayload)
                     .eq('id', editingProject.id);
 
                 if (error) throw error;
                 toast.success('Projeto atualizado!');
             } else {
+                // Insert Logic: Based on useProjects > createProject (uses image, available_m2, total_m2)
+                const insertPayload: any = {
+                    name: formData.name.trim(),
+                    description: formData.description.trim(),
+                    long_description: formData.long_description.trim() || null,
+                    location: formData.location.trim(),
+                    type: formData.type,
+                    price_per_m2: Number(formData.price_per_sqm),
+
+                    // DIFFERENT COLUMNS FOR INSERT as per hook analysis
+                    available_m2: Number(formData.available_area),
+                    total_m2: Number(formData.total_area || formData.available_area),
+
+                    status: formData.status,
+                    image: coverImage, // Insert uses 'image', Update uses 'main_image'? 
+                    gallery_images
+                };
+
                 const { error } = await supabase
                     .from('projects')
-                    .insert([payload]);
+                    .insert([insertPayload]);
 
                 if (error) throw error;
                 toast.success('Projeto criado!');
@@ -191,9 +210,10 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
             setEditingProject(null);
             setFormData(emptyForm);
             await onReload();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error saving project:', error);
-            toast.error('Erro ao salvar projeto');
+            // More detailed error message
+            toast.error(`Erro ao salvar: ${error.message || error.details || 'Erro desconhecido'}`);
         } finally {
             setSaving(false);
         }
