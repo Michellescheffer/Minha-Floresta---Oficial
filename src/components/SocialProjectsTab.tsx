@@ -4,6 +4,7 @@ import { supabase } from '../services/supabaseClient';
 import { toast } from 'sonner';
 import { ImageUploadWithResizer } from './ImageUploadWithResizer';
 import { GlassCard } from './GlassCard';
+import { cmsTokens } from './cms/constants';
 
 interface Donation {
   id: string;

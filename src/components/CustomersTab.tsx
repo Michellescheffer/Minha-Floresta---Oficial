@@ -6,6 +6,7 @@ import {
 import { toast } from 'sonner';
 
 import { GlassCard } from './GlassCard';
+import { cmsTokens } from './cms/constants';
 
 interface Customer {
   id: string;

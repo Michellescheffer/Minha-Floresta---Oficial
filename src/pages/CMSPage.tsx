@@ -294,7 +294,7 @@ export default function CMSPage() {
                 <div className="hidden md:flex flex-col items-end mr-4">
                   <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Versão</span>
                   <span className="text-sm font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600">
-                    v4.1.6
+                    v4.1.7
                   </span>
                 </div>
                 <p className="text-sm text-gray-500 font-medium">

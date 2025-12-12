@@ -3,6 +3,7 @@ import { Save, Globe, Mail, Phone, MapPin, Facebook, Instagram, Linkedin, AlertC
 import { supabase } from '../services/supabaseClient';
 import { toast } from 'sonner';
 import { GlassCard } from './GlassCard';
+import { cmsTokens } from './cms/constants';
 
 interface SiteSettings {
   site_name: string;
