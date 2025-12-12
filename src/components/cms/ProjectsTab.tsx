@@ -196,10 +196,14 @@ export function ProjectsTab({ projects, onDelete, onReload }: ProjectsTabProps) 
                     location: formData.location.trim(),
                     type: formData.type,
                     price_per_m2: Number(formData.price_per_sqm),
-                    available_m2: Number(formData.available_area),
-                    total_m2: Number(formData.total_area || formData.available_area),
+
+                    // FIXED: Using 'available_area' and 'sold_area' to match verified Update schema
+                    available_area: Number(formData.available_area),
+                    // For new projects, sold_area is typically 0 unless manually set via total_area math
+                    sold_area: Number(formData.total_area || formData.available_area) - Number(formData.available_area),
+
                     status: formData.status,
-                    image: coverImage,
+                    main_image: coverImage, // specific key for projects table
                     gallery_images
                 };
 
